@@ -49,7 +49,20 @@ export default function App() {
   const [favoriteMeals, setFavoriteMeals] = useState(() => getFavoriteMeals());
   const [completedMealsData, setCompletedMealsData] = useState(() => getCompletedMeals());
   const [waterGlasses, setWaterGlassesState] = useState(() => getWaterIntake().glasses);
-  const [activePlan, setActivePlanState] = useState(() => getActivePlan() || ROUTINES_DATA[0]);
+  const [activePlan, setActivePlanState] = useState(() => {
+    try {
+      const stored = getActivePlan();
+      if (!stored) return ROUTINES_DATA[0];
+      if (typeof stored === "string") return getRoutineById(stored) || ROUTINES_DATA[0];
+      if (stored && typeof stored === "object") {
+        if (Array.isArray(stored.dailyTimeline) && stored.dailyTimeline.length > 0) return stored;
+        if (stored.id) return getRoutineById(stored.id) || ROUTINES_DATA[0];
+      }
+      return ROUTINES_DATA[0];
+    } catch (e) {
+      return ROUTINES_DATA[0];
+    }
+  });
 
   // Modals State
   const [selectedRoutine, setSelectedRoutine] = useState(null);

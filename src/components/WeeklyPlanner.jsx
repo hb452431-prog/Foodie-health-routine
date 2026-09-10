@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Calendar, CheckCircle, Clock, Utensils, ChevronRight, ShoppingBag } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import { ROUTINES_DATA } from "../data/routinesData";
 
 export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, onOpenOrder }) {
   const days = [
@@ -15,7 +16,11 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
 
   const [activeDay, setActiveDay] = useState("mon");
 
-  if (!routine) return null;
+  const safeTimeline = (routine && Array.isArray(routine.dailyTimeline) && routine.dailyTimeline.length > 0)
+    ? routine.dailyTimeline
+    : (ROUTINES_DATA[0].dailyTimeline || []);
+
+  const safeTitle = routine?.title || "Active Routine";
 
   return (
     <div className="widget-card">
@@ -25,7 +30,7 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
             Weekly Routine Schedule
           </h3>
           <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-            7-day plan distribution based on {routine.title}. Click any meal to view recipes, YouTube videos, or delivery options.
+            7-day plan distribution based on {safeTitle}. Click any meal to view recipes, YouTube videos, or delivery options.
           </p>
         </div>
       </div>
@@ -49,10 +54,16 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
 
       {/* Active Day Meal List */}
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {routine.dailyTimeline &&
-          routine.dailyTimeline.map((meal) => (
+        {safeTimeline.map((meal, index) => {
+          const mealId = meal.id || `weekly-meal-${index}`;
+          const mealTitle = meal.title || "Healthy Meal";
+          const mealEmoji = meal.emoji || "🥗";
+          const mealCalories = meal.calories || 300;
+          const mealProtein = meal.protein || 15;
+
+          return (
             <div
-              key={meal.id}
+              key={mealId}
               className="weekly-meal-row"
               style={{
                 display: "flex",
@@ -70,7 +81,7 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
               title="Click to view preparation recipe and details"
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-                <span style={{ fontSize: "1.3rem" }}>{meal.emoji}</span>
+                <span style={{ fontSize: "1.3rem" }}>{mealEmoji}</span>
                 <div>
                   <div
                     style={{
@@ -80,13 +91,13 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
                       color: "var(--primary-700)"
                     }}
                   >
-                    {meal.slotName} • {meal.time}
+                    {meal.slotName || `Meal ${index + 1}`} • {meal.time || "Daily"}
                   </div>
                   <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>
-                    {meal.title}
+                    {mealTitle}
                   </h4>
                   <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                    {meal.calories} kcal • {meal.protein}g protein
+                    {mealCalories} kcal • {mealProtein}g protein
                   </div>
                 </div>
               </div>
@@ -128,7 +139,8 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
                 )}
               </div>
             </div>
-          ))}
+          );
+        })}
       </div>
     </div>
   );

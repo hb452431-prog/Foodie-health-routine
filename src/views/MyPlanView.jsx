@@ -3,7 +3,7 @@ import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import ShoppingList from "../components/ShoppingList";
 import YouTubeIcon from "../components/YouTubeIcon";
-import { ROUTINES_DATA } from "../data/routinesData";
+import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
 import {
   Sparkles,
   CheckCircle2,
@@ -13,7 +13,8 @@ import {
   RotateCw,
   ShoppingBag,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from "lucide-react";
 
 export default function MyPlanView({
@@ -23,30 +24,54 @@ export default function MyPlanView({
   onOpenYouTube,
   onOpenOrder,
   onShareRoutine,
-  waterGlasses,
+  waterGlasses = 0,
   onUpdateWater,
-  completedMealsData,
+  completedMealsData = { meals: [] },
   onToggleMealCompleted,
-  favoriteMeals,
+  favoriteMeals = [],
   onToggleFavoriteMeal,
   onShowToast,
   onExploreClick,
   onSelectRoutine
 }) {
-  // If user hasn't generated a plan yet, fallback to first routine
-  const routine = activePlan || ROUTINES_DATA[0];
+  // Ultra-robust routine resolution
+  let routine = activePlan;
+  if (typeof routine === "string") {
+    routine = getRoutineById(routine);
+  }
+  if (
+    !routine ||
+    typeof routine !== "object" ||
+    !Array.isArray(routine.dailyTimeline) ||
+    routine.dailyTimeline.length === 0
+  ) {
+    routine = (routine && routine.id && getRoutineById(routine.id)) || ROUTINES_DATA[0];
+  }
+
+  const completedMealsList =
+    completedMealsData && Array.isArray(completedMealsData.meals)
+      ? completedMealsData.meals
+      : [];
+
+  const safeFavoriteMeals = Array.isArray(favoriteMeals) ? favoriteMeals : [];
 
   const handleMealCheck = (e, mealId, mealTitle) => {
     e.stopPropagation();
-    onToggleMealCompleted(mealId);
-    const isNowDone = !completedMealsData?.meals?.includes(mealId);
-    onShowToast(isNowDone ? `✅ Completed ${mealTitle}!` : `Unchecked ${mealTitle}`);
+    if (onToggleMealCompleted) onToggleMealCompleted(mealId);
+    const isNowDone = !completedMealsList.includes(mealId);
+    if (onShowToast) {
+      onShowToast(isNowDone ? `✅ Completed ${mealTitle}!` : `Unchecked ${mealTitle}`);
+    }
   };
 
   const handleFavClick = (e, mealId) => {
     e.stopPropagation();
-    onToggleFavoriteMeal(mealId);
+    if (onToggleFavoriteMeal) onToggleFavoriteMeal(mealId);
   };
+
+  const safeDailyTimeline = Array.isArray(routine.dailyTimeline)
+    ? routine.dailyTimeline
+    : ROUTINES_DATA[0].dailyTimeline;
 
   return (
     <div style={{ padding: "2rem 0 4rem" }}>
@@ -77,18 +102,18 @@ export default function MyPlanView({
                   border: "1px solid rgba(16, 185, 129, 0.4)"
                 }}
               >
-                {activePlan?.isCustom ? "✨ Custom Active Routine" : "⭐ Standard Active Routine"}
+                {routine.isCustom ? "✨ Custom Active Routine" : "⭐ Standard Active Routine"}
               </span>
               <span className="badge" style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF" }}>
-                {routine.category}
+                {routine.category || "Health & Wellness"}
               </span>
             </div>
 
             <h1 style={{ fontSize: "1.9rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.4rem" }}>
-              {routine.title}
+              {routine.title || "My Daily Nutrition Plan"}
             </h1>
             <p style={{ color: "#E2E8F0", fontSize: "0.9rem", maxWidth: "600px" }}>
-              {routine.subtitle || routine.description}
+              {routine.subtitle || routine.description || "Personalized daily food routine for health and vitality."}
             </p>
           </div>
 
@@ -117,7 +142,7 @@ export default function MyPlanView({
 
             <button
               className="btn btn-secondary btn-sm"
-              onClick={() => onSelectRoutine(routine.id)}
+              onClick={() => onSelectRoutine && onSelectRoutine(routine.id || "diabetes-friendly")}
               style={{
                 background: "rgba(255,255,255,0.15)",
                 color: "#FFFFFF",
@@ -159,258 +184,259 @@ export default function MyPlanView({
 
               {/* Meal Completion Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {routine.dailyTimeline &&
-                  routine.dailyTimeline.map((meal) => {
-                    const isDone = completedMealsData?.meals?.includes(meal.id);
-                    const isFav = favoriteMeals.includes(meal.id);
-                    const dishName = meal.orderQuery || meal.title;
-                    const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dishName)}`;
-                    const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(dishName)}`;
+                {safeDailyTimeline.map((meal, index) => {
+                  const mealId = meal.id || `meal-${index}`;
+                  const isDone = completedMealsList.includes(mealId);
+                  const isFav = safeFavoriteMeals.includes(mealId);
+                  const mealTitle = meal.title || "Healthy Meal";
+                  const dishName = meal.orderQuery || mealTitle;
+                  const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dishName)}`;
+                  const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(dishName)}`;
 
-                    return (
-                      <div
-                        key={meal.id}
-                        className="my-plan-meal-card"
-                        style={{
-                          background: isDone ? "#F0FDF4" : "var(--bg-card-subtle)",
-                          border: isDone ? "1.5px solid #86EFAC" : "1px solid var(--border-subtle)",
-                          borderRadius: "var(--radius-xl)",
-                          padding: "1.1rem",
-                          transition: "all 0.22s ease",
-                          cursor: "pointer"
-                        }}
-                        onClick={() => onOpenRecipe(meal, routine)}
-                        title="Click to view full recipe, YouTube guides and delivery options"
-                      >
-                        {/* Top Info Header */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
-                          {/* Checkbox Trigger */}
-                          <button
-                            onClick={(e) => handleMealCheck(e, meal.id, meal.title)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              color: isDone ? "#059669" : "var(--text-muted)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: "0.2rem",
-                              flexShrink: 0,
-                              marginTop: "2px"
-                            }}
-                            title={isDone ? "Mark uncompleted" : "Mark meal completed"}
-                          >
-                            {isDone ? (
-                              <CheckCircle2 size={26} fill="#10B981" color="#FFFFFF" />
-                            ) : (
-                              <Circle size={26} />
-                            )}
-                          </button>
-
-                          {/* Meal Thumbnail */}
-                          {meal.image && (
-                            <img
-                              src={meal.image}
-                              alt={meal.title}
-                              style={{
-                                width: "64px",
-                                height: "64px",
-                                borderRadius: "var(--radius-md)",
-                                objectFit: "cover",
-                                flexShrink: 0,
-                                border: "1px solid var(--border-subtle)"
-                              }}
-                            />
-                          )}
-
-                          {/* Meal Details */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: "0.5rem",
-                                marginBottom: "0.2rem"
-                              }}
-                            >
-                              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                                <span
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    fontWeight: 700,
-                                    textTransform: "uppercase",
-                                    color: "var(--primary-700)"
-                                  }}
-                                >
-                                  {meal.slotName} • {meal.time}
-                                </span>
-                                <span
-                                  style={{
-                                    fontSize: "0.72rem",
-                                    color: meal.isVeg ? "#059669" : "#DC2626",
-                                    fontWeight: 600
-                                  }}
-                                >
-                                  • {meal.dietType || (meal.isVeg ? "Veg" : "Non-Veg")}
-                                </span>
-                              </div>
-
-                              <button
-                                onClick={(e) => handleFavClick(e, meal.id)}
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  cursor: "pointer",
-                                  color: isFav ? "#EF4444" : "var(--text-muted)",
-                                  padding: "0.2rem"
-                                }}
-                                title={isFav ? "Saved in favorite meals" : "Save meal to favorites"}
-                              >
-                                <Heart size={18} fill={isFav ? "#EF4444" : "none"} />
-                              </button>
-                            </div>
-
-                            <h4
-                              style={{
-                                fontSize: "1.05rem",
-                                fontWeight: 800,
-                                color: isDone ? "#065F46" : "var(--text-primary)",
-                                textDecoration: isDone ? "line-through" : "none",
-                                marginBottom: "0.25rem"
-                              }}
-                            >
-                              {meal.title}
-                            </h4>
-
-                            <div
-                              style={{
-                                fontSize: "0.78rem",
-                                color: "var(--text-muted)",
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: "0.75rem"
-                              }}
-                            >
-                              <span>🔥 {meal.calories} kcal</span>
-                              <span>🍗 {meal.protein}g protein</span>
-                              <span>🌾 {meal.carbs}g carbs</span>
-                              <span>⏱️ {meal.prepTime}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Interactive Action Buttons Row */}
-                        <div
+                  return (
+                    <div
+                      key={mealId}
+                      className="my-plan-meal-card"
+                      style={{
+                        background: isDone ? "#F0FDF4" : "var(--bg-card-subtle)",
+                        border: isDone ? "1.5px solid #86EFAC" : "1px solid var(--border-subtle)",
+                        borderRadius: "var(--radius-xl)",
+                        padding: "1.1rem",
+                        transition: "all 0.22s ease",
+                        cursor: "pointer"
+                      }}
+                      onClick={() => onOpenRecipe && onOpenRecipe(meal, routine)}
+                      title="Click to view full recipe, YouTube guides and delivery options"
+                    >
+                      {/* Top Info Header */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
+                        {/* Checkbox Trigger */}
+                        <button
+                          onClick={(e) => handleMealCheck(e, mealId, mealTitle)}
                           style={{
-                            marginTop: "0.9rem",
-                            paddingTop: "0.85rem",
-                            borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            color: isDone ? "#059669" : "var(--text-muted)",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between",
-                            flexWrap: "wrap",
-                            gap: "0.6rem"
+                            justifyContent: "center",
+                            padding: "0.2rem",
+                            flexShrink: 0,
+                            marginTop: "2px"
                           }}
-                          onClick={(e) => e.stopPropagation()}
+                          title={isDone ? "Mark uncompleted" : "Mark meal completed"}
                         >
-                          {/* Recipe and YouTube Buttons */}
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          {isDone ? (
+                            <CheckCircle2 size={26} fill="#10B981" color="#FFFFFF" />
+                          ) : (
+                            <Circle size={26} />
+                          )}
+                        </button>
+
+                        {/* Meal Thumbnail */}
+                        {meal.image && (
+                          <img
+                            src={meal.image}
+                            alt={mealTitle}
+                            style={{
+                              width: "64px",
+                              height: "64px",
+                              borderRadius: "var(--radius-md)",
+                              objectFit: "cover",
+                              flexShrink: 0,
+                              border: "1px solid var(--border-subtle)"
+                            }}
+                          />
+                        )}
+
+                        {/* Meal Details */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "0.5rem",
+                              marginBottom: "0.2rem"
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                              <span
+                                style={{
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  textTransform: "uppercase",
+                                  color: "var(--primary-700)"
+                                }}
+                              >
+                                {meal.slotName || `Slot ${index + 1}`} • {meal.time || "Daily"}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: "0.72rem",
+                                  color: meal.isVeg ? "#059669" : "#DC2626",
+                                  fontWeight: 600
+                                }}
+                              >
+                                • {meal.dietType || (meal.isVeg ? "Veg" : "Non-Veg")}
+                              </span>
+                            </div>
+
                             <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => onOpenRecipe(meal, routine)}
-                              title="View full ingredient checklist and preparation steps"
+                              onClick={(e) => handleFavClick(e, mealId)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: isFav ? "#EF4444" : "var(--text-muted)",
+                                padding: "0.2rem"
+                              }}
+                              title={isFav ? "Saved in favorite meals" : "Save meal to favorites"}
                             >
-                              <Utensils size={14} />
-                              <span>View Recipe</span>
+                              <Heart size={18} fill={isFav ? "#EF4444" : "none"} />
                             </button>
-
-                            {onOpenYouTube && (
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => onOpenYouTube(meal)}
-                                style={{
-                                  color: "#DC2626",
-                                  background: "#FEF2F2",
-                                  border: "1px solid #FECACA"
-                                }}
-                                title="Watch YouTube preparation video guides"
-                              >
-                                <YouTubeIcon size={14} color="#DC2626" fill={true} />
-                                <span>Watch Video</span>
-                              </button>
-                            )}
-
-                            {onOpenOrder && (
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => onOpenOrder(meal)}
-                                style={{
-                                  color: "#D97706",
-                                  background: "#FFFBEB",
-                                  border: "1px solid #FDE68A"
-                                }}
-                                title="Order this dish from nearby restaurants"
-                              >
-                                <ShoppingBag size={14} />
-                                <span>Order Food</span>
-                              </button>
-                            )}
                           </div>
 
-                          {/* Direct Quick Delivery Links (Swiggy & Zomato) */}
-                          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                            <a
-                              href={swiggyUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.3rem",
-                                padding: "0.3rem 0.6rem",
-                                borderRadius: "var(--radius-full)",
-                                background: "rgba(252, 128, 25, 0.12)",
-                                color: "#C2410C",
-                                border: "1px solid rgba(252, 128, 25, 0.25)",
-                                fontSize: "0.75rem",
-                                fontWeight: 700,
-                                textDecoration: "none"
-                              }}
-                              title={`Order "${dishName}" on Swiggy`}
-                            >
-                              <span>🛵 Swiggy</span>
-                              <ExternalLink size={11} />
-                            </a>
+                          <h4
+                            style={{
+                              fontSize: "1.05rem",
+                              fontWeight: 800,
+                              color: isDone ? "#065F46" : "var(--text-primary)",
+                              textDecoration: isDone ? "line-through" : "none",
+                              marginBottom: "0.25rem"
+                            }}
+                          >
+                            {mealTitle}
+                          </h4>
 
-                            <a
-                              href={zomatoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "0.3rem",
-                                padding: "0.3rem 0.6rem",
-                                borderRadius: "var(--radius-full)",
-                                background: "rgba(226, 55, 68, 0.12)",
-                                color: "#B91C1C",
-                                border: "1px solid rgba(226, 55, 68, 0.25)",
-                                fontSize: "0.75rem",
-                                fontWeight: 700,
-                                textDecoration: "none"
-                              }}
-                              title={`Order "${dishName}" on Zomato`}
-                            >
-                              <span>🍴 Zomato</span>
-                              <ExternalLink size={11} />
-                            </a>
+                          <div
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-muted)",
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "0.75rem"
+                            }}
+                          >
+                            <span>🔥 {meal.calories || 300} kcal</span>
+                            <span>🍗 {meal.protein || 15}g protein</span>
+                            <span>🌾 {meal.carbs || 35}g carbs</span>
+                            <span>⏱️ {meal.prepTime || "15 min"}</span>
                           </div>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      {/* Interactive Action Buttons Row */}
+                      <div
+                        style={{
+                          marginTop: "0.9rem",
+                          paddingTop: "0.85rem",
+                          borderTop: "1px solid rgba(0, 0, 0, 0.06)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "0.6rem"
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Recipe and YouTube Buttons */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => onOpenRecipe && onOpenRecipe(meal, routine)}
+                            title="View full ingredient checklist and preparation steps"
+                          >
+                            <Utensils size={14} />
+                            <span>View Recipe</span>
+                          </button>
+
+                          {onOpenYouTube && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => onOpenYouTube(meal)}
+                              style={{
+                                color: "#DC2626",
+                                background: "#FEF2F2",
+                                border: "1px solid #FECACA"
+                              }}
+                              title="Watch YouTube preparation video guides"
+                            >
+                              <YouTubeIcon size={14} color="#DC2626" fill={true} />
+                              <span>Watch Video</span>
+                            </button>
+                          )}
+
+                          {onOpenOrder && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => onOpenOrder(meal)}
+                              style={{
+                                color: "#D97706",
+                                background: "#FFFBEB",
+                                border: "1px solid #FDE68A"
+                              }}
+                              title="Order this dish from nearby restaurants"
+                            >
+                              <ShoppingBag size={14} />
+                              <span>Order Food</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Direct Quick Delivery Links (Swiggy & Zomato) */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                          <a
+                            href={swiggyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.3rem",
+                              padding: "0.3rem 0.6rem",
+                              borderRadius: "var(--radius-full)",
+                              background: "rgba(252, 128, 25, 0.12)",
+                              color: "#C2410C",
+                              border: "1px solid rgba(252, 128, 25, 0.25)",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              textDecoration: "none"
+                            }}
+                            title={`Order "${dishName}" on Swiggy`}
+                          >
+                            <span>🛵 Swiggy</span>
+                            <ExternalLink size={11} />
+                          </a>
+
+                          <a
+                            href={zomatoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.3rem",
+                              padding: "0.3rem 0.6rem",
+                              borderRadius: "var(--radius-full)",
+                              background: "rgba(226, 55, 68, 0.12)",
+                              color: "#B91C1C",
+                              border: "1px solid rgba(226, 55, 68, 0.25)",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              textDecoration: "none"
+                            }}
+                            title={`Order "${dishName}" on Zomato`}
+                          >
+                            <span>🍴 Zomato</span>
+                            <ExternalLink size={11} />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -429,10 +455,10 @@ export default function MyPlanView({
               waterGlasses={waterGlasses}
               onUpdateWater={onUpdateWater}
               completedMealsData={completedMealsData}
-              totalMealsCount={routine.dailyTimeline?.length || 6}
+              totalMealsCount={safeDailyTimeline.length}
               onToggleMealCompleted={onToggleMealCompleted}
               routine={routine}
-              savedRecipesCount={favoriteMeals.length}
+              savedRecipesCount={safeFavoriteMeals.length}
               onShowToast={onShowToast}
             />
 

@@ -2,9 +2,9 @@ import React from "react";
 import { Droplet, Flame, Utensils, CheckCircle2, Circle, Plus, Minus, Heart, Award } from "lucide-react";
 
 export default function DashboardWidgets({
-  waterGlasses,
+  waterGlasses = 0,
   onUpdateWater,
-  completedMealsData,
+  completedMealsData = { meals: [] },
   totalMealsCount = 6,
   onToggleMealCompleted,
   routine,
@@ -12,19 +12,22 @@ export default function DashboardWidgets({
   onShowToast
 }) {
   const targetGlasses = 8;
-  const completedCount = completedMealsData?.meals?.length || 0;
-  const completionPercentage = Math.round((completedCount / (totalMealsCount || 6)) * 100);
+  const currentGlasses = Number(waterGlasses || 0);
+  const completedList = completedMealsData && Array.isArray(completedMealsData.meals) ? completedMealsData.meals : [];
+  const completedCount = completedList.length;
+  const safeTotalMeals = Math.max(1, totalMealsCount || routine?.dailyTimeline?.length || 6);
+  const completionPercentage = Math.min(100, Math.round((completedCount / safeTotalMeals) * 100));
 
   const handleAddGlass = () => {
-    if (waterGlasses < 16) {
-      onUpdateWater(waterGlasses + 1);
-      onShowToast("💧 Logged 1 glass (+250ml) of water!");
+    if (currentGlasses < 16) {
+      if (onUpdateWater) onUpdateWater(currentGlasses + 1);
+      if (onShowToast) onShowToast("💧 Logged 1 glass (+250ml) of water!");
     }
   };
 
   const handleRemoveGlass = () => {
-    if (waterGlasses > 0) {
-      onUpdateWater(waterGlasses - 1);
+    if (currentGlasses > 0) {
+      if (onUpdateWater) onUpdateWater(currentGlasses - 1);
     }
   };
 
@@ -59,19 +62,19 @@ export default function DashboardWidgets({
           </div>
 
           <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#0369A1" }}>
-            {waterGlasses * 250} <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>ml</span>
+            {currentGlasses * 250} <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>ml</span>
           </div>
         </div>
 
         {/* Glasses Visual Grid */}
         <div className="water-glasses-row">
           {Array.from({ length: targetGlasses }).map((_, idx) => {
-            const isFilled = idx < waterGlasses;
+            const isFilled = idx < currentGlasses;
             return (
               <div
                 key={idx}
                 className={`water-glass-item ${isFilled ? "filled" : ""}`}
-                onClick={() => onUpdateWater(idx + 1 === waterGlasses ? idx : idx + 1)}
+                onClick={() => onUpdateWater && onUpdateWater(idx + 1 === currentGlasses ? idx : idx + 1)}
                 title={`Glass ${idx + 1} (250 ml)`}
               >
                 <Droplet size={16} fill={isFilled ? "#FFFFFF" : "none"} />
@@ -91,7 +94,7 @@ export default function DashboardWidgets({
             <span>+250 ml Glass</span>
           </button>
 
-          {waterGlasses > 0 && (
+          {currentGlasses > 0 && (
             <button
               className="btn btn-secondary btn-sm"
               style={{ padding: "0.4rem 0.6rem" }}
@@ -103,7 +106,7 @@ export default function DashboardWidgets({
           )}
 
           <span style={{ fontSize: "0.78rem", color: "#0369A1", fontWeight: 600, marginLeft: "auto" }}>
-            {waterGlasses >= targetGlasses ? "🎉 Target Met!" : `${targetGlasses - waterGlasses} glasses left`}
+            {currentGlasses >= targetGlasses ? "🎉 Target Met!" : `${targetGlasses - currentGlasses} glasses left`}
           </span>
         </div>
       </div>
@@ -115,7 +118,7 @@ export default function DashboardWidgets({
             Today's Routine Progress
           </h4>
           <span className="badge badge-green">
-            {completedCount}/{totalMealsCount} Meals Done
+            {completedCount}/{safeTotalMeals} Meals Done
           </span>
         </div>
 
@@ -148,14 +151,14 @@ export default function DashboardWidgets({
             <div>
               <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Target Calories</span>
               <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary-900)" }}>
-                {routine.calories} kcal
+                {routine.calories || 2000} kcal
               </div>
             </div>
 
             <div>
               <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>Target Protein</span>
               <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "var(--primary-600)" }}>
-                {routine.protein}g / day
+                {routine.protein || 80}g / day
               </div>
             </div>
           </div>
