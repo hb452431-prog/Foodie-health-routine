@@ -103,10 +103,10 @@ export default function AvatarPickerModal({
             </div>
             <div>
               <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "#FFFFFF" }}>
-                Choose Your Cartoon Animated Avatar
+                Choose Your Snapchat-Style Avatar
               </h3>
               <p style={{ fontSize: "0.78rem", color: "#94A3B8", margin: 0 }}>
-                Select an animated boy or girl avatar or use a custom image link
+                Select a Snapchat Bitmoji style boy or girl avatar for your foodie profile
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ export default function AvatarPickerModal({
               className={`filter-chip ${activeGender === "all" && !showCustomInput ? "active" : ""}`}
               style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", fontWeight: 700 }}
             >
-              ✨ All Animated ({AVATAR_COLLECTION.length})
+              👻 All Bitmojis ({AVATAR_COLLECTION.length})
             </button>
             <button
               onClick={() => {

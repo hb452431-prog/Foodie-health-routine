@@ -148,7 +148,7 @@ export default function ProfileCard({
             <div style={{ marginBottom: "1.25rem", padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--primary-900)", margin: 0 }}>
-                  Choose Your Animated Avatar
+                  Choose Your Snapchat Bitmoji Avatar
                 </label>
                 <button
                   type="button"
