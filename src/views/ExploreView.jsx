@@ -8,6 +8,7 @@ export default function ExploreView({
   initialQuery = "",
   initialCategory = "all",
   onSelectRoutine,
+  onOpenShare,
   savedRoutines,
   onToggleSaveRoutine
 }) {
@@ -254,6 +255,7 @@ export default function ExploreView({
                 onSelectRoutine={onSelectRoutine}
                 isSaved={savedRoutines.includes(routine.id)}
                 onToggleSave={onToggleSaveRoutine}
+                onOpenShare={onOpenShare}
               />
             ))}
           </div>

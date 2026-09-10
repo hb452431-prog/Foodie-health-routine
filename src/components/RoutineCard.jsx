@@ -1,11 +1,12 @@
 import React from "react";
-import { Clock, Utensils, Heart, ArrowRight, Activity, Flame } from "lucide-react";
+import { Clock, Utensils, Heart, ArrowRight, Activity, Flame, Share2 } from "lucide-react";
 
 export default function RoutineCard({
   routine,
   onSelectRoutine,
   isSaved,
-  onToggleSave
+  onToggleSave,
+  onOpenShare
 }) {
   return (
     <div className="routine-card">
@@ -20,6 +21,41 @@ export default function RoutineCard({
         <div className="routine-badge-category">
           {routine.category}
         </div>
+
+        {/* Share Button */}
+        {onOpenShare && (
+          <button
+            className="routine-share-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenShare(routine);
+            }}
+            title="Share routine to WhatsApp, Instagram, Facebook, and more"
+            aria-label="Share routine"
+            style={{
+              position: "absolute",
+              top: "12px",
+              right: "54px",
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              background: "rgba(255, 255, 255, 0.92)",
+              backdropFilter: "blur(6px)",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#059669",
+              boxShadow: "var(--shadow-xs)",
+              transition: "transform 0.18s ease"
+            }}
+          >
+            <Share2 size={16} />
+          </button>
+        )}
+
+        {/* Favorite Button */}
         <button
           className={`routine-fav-btn ${isSaved ? "active" : ""}`}
           onClick={(e) => {

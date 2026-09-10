@@ -22,6 +22,7 @@ export default function MyPlanView({
   onOpenRecipe,
   onOpenYouTube,
   onOpenOrder,
+  onShareRoutine,
   waterGlasses,
   onUpdateWater,
   completedMealsData,
@@ -96,6 +97,23 @@ export default function MyPlanView({
               <RotateCw size={15} />
               <span>Regenerate Routine</span>
             </button>
+
+            {onShareRoutine && (
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => onShareRoutine(routine)}
+                style={{
+                  background: "#25D366",
+                  color: "#FFFFFF",
+                  border: "none",
+                  boxShadow: "0 2px 8px rgba(37, 211, 102, 0.3)"
+                }}
+                title="Share this plan to WhatsApp, Instagram, Facebook, and more"
+              >
+                <Share2 size={15} />
+                <span>Share Plan</span>
+              </button>
+            )}
 
             <button
               className="btn btn-secondary btn-sm"

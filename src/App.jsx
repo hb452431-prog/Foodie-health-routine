@@ -10,6 +10,7 @@ import RecipeModal from "./components/RecipeModal";
 import YouTubeModal from "./components/YouTubeModal";
 import OrderModal from "./components/OrderModal";
 import PlanBuilder from "./components/PlanBuilder";
+import ShareModal from "./components/ShareModal";
 
 // Views
 import HomeView from "./views/HomeView";
@@ -56,6 +57,7 @@ export default function App() {
   const [selectedRecipeRoutine, setSelectedRecipeRoutine] = useState(null);
   const [selectedYouTubeMeal, setSelectedYouTubeMeal] = useState(null);
   const [selectedOrderMeal, setSelectedOrderMeal] = useState(null);
+  const [selectedShareRoutine, setSelectedShareRoutine] = useState(null);
   const [isPlanWizardOpen, setIsPlanWizardOpen] = useState(false);
 
   // Toast State
@@ -118,6 +120,10 @@ export default function App() {
     setSelectedOrderMeal(meal);
   };
 
+  const handleOpenShare = (routine) => {
+    setSelectedShareRoutine(routine || selectedRoutine || activePlan);
+  };
+
   // Search & Exploration Triggers
   const handleHeroSearchSubmit = (query) => {
     setExploreQuery(query);
@@ -159,6 +165,7 @@ export default function App() {
             onExploreClick={() => setActiveTab("explore")}
             onSelectCategory={handleCategorySelect}
             onSelectRoutine={handleSelectRoutine}
+            onOpenShare={handleOpenShare}
             savedRoutines={savedRoutines}
             onToggleSaveRoutine={handleToggleSaveRoutine}
           />
@@ -169,6 +176,7 @@ export default function App() {
             initialQuery={exploreQuery}
             initialCategory={exploreCategory}
             onSelectRoutine={handleSelectRoutine}
+            onOpenShare={handleOpenShare}
             savedRoutines={savedRoutines}
             onToggleSaveRoutine={handleToggleSaveRoutine}
           />
@@ -181,6 +189,7 @@ export default function App() {
             onOpenRecipe={handleOpenRecipe}
             onOpenYouTube={handleOpenYouTube}
             onOpenOrder={handleOpenOrder}
+            onShareRoutine={handleOpenShare}
             waterGlasses={waterGlasses}
             onUpdateWater={handleUpdateWater}
             completedMealsData={completedMealsData}
@@ -214,6 +223,7 @@ export default function App() {
           onOpenRecipe={handleOpenRecipe}
           onOpenYouTube={handleOpenYouTube}
           onOpenOrder={handleOpenOrder}
+          onOpenShare={handleOpenShare}
           favoriteMeals={favoriteMeals}
           onToggleFavoriteMeal={handleToggleFavoriteMeal}
           isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
@@ -250,7 +260,17 @@ export default function App() {
         />
       )}
 
-      {/* Plan Builder 5-Step Wizard */}
+      {/* Share Routine Modal */}
+      {selectedShareRoutine && (
+        <ShareModal
+          isOpen={!!selectedShareRoutine}
+          routine={selectedShareRoutine}
+          onClose={() => setSelectedShareRoutine(null)}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* Plan Builder 5-Step Wizard / Custom Creator */}
       {isPlanWizardOpen && (
         <PlanBuilder
           onPlanGenerated={handlePlanGenerated}

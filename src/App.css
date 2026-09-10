@@ -1416,4 +1416,19 @@
   border-color: #86EFAC !important;
 }
 
+/* ============================================================
+   SHARE MODAL & SHARE BUTTONS
+============================================================ */
+.share-platform-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.12);
+}
+
+.routine-share-btn:hover {
+  transform: scale(1.1);
+  color: #047857 !important;
+  background: #FFFFFF !important;
+}
+
+
 

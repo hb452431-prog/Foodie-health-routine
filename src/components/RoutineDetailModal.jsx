@@ -7,6 +7,7 @@ export default function RoutineDetailModal({
   onOpenRecipe,
   onOpenYouTube,
   onOpenOrder,
+  onOpenShare,
   favoriteMeals,
   onToggleFavoriteMeal,
   isSavedRoutine,
@@ -16,7 +17,9 @@ export default function RoutineDetailModal({
   if (!routine) return null;
 
   const handleShare = () => {
-    if (navigator.clipboard) {
+    if (onOpenShare) {
+      onOpenShare(routine);
+    } else if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       onShowToast("Routine link copied to clipboard!");
     } else {

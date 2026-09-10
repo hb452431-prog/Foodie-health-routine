@@ -11,6 +11,7 @@ export default function HomeView({
   onExploreClick,
   onSelectCategory,
   onSelectRoutine,
+  onOpenShare,
   savedRoutines,
   onToggleSaveRoutine
 }) {
@@ -29,13 +30,12 @@ export default function HomeView({
       {/* Quick Category Section */}
       <CategorySection onSelectCategory={onSelectCategory} />
 
-      {/* Featured Food Routines Section */}
-      <section style={{ padding: "3rem 0 4rem", background: "rgba(255, 255, 255, 0.6)" }}>
+      {/* Featured Routines Grid */}
+      <section style={{ padding: "3.5rem 0" }}>
         <div className="container">
-          <div className="section-header">
-            <div className="section-tag">
-              <Flame size={14} />
-              <span>Tested Meal Plans</span>
+          <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>
+            <div className="badge badge-green" style={{ marginBottom: "0.5rem" }}>
+              ✨ Daily Nutrition Blueprints
             </div>
             <h2 className="section-title">Featured Food Routines</h2>
             <p className="section-subtitle">
@@ -51,6 +51,7 @@ export default function HomeView({
                 onSelectRoutine={onSelectRoutine}
                 isSaved={savedRoutines.includes(routine.id)}
                 onToggleSave={onToggleSaveRoutine}
+                onOpenShare={onOpenShare}
               />
             ))}
           </div>
