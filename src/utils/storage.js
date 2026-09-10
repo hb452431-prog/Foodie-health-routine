@@ -8,11 +8,13 @@ const KEYS = {
   SHOPPING_LIST_CHECKED: "fhr_shopping_checked"
 };
 
+import { DEFAULT_AVATAR } from "../data/avatarsData";
+
 // Default user profile
 export const DEFAULT_USER_PROFILE = {
   name: "Harsha",
   email: "harsha.wellness@example.com",
-  avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+  avatar: DEFAULT_AVATAR,
   goal: "Healthy Lifestyle & Metabolic Energy",
   dietPreference: "Vegetarian",
   activityLevel: "Moderate",

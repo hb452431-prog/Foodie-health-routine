@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { User, Mail, Target, Salad, Activity, Flame, Heart, Sparkles, Check, Edit2, RotateCcw } from "lucide-react";
+import { User, Mail, Target, Salad, Activity, Flame, Heart, Sparkles, Check, Edit2, Camera, UserCheck } from "lucide-react";
 import { saveUserProfile } from "../utils/storage";
+import { AVATAR_COLLECTION } from "../data/avatarsData";
+import AvatarPickerModal from "./AvatarPickerModal";
 
 export default function ProfileCard({
   profile,
@@ -13,7 +15,15 @@ export default function ProfileCard({
   onOpenPlanWizard
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [formData, setFormData] = useState({ ...profile });
+
+  const handleAvatarSelect = (newAvatarUrl) => {
+    const updated = { ...profile, ...formData, avatar: newAvatarUrl };
+    setFormData(updated);
+    onProfileUpdate(updated);
+    saveUserProfile(updated);
+  };
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -37,18 +47,46 @@ export default function ProfileCard({
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
-            <img
-              src={profile.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"}
-              alt={profile.name}
-              style={{
-                width: "80px",
-                height: "80px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                border: "3px solid #D1FAE5",
-                boxShadow: "var(--shadow-sm)"
-              }}
-            />
+            {/* Interactive Avatar Container */}
+            <div
+              style={{ position: "relative", cursor: "pointer" }}
+              onClick={() => setIsAvatarModalOpen(true)}
+              title="Click to change your professional avatar"
+              className="avatar-interactive-wrapper"
+            >
+              <img
+                src={profile.avatar || AVATAR_COLLECTION[0].url}
+                alt={profile.name}
+                style={{
+                  width: "84px",
+                  height: "84px",
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  border: "3px solid #10B981",
+                  boxShadow: "0 4px 14px rgba(16, 185, 129, 0.25)",
+                  display: "block"
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  right: "-2px",
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  background: "#0F382A",
+                  color: "#34D399",
+                  border: "2px solid #FFFFFF",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+                }}
+              >
+                <Camera size={14} />
+              </div>
+            </div>
 
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -61,20 +99,42 @@ export default function ProfileCard({
                 <Mail size={14} />
                 <span>{profile.email}</span>
               </p>
-              <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.4rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.4rem", flexWrap: "wrap", alignItems: "center" }}>
                 <span className="badge badge-amber">🎯 {profile.goal}</span>
                 <span className="badge badge-blue">🥗 {profile.dietPreference}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  style={{
+                    background: "rgba(16, 185, 129, 0.1)",
+                    border: "1px solid rgba(16, 185, 129, 0.25)",
+                    color: "#047857",
+                    borderRadius: "var(--radius-full)",
+                    padding: "0.2rem 0.65rem",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem"
+                  }}
+                >
+                  <UserCheck size={12} />
+                  <span>Change Avatar</span>
+                </button>
               </div>
             </div>
           </div>
 
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            <Edit2 size={14} />
-            <span>{isEditing ? "Cancel" : "Edit Preferences"}</span>
-          </button>
+          <div style={{ display: "flex", gap: "0.6rem" }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Edit2 size={14} />
+              <span>{isEditing ? "Cancel" : "Edit Preferences"}</span>
+            </button>
+          </div>
         </div>
 
         {/* Edit Form */}
@@ -83,6 +143,78 @@ export default function ProfileCard({
             <h4 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", color: "var(--primary-900)" }}>
               Update Wellness & Diet Preferences
             </h4>
+
+            {/* Quick Avatar Row */}
+            <div style={{ marginBottom: "1.25rem", padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--primary-900)", margin: 0 }}>
+                  Choose Your Professional Avatar
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  style={{ padding: "0.25rem 0.6rem", fontSize: "0.75rem" }}
+                >
+                  Browse All ({AVATAR_COLLECTION.length})
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
+                {AVATAR_COLLECTION.slice(0, 8).map((av) => {
+                  const isCur = (formData.avatar || profile.avatar) === av.url;
+                  return (
+                    <button
+                      key={av.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, avatar: av.url })}
+                      style={{
+                        position: "relative",
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        flexShrink: 0
+                      }}
+                      title={`${av.name} (${av.gender === "boy" ? "Boy" : "Girl"}) - ${av.tag}`}
+                    >
+                      <img
+                        src={av.url}
+                        alt={av.name}
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          border: isCur ? "3px solid #10B981" : "2px solid #E2E8F0",
+                          boxShadow: isCur ? "0 0 0 2px rgba(16, 185, 129, 0.4)" : "none",
+                          transition: "all 0.2s ease"
+                        }}
+                      />
+                      {isCur && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "0",
+                            right: "0",
+                            width: "16px",
+                            height: "16px",
+                            borderRadius: "50%",
+                            background: "#10B981",
+                            color: "#FFFFFF",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}
+                        >
+                          <Check size={10} strokeWidth={3} />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
               <div>
@@ -138,6 +270,15 @@ export default function ProfileCard({
           </form>
         )}
       </div>
+
+      {/* Avatar Selection Modal */}
+      <AvatarPickerModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={profile.avatar}
+        onSelectAvatar={handleAvatarSelect}
+        onShowToast={onShowToast}
+      />
 
       {/* Stats Summary Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.75rem" }}>

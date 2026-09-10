@@ -1366,3 +1366,29 @@
     flex-direction: row;
   }
 }
+
+/* ============================================================
+   AVATAR SELECTOR & INTERACTIVE ELEMENTS
+============================================================ */
+.avatar-interactive-wrapper {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.avatar-interactive-wrapper:hover {
+  transform: scale(1.05);
+}
+
+.avatar-interactive-wrapper:hover img {
+  border-color: #059669 !important;
+}
+
+.avatar-card-option:hover {
+  transform: translateY(-3px);
+  border-color: #10B981 !important;
+  box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.2) !important;
+}
+
+.avatar-card-option:hover img {
+  transform: scale(1.06);
+}
+

@@ -18,7 +18,7 @@ export default function ShoppingList({ routine, onShowToast }) {
   const handleCopyList = () => {
     const text = allIngredients.map((i) => `• ${i.name} (${i.amount})`).join("\n");
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(`Foodie-Health-Routine Shopping List (${routine.title}):\n\n` + text);
+      navigator.clipboard.writeText(`Foodie-Routine-ADDA Shopping List (${routine.title}):\n\n` + text);
       onShowToast("📋 Shopping list copied to clipboard!");
     } else {
       onShowToast("Shopping list ready!");

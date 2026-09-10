@@ -15,7 +15,7 @@ export default function Navbar({
         <button
           onClick={() => setActiveTab("home")}
           style={{ background: "none", border: "none", padding: 0, textAlign: "left" }}
-          aria-label="Foodie-Health-Routine Home"
+          aria-label="Foodie-Routine-ADDA Home"
         >
           <Logo size={36} />
         </button>

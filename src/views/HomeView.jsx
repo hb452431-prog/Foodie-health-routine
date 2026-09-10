@@ -94,7 +94,7 @@ export default function HomeView({
                 }}
               >
                 <Award size={15} />
-                <span>The Foodie-Health-Routine Method</span>
+                <span>The Foodie-Routine-ADDA Method</span>
               </div>
               <h2 style={{ fontSize: "2.2rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "1rem", lineHeight: 1.2 }}>
                 Eat Real Food. <br />

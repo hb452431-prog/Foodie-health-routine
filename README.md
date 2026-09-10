@@ -1,10 +1,10 @@
-# 🥗 Foodie-Health-Routine
+# 🥗 Foodie-Routine-ADDA
 
 > **“Eat Better. Live Better. Every Day.”**
 
 A complete, modern, professional, responsive frontend food and wellness platform where users discover personalized daily food routines based on lifestyle, fitness goals, and metabolic health.
 
-![Foodie-Health-Routine](https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80)
+![Foodie-Routine-ADDA](https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80)
 
 ---
 
