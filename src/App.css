@@ -1392,3 +1392,28 @@
   transform: scale(1.06);
 }
 
+/* ============================================================
+   MY PLAN INTERACTIVE MEAL CARDS & ACTIONS
+============================================================ */
+.my-plan-meal-card {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.my-plan-meal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-300) !important;
+}
+
+.weekly-meal-row {
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.weekly-meal-row:hover {
+  transform: translateX(4px);
+  background-color: #F0FDF4 !important;
+  border-color: #86EFAC !important;
+}
+
+

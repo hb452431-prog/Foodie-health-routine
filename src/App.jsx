@@ -179,6 +179,8 @@ export default function App() {
             activePlan={activePlan}
             onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
             onOpenRecipe={handleOpenRecipe}
+            onOpenYouTube={handleOpenYouTube}
+            onOpenOrder={handleOpenOrder}
             waterGlasses={waterGlasses}
             onUpdateWater={handleUpdateWater}
             completedMealsData={completedMealsData}
