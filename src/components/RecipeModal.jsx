@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { X, Clock, Flame, Utensils, Heart, CheckCircle, ExternalLink, ShieldAlert, Sparkles } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 
@@ -10,6 +11,14 @@ export default function RecipeModal({
   onShowToast
 }) {
   const [checkedIngredients, setCheckedIngredients] = useState({});
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   if (!meal) return null;
 

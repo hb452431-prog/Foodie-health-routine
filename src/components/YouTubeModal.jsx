@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X, ExternalLink, Play } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 
 export default function YouTubeModal({ meal, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   if (!meal) return null;
 
   return (

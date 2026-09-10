@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Check, Sparkles, User, Camera, Link as LinkIcon } from "lucide-react";
 import { AVATAR_COLLECTION } from "../data/avatarsData";
 
@@ -12,6 +12,15 @@ export default function AvatarPickerModal({
   const [activeGender, setActiveGender] = useState("all");
   const [customUrl, setCustomUrl] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -62,7 +62,7 @@ export default function Navbar({
           </ul>
         </nav>
 
-        {/* Action CTAs */}
+        {/* Action CTAs Desktop */}
         <div className="nav-actions-desktop">
           <button
             className="nav-search-btn"
@@ -79,6 +79,28 @@ export default function Navbar({
           >
             <Sparkles size={16} />
             <span>Create My Plan</span>
+          </button>
+        </div>
+
+        {/* Action CTAs Mobile */}
+        <div className="nav-actions-mobile">
+          <button
+            className="mobile-header-icon-btn"
+            onClick={onOpenSearch}
+            title="Search food routines"
+            aria-label="Search"
+          >
+            <Search size={18} />
+          </button>
+
+          <button
+            className="mobile-header-plan-btn"
+            onClick={onOpenPlanWizard}
+            title="Create your personalized food plan"
+            aria-label="Create Plan"
+          >
+            <Sparkles size={15} />
+            <span>Plan</span>
           </button>
         </div>
       </div>

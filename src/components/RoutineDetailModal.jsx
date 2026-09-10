@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import { X, Clock, Flame, Utensils, Heart, ShoppingBag, ShieldAlert, CheckCircle, Share2 } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 
@@ -14,6 +15,14 @@ export default function RoutineDetailModal({
   onToggleSaveRoutine,
   onShowToast
 }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   if (!routine) return null;
 
   const handleShare = () => {

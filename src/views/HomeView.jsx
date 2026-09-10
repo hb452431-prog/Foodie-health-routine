@@ -2,6 +2,7 @@ import React from "react";
 import HeroSection from "../components/HeroSection";
 import CategorySection from "../components/CategorySection";
 import RoutineCard from "../components/RoutineCard";
+import NutritionCalculator from "../components/NutritionCalculator";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { Sparkles, ArrowRight, ShieldCheck, Heart, Flame, Zap, Award } from "lucide-react";
 
@@ -65,6 +66,16 @@ export default function HomeView({
               <ArrowRight size={18} />
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Health & Nutrition Calculator */}
+      <section style={{ padding: "1rem 0 3.5rem" }}>
+        <div className="container">
+          <NutritionCalculator
+            onOpenPlanWizard={onOpenPlanWizard}
+            onSelectRoutine={onSelectRoutine}
+          />
         </div>
       </section>
 

@@ -1,7 +1,15 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X, ExternalLink, ShoppingBag, MapPin, Sparkles } from "lucide-react";
 
 export default function OrderModal({ meal, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   if (!meal) return null;
 
   const dishName = meal.orderQuery || meal.title;
