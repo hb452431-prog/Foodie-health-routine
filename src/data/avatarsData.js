@@ -1,102 +1,134 @@
 export const AVATAR_COLLECTION = [
-  // --- BOY / MEN AVATARS ---
+  // --- CARTOON ANIMATED BOY AVATARS ---
+  {
+    id: "boy-leo",
+    name: "Leo",
+    title: "Fitness Hero & Nutritionist",
+    gender: "boy",
+    tag: "💪 Fitness Hero",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix&backgroundColor=b6e3f4"
+  },
   {
     id: "boy-alex",
     name: "Alex",
-    title: "Fitness & Nutrition Specialist",
+    title: "High-Protein & Gym Coach",
     gender: "boy",
-    tag: "💪 Athletic",
-    url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80"
+    tag: "⚡ Gym Beast",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alexander&backgroundColor=c0aede"
   },
   {
-    id: "boy-david",
-    name: "David",
-    title: "Health & Performance Coach",
+    id: "boy-sam",
+    name: "Sam",
+    title: "Mindfulness & Zen Living",
     gender: "boy",
-    tag: "🩺 Health Coach",
-    url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"
+    tag: "🧘 Zen Master",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Leo&backgroundColor=d1fae5"
+  },
+  {
+    id: "boy-max",
+    name: "Max",
+    title: "Gourmet Healthy Foodie Chef",
+    gender: "boy",
+    tag: "🍳 Master Chef",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Max&backgroundColor=ffd5dc"
+  },
+  {
+    id: "boy-ethan",
+    name: "Ethan",
+    title: "Calisthenics & Strength Pro",
+    gender: "boy",
+    tag: "🔥 Strength Pro",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Jack&backgroundColor=fed7aa"
   },
   {
     id: "boy-rohan",
     name: "Rohan",
-    title: "Executive Wellness Consultant",
+    title: "Executive Wellness Coach",
     gender: "boy",
-    tag: "💼 Corporate Fit",
-    url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
+    tag: "💼 Wellness Coach",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Christopher&backgroundColor=d1d4f9"
   },
   {
-    id: "boy-marcus",
-    name: "Marcus",
-    title: "Artisanal Nutrition & Chef",
+    id: "boy-lucas",
+    name: "Lucas",
+    title: "Cardio & Marathons",
     gender: "boy",
-    tag: "🥗 Foodie Chef",
-    url: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=400&q=80"
+    tag: "🏃 Runner",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lucas&backgroundColor=fde68a"
   },
   {
-    id: "boy-liam",
-    name: "Liam",
-    title: "Strength & Calisthenics Pro",
+    id: "boy-oliver",
+    name: "Oliver",
+    title: "Clean Eating Advocate",
     gender: "boy",
-    tag: "⚡ High Energy",
-    url: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "boy-karan",
-    name: "Karan",
-    title: "Mindfulness & Yoga Guide",
-    gender: "boy",
-    tag: "🧘 Zen Living",
-    url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"
+    tag: "🥗 Clean Eating",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Oliver&backgroundColor=b6e3f4"
   },
 
-  // --- GIRL / WOMEN AVATARS ---
+  // --- CARTOON ANIMATED GIRL AVATARS ---
   {
-    id: "girl-priya",
-    name: "Priya",
-    title: "Holistic Lifestyle & Wellness",
+    id: "girl-mia",
+    name: "Mia",
+    title: "Wellness & Lifestyle Star",
     gender: "girl",
-    tag: "🌱 Holistic",
-    url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+    tag: "🌟 Wellness Star",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Mia&backgroundColor=ffd5dc"
   },
   {
-    id: "girl-sarah",
-    name: "Sarah",
-    title: "Clinical Dietitian & Nutritionist",
+    id: "girl-emma",
+    name: "Emma",
+    title: "Smoothie & Detox Specialist",
+    gender: "girl",
+    tag: "🥑 Detox Queen",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emma&backgroundColor=d1fae5"
+  },
+  {
+    id: "girl-lily",
+    name: "Lily",
+    title: "Cardio & Endurance Champion",
+    gender: "girl",
+    tag: "🏃 Cardio Champ",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Lily&backgroundColor=ffdfbf"
+  },
+  {
+    id: "girl-sophia",
+    name: "Sophia",
+    title: "Yoga & Meditation Mentor",
+    gender: "girl",
+    tag: "🧘 Mindful Yogi",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia&backgroundColor=c0aede"
+  },
+  {
+    id: "girl-zoe",
+    name: "Zoe",
+    title: "Clinical Nutrition Consultant",
     gender: "girl",
     tag: "🩺 Clinical Diet",
-    url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe&backgroundColor=fed7aa"
   },
   {
-    id: "girl-elena",
-    name: "Elena",
+    id: "girl-aria",
+    name: "Aria",
     title: "Plant-Based Recipe Creator",
     gender: "girl",
-    tag: "🥑 Plant-Based",
-    url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "girl-maya",
-    name: "Maya",
-    title: "Endurance Athlete & Runner",
-    gender: "girl",
-    tag: "🏃 Runner",
-    url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80"
-  },
-  {
-    id: "girl-ananya",
-    name: "Ananya",
-    title: "Metabolic Health Consultant",
-    gender: "girl",
-    tag: "✨ Metabolic Coach",
-    url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80"
+    tag: "🌱 Plant-Based",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aria&backgroundColor=b6e3f4"
   },
   {
     id: "girl-chloe",
     name: "Chloe",
-    title: "Mindful Eating & Habit Coach",
+    title: "Metabolic Balance Coach",
     gender: "girl",
-    tag: "🧘 Habit Coach",
-    url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"
+    tag: "✨ Metabolic Pro",
+    url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Chloe&backgroundColor=fde68a"
+  },
+  {
+    id: "girl-isabella",
+    name: "Isabella",
+    title: "Holistic Health Strategist",
+    gender: "girl",
+    tag: "💖 Holistic Guide",
+    url: "https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella&backgroundColor=d1d4f9"
   }
 ];
 

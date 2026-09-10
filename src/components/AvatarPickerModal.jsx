@@ -39,6 +39,9 @@ export default function AvatarPickerModal({
     }
   };
 
+  const boyCount = AVATAR_COLLECTION.filter((a) => a.gender === "boy").length;
+  const girlCount = AVATAR_COLLECTION.filter((a) => a.gender === "girl").length;
+
   return (
     <div
       className="modal-overlay"
@@ -61,7 +64,7 @@ export default function AvatarPickerModal({
         className="widget-card animate-fade-in"
         style={{
           width: "100%",
-          maxWidth: "680px",
+          maxWidth: "700px",
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
@@ -100,10 +103,10 @@ export default function AvatarPickerModal({
             </div>
             <div>
               <h3 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0, color: "#FFFFFF" }}>
-                Choose Your Professional Avatar
+                Choose Your Cartoon Animated Avatar
               </h3>
               <p style={{ fontSize: "0.78rem", color: "#94A3B8", margin: 0 }}>
-                Select a verified boy or girl health avatar or upload custom image
+                Select an animated boy or girl avatar or use a custom image link
               </p>
             </div>
           </div>
@@ -151,7 +154,7 @@ export default function AvatarPickerModal({
               className={`filter-chip ${activeGender === "all" && !showCustomInput ? "active" : ""}`}
               style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", fontWeight: 700 }}
             >
-              ✨ All Avatars ({AVATAR_COLLECTION.length})
+              ✨ All Animated ({AVATAR_COLLECTION.length})
             </button>
             <button
               onClick={() => {
@@ -161,7 +164,7 @@ export default function AvatarPickerModal({
               className={`filter-chip ${activeGender === "boy" && !showCustomInput ? "active" : ""}`}
               style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", fontWeight: 700 }}
             >
-              👨 Boy Avatars (6)
+              👦 Boys ({boyCount})
             </button>
             <button
               onClick={() => {
@@ -171,7 +174,7 @@ export default function AvatarPickerModal({
               className={`filter-chip ${activeGender === "girl" && !showCustomInput ? "active" : ""}`}
               style={{ padding: "0.4rem 0.85rem", fontSize: "0.82rem", fontWeight: 700 }}
             >
-              👩 Girl Avatars (6)
+              👧 Girls ({girlCount})
             </button>
           </div>
 
