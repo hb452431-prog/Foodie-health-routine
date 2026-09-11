@@ -20,37 +20,26 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard })
         <span>Explore</span>
       </button>
 
-      {/* Floating center highlight button for wizard */}
+      {/* Center AI Plan Wizard Trigger */}
       <button
-        className="mobile-nav-btn"
+        className="mobile-nav-btn mobile-center-plan-btn"
         onClick={onOpenPlanWizard}
-        style={{ color: "#059669" }}
+        title="Create your AI Nutrition Routine"
       >
-        <div
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #10B981, #059669)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#FFFFFF",
-            boxShadow: "0 4px 10px rgba(16, 185, 129, 0.4)",
-            marginTop: "-14px",
-            marginBottom: "2px"
-          }}
-        >
+        <div className="mobile-center-circle">
           <Sparkles size={18} />
         </div>
-        <span>Plan</span>
+        <span style={{ fontWeight: 800, color: "var(--primary-800)" }}>Plan</span>
       </button>
 
       <button
         className={`mobile-nav-btn ${activeTab === "my-plan" ? "active" : ""}`}
         onClick={() => setActiveTab("my-plan")}
       >
-        <Calendar size={20} />
+        <div style={{ position: "relative", display: "inline-flex" }}>
+          <Calendar size={20} />
+          <span className="mobile-nav-dot" />
+        </div>
         <span>My Plan</span>
       </button>
 

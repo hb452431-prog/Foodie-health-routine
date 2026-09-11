@@ -3,6 +3,8 @@ import Navbar from "./components/Navbar";
 import MobileNav from "./components/MobileNav";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
+import CommandPalette from "./components/CommandPalette";
+import FloatingQuickBar from "./components/FloatingQuickBar";
 
 // Modals
 import RoutineDetailModal from "./components/RoutineDetailModal";
@@ -64,7 +66,8 @@ export default function App() {
     }
   });
 
-  // Modals State
+  // Modals & Command Palette State
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const [selectedRecipeMeal, setSelectedRecipeMeal] = useState(null);
   const [selectedRecipeRoutine, setSelectedRecipeRoutine] = useState(null);
@@ -84,6 +87,58 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeTab]);
+
+  // Global Keyboard Shortcuts (⌘K, /, 1, 2, 3, 4, Esc)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+
+      // 1. ⌘K or Ctrl+K -> Open Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // 2. '/' shortcut to search when not typing
+      if (e.key === "/" && !isInput) {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+
+      // 3. Number keys 1-4 to switch tabs when not typing
+      if (!isInput && !isCommandPaletteOpen && !isPlanWizardOpen && !selectedRoutine && !selectedRecipeMeal) {
+        if (e.key === "1") {
+          setActiveTab("home");
+          showToast("🏠 Switched to Home");
+        } else if (e.key === "2") {
+          setActiveTab("explore");
+          showToast("🧭 Switched to Explore");
+        } else if (e.key === "3") {
+          setActiveTab("my-plan");
+          showToast("📅 Switched to My Plan");
+        } else if (e.key === "4") {
+          setActiveTab("profile");
+          showToast("👤 Switched to Profile");
+        }
+      }
+
+      // 4. Escape closes any open modal
+      if (e.key === "Escape") {
+        if (isCommandPaletteOpen) setIsCommandPaletteOpen(false);
+        if (selectedRoutine) setSelectedRoutine(null);
+        if (selectedRecipeMeal) setSelectedRecipeMeal(null);
+        if (selectedYouTubeMeal) setSelectedYouTubeMeal(null);
+        if (selectedOrderMeal) setSelectedOrderMeal(null);
+        if (selectedShareRoutine) setSelectedShareRoutine(null);
+        if (isPlanWizardOpen) setIsPlanWizardOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [isCommandPaletteOpen, isPlanWizardOpen, selectedRoutine, selectedRecipeMeal, selectedYouTubeMeal, selectedOrderMeal, selectedShareRoutine]);
 
   // Handlers for Routines & Favorites
   const handleToggleSaveRoutine = (routineId) => {
@@ -150,11 +205,21 @@ export default function App() {
     setActiveTab("explore");
   };
 
+  const handleFilterSelect = (filterType) => {
+    if (filterType === "vegetarian") {
+      setExploreCategory("vegetarian");
+    } else if (filterType === "high-protein") {
+      setExploreCategory("high-protein");
+    }
+    setActiveTab("explore");
+  };
+
   const handlePlanGenerated = (customPlan) => {
     setActivePlan(customPlan);
     setActivePlanState(customPlan);
     setIsPlanWizardOpen(false);
     setActiveTab("my-plan");
+    showToast("✨ Your custom nutrition routine is now active!");
   };
 
   return (
@@ -163,10 +228,12 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenSearch={() => {
-          setActiveTab("explore");
-        }}
+        onOpenSearch={() => setIsCommandPaletteOpen(true)}
         onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        waterGlasses={waterGlasses}
+        onUpdateWater={handleUpdateWater}
+        userProfile={userProfile}
+        onShowToast={showToast}
       />
 
       {/* Main View Switcher */}
@@ -227,6 +294,29 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Universal Command Palette (Ctrl+K / ⌘K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigateTab={setActiveTab}
+        onSelectRoutine={handleSelectRoutine}
+        onOpenRecipe={handleOpenRecipe}
+        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        onUpdateWater={handleUpdateWater}
+        waterGlasses={waterGlasses}
+        onShowToast={showToast}
+        onCategorySelect={handleCategorySelect}
+        onFilterSelect={handleFilterSelect}
+      />
+
+      {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
+      <FloatingQuickBar
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        waterGlasses={waterGlasses}
+        onUpdateWater={handleUpdateWater}
+        onShowToast={showToast}
+      />
 
       {/* Routine Detail Modal */}
       {selectedRoutine && (
