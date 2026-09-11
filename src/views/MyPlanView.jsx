@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import YouTubeIcon from "../components/YouTubeIcon";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
-import { getRegionalRoutineForLocation, getAdaptedRoutineForLocation } from "../data/regionalCuisinesData";
+import { getRegionalRoutineForLocation, getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
 import {
   Sparkles,
   CheckCircle2,
@@ -44,6 +44,7 @@ export default function MyPlanView({
   // Live Real-Time Clock & Date State
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [planCuisineMode, setPlanCuisineMode] = useState("regional"); // "regional" | "global"
+  const [selectedDay, setSelectedDay] = useState(() => getCurrentDayId());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -108,12 +109,13 @@ export default function MyPlanView({
   const userState = userProfile?.state || "Karnataka";
   const regionalRoutine = getRegionalRoutineForLocation(userCountry, userState);
   
-  // Adapted routine based on selected cuisine mode
+  // Adapted routine based on selected cuisine mode and selected day of week
   const displayedRoutine = getAdaptedRoutineForLocation(
     routine,
     userCountry,
     userState,
-    planCuisineMode
+    planCuisineMode,
+    selectedDay
   ) || routine;
 
   const isCurrentlyRegional = planCuisineMode === "regional" || displayedRoutine.isRegionalAdapted;
@@ -393,6 +395,86 @@ export default function MyPlanView({
                   <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#047857", fontFamily: "monospace" }}>
                     {timeStr}
                   </span>
+                </div>
+              </div>
+
+              {/* Day-by-Day Varied Schedule Selector Tabs */}
+              <div style={{ marginBottom: "1.25rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                    <Calendar size={14} color="#059669" />
+                    <span>Select Day of the Week:</span>
+                  </div>
+                  {selectedDay !== getCurrentDayId() && (
+                    <button
+                      className="btn btn-sm btn-accent"
+                      onClick={() => {
+                        setSelectedDay(getCurrentDayId());
+                        if (onShowToast) onShowToast("📅 Jumped back to Today's schedule");
+                      }}
+                      style={{ padding: "0.25rem 0.6rem", fontSize: "0.72rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}
+                    >
+                      <Sparkles size={12} />
+                      <span>Back to Today ({dayName.slice(0, 3)})</span>
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.25rem" }}>
+                  {[
+                    { id: "mon", label: "Mon", full: "Monday" },
+                    { id: "tue", label: "Tue", full: "Tuesday" },
+                    { id: "wed", label: "Wed", full: "Wednesday" },
+                    { id: "thu", label: "Thu", full: "Thursday" },
+                    { id: "fri", label: "Fri", full: "Friday" },
+                    { id: "sat", label: "Sat", full: "Saturday" },
+                    { id: "sun", label: "Sun", full: "Sunday" }
+                  ].map((d) => {
+                    const isSelected = selectedDay === d.id;
+                    const isToday = getCurrentDayId() === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDay(d.id);
+                          if (onShowToast) onShowToast(`🗓️ Showing ${d.full}'s authentic ${userState} healthy menu`);
+                        }}
+                        style={{
+                          padding: "0.45rem 0.85rem",
+                          borderRadius: "var(--radius-lg)",
+                          border: isSelected ? "2px solid #059669" : "1px solid var(--border-subtle)",
+                          background: isSelected ? "linear-gradient(135deg, #059669 0%, #10B981 100%)" : "var(--bg-card)",
+                          color: isSelected ? "#FFFFFF" : "var(--text-primary)",
+                          fontWeight: 700,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.4rem",
+                          whiteSpace: "nowrap",
+                          boxShadow: isSelected ? "0 2px 8px rgba(5, 150, 105, 0.25)" : "none",
+                          transition: "all 0.18s ease"
+                        }}
+                      >
+                        <span>{d.label}</span>
+                        {isToday && (
+                          <span
+                            style={{
+                              background: isSelected ? "#FEF08A" : "#10B981",
+                              color: isSelected ? "#713F12" : "#FFFFFF",
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              padding: "0.1rem 0.35rem",
+                              borderRadius: "var(--radius-full)"
+                            }}
+                          >
+                            TODAY
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

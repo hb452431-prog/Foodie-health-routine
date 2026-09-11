@@ -4,9 +4,11 @@ import CategorySection from "../components/CategorySection";
 import RoutineCard from "../components/RoutineCard";
 import NutritionCalculator from "../components/NutritionCalculator";
 import { ROUTINES_DATA } from "../data/routinesData";
-import { Sparkles, ArrowRight, ShieldCheck, Heart, Flame, Zap, Award } from "lucide-react";
+import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
+import { Sparkles, ArrowRight, ShieldCheck, Heart, Flame, Zap, Award, MapPin } from "lucide-react";
 
 export default function HomeView({
+  userProfile,
   onSearchSubmit,
   onOpenPlanWizard,
   onExploreClick,
@@ -16,7 +18,11 @@ export default function HomeView({
   savedRoutines,
   onToggleSaveRoutine
 }) {
-  const featuredRoutines = ROUTINES_DATA.slice(0, 6);
+  const userCountry = userProfile?.country || "India";
+  const userState = userProfile?.state || "Karnataka";
+  
+  const adaptedRoutines = getAdaptedRoutinesList(ROUTINES_DATA, userCountry, userState);
+  const featuredRoutines = adaptedRoutines.slice(0, 6);
 
   return (
     <div>

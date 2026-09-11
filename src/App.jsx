@@ -22,6 +22,7 @@ import ProfileView from "./views/ProfileView";
 
 // Data & Storage
 import { ROUTINES_DATA, getRoutineById } from "./data/routinesData";
+import { getAdaptedRoutineForLocation } from "./data/regionalCuisinesData";
 import {
   getUserProfile,
   saveUserProfile,
@@ -166,12 +167,30 @@ export default function App() {
   const handleProfileUpdate = (profile) => {
     setUserProfile(profile);
     saveUserProfile(profile);
+    if (activePlan) {
+      const updatedPlan = getAdaptedRoutineForLocation(
+        activePlan,
+        profile.country || "India",
+        profile.state || "Karnataka",
+        "regional"
+      );
+      if (updatedPlan) {
+        setActivePlan(updatedPlan);
+        setActivePlanState(updatedPlan);
+      }
+    }
   };
 
   const handleSelectRoutine = (routineId) => {
-    const routine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
-    if (routine) {
-      setSelectedRoutine(routine);
+    const rawRoutine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
+    if (rawRoutine) {
+      const adapted = getAdaptedRoutineForLocation(
+        rawRoutine,
+        userProfile?.country || "India",
+        userProfile?.state || "Karnataka",
+        "regional"
+      ) || rawRoutine;
+      setSelectedRoutine(adapted);
     }
   };
 
@@ -246,6 +265,7 @@ export default function App() {
       <main className="main-content">
         {activeTab === "home" && (
           <HomeView
+            userProfile={userProfile}
             onSearchSubmit={handleHeroSearchSubmit}
             onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
             onExploreClick={() => setActiveTab("explore")}
@@ -259,6 +279,7 @@ export default function App() {
 
         {activeTab === "explore" && (
           <ExploreView
+            userProfile={userProfile}
             initialQuery={exploreQuery}
             initialCategory={exploreCategory}
             onSelectRoutine={handleSelectRoutine}

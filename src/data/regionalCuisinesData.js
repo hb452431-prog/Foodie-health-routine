@@ -1,6 +1,7 @@
 // Comprehensive Regional & Cultural Cuisines Data for India & Global Regions
 // Supports adapting ANY health goal (Diabetes, Weight Loss, Muscle Gain, Student, Heart, High Protein)
 // into authentic local and regional dishes for Karnataka, Maharashtra, Tamil Nadu, Andhra, North India, and Western/Global styles.
+// Includes 7-Day Day-by-Day variations for EVERY health goal & location!
 
 export const REGIONAL_COUNTRIES = [
   {
@@ -8,16 +9,16 @@ export const REGIONAL_COUNTRIES = [
     name: "India",
     emoji: "🇮🇳",
     states: [
-      { id: "karnataka", name: "Karnataka", cuisineTag: "Karnataka Heritage & Millet Cuisine", popularDishes: "Ragi Idli, Bisi Bele Bath, Kosambari, Majjige, Jowar Rotti, Saagu, Kadale Usli" },
-      { id: "maharashtra", name: "Maharashtra", cuisineTag: "Maharashtrian Satvik & Coastal", popularDishes: "Kande Pohe, Jowar Bhakri, Pitla, Matki Usal, Solkadhi, Taak" },
-      { id: "tamil-nadu", name: "Tamil Nadu", cuisineTag: "Tamil Traditional Low-GI & Millets", popularDishes: "Brown Rice Idli, Sambar, Kootu, Neer Mor, Sundal, Ragi Dosa, Thinai" },
-      { id: "andhra-telangana", name: "Andhra Pradesh & Telangana", cuisineTag: "Telugu Whole Grains & Greens", popularDishes: "Pesarattu, Gongura Pappu, Allam Chutney, Majjiga, Jowar Roti" },
+      { id: "karnataka", name: "Karnataka", cuisineTag: "Karnataka Heritage & Millet Cuisine", popularDishes: "Ragi Idli, Bisi Bele Bath, Kosambari, Majjige, Jowar Rotti, Saagu, Kadale Usli, Ragi Mudde" },
+      { id: "maharashtra", name: "Maharashtra", cuisineTag: "Maharashtrian Satvik & Coastal", popularDishes: "Kande Pohe, Jowar Bhakri, Pitla, Matki Usal, Solkadhi, Taak, Thalipeeth" },
+      { id: "tamil-nadu", name: "Tamil Nadu", cuisineTag: "Tamil Traditional Low-GI & Millets", popularDishes: "Brown Rice Idli, Sambar, Kootu, Neer Mor, Sundal, Ragi Dosa, Thinai Pongal" },
+      { id: "andhra-telangana", name: "Andhra Pradesh & Telangana", cuisineTag: "Telugu Whole Grains & Greens", popularDishes: "Pesarattu, Gongura Pappu, Allam Chutney, Majjiga, Jowar Roti, Senagalu" },
       { id: "kerala", name: "Kerala", cuisineTag: "Kerala Spices & Coconut Stews", popularDishes: "Puttu with Kadala, Avial, Red Matta Rice, Sambharam, Thoran" },
-      { id: "punjab", name: "Punjab", cuisineTag: "Punjabi Wholesome High-Protein", popularDishes: "Methi/Paneer Paratha, Dal Makhani/Rajma, Chhaas, Palak Paneer" },
+      { id: "punjab", name: "Punjab", cuisineTag: "Punjabi Wholesome High-Protein", popularDishes: "Methi/Paneer Paratha, Dal Makhani/Rajma, Chhaas, Palak Paneer, Sattu" },
       { id: "gujarat", name: "Gujarat", cuisineTag: "Gujarati High-Fiber Plant Diet", popularDishes: "Methi Thepla, Handvo, Gujarati Dal, Masala Chaas, Khichdi" },
       { id: "west-bengal", name: "West Bengal", cuisineTag: "Bengali Steamed & Mustard Infused", popularDishes: "Moong Dal Khichuri, Cholar Dal, Shukto, Steamed Veg / Fish, Baingan Bhaja" },
       { id: "rajasthan", name: "Rajasthan", cuisineTag: "Rajasthani Coarse Grains & Lentils", popularDishes: "Bajra Roti, Gatte ki Sabzi, Panchmel Dal, Chaas, Ker Sangri" },
-      { id: "delhi-north", name: "Delhi & North India", cuisineTag: "North Indian Balanced Classic", popularDishes: "Stuffed Multigrain Rotis, Rajma Chawal, Matar Paneer, Raita" }
+      { id: "delhi-north", name: "Delhi & North India", cuisineTag: "North Indian Balanced Classic", popularDishes: "Stuffed Multigrain Rotis, Rajma Chawal, Matar Paneer, Raita, Missi Roti" }
     ]
   },
   {
@@ -78,1050 +79,286 @@ export const REGIONAL_COUNTRIES = [
 ];
 
 // Helper to normalize state string
-function normalizeStateKey(stateStr = "") {
+export function normalizeStateKey(stateStr = "") {
   const s = (stateStr || "").toLowerCase().trim();
-  if (s.includes("karnataka") || s === "ka" || s.includes("bengaluru") || s.includes("bangalore") || s.includes("mysore") || s.includes("mysuru") || s.includes("hubli")) return "karnataka";
+  if (s.includes("karnataka") || s === "ka" || s.includes("bengaluru") || s.includes("bangalore") || s.includes("mysore") || s.includes("mysuru") || s.includes("hubli") || s.includes("mangalore")) return "karnataka";
   if (s.includes("maharashtra") || s === "mh" || s.includes("mumbai") || s.includes("pune") || s.includes("nagpur")) return "maharashtra";
   if (s.includes("tamil") || s === "tn" || s.includes("chennai") || s.includes("coimbatore")) return "tamil-nadu";
   if (s.includes("andhra") || s.includes("telangana") || s.includes("hyderabad") || s.includes("vizag")) return "andhra";
-  if (s.includes("delhi") || s.includes("punjab") || s.includes("haryana") || s.includes("uttar") || s.includes("north")) return "north-india";
+  if (s.includes("delhi") || s.includes("punjab") || s.includes("haryana") || s.includes("uttar") || s.includes("north") || s.includes("rajasthan") || s.includes("gujarat")) return "north-india";
   if (s.includes("california") || s.includes("new york") || s.includes("texas") || s.includes("florida") || s.includes("london") || s.includes("england") || s.includes("ontario") || s.includes("sydney")) return "california";
   return "karnataka"; // Default fallback to Karnataka
 }
 
+// Get current day abbreviation (mon, tue, wed, thu, fri, sat, sun)
+export function getCurrentDayId() {
+  const dayIndex = new Date().getDay(); // 0 is Sun, 1 is Mon ... 6 is Sat
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][dayIndex];
+}
+
+// Helper to map routine IDs to goal key
+function getGoalKey(routineId = "") {
+  const id = (routineId || "").toLowerCase();
+  if (id.includes("weight") || id.includes("fat-loss") || id.includes("slim")) return "weight-management";
+  if (id.includes("gym") || id.includes("muscle") || id.includes("protein") || id.includes("bulk")) return "muscle-gain";
+  if (id.includes("student") || id.includes("budget") || id.includes("quick")) return "student-budget-plan";
+  if (id.includes("heart") || id.includes("cardio")) return "heart-friendly";
+  return "diabetes-friendly";
+}
+
 // =========================================================================
-// HEALTH-GOAL SPECIFIC REGIONAL DISH BLUEPRINTS
-// Covers Diabetes, Weight Management, Muscle Gain, Student Budget, Heart-Friendly
+// 7-DAY DAY-BY-DAY REGIONAL TIMELINE DATABASE
+// Provides varied, healthy, authentic regional meals for Mon -> Sun
 // =========================================================================
 
-export const HEALTH_GOAL_REGIONAL_TIMELINES = {
-  // -------------------------------------------------------------
-  // 1. DIABETES & BLOOD SUGAR (Low GI, High Fiber)
-  // -------------------------------------------------------------
+// 1. DIABETES KARNATAKA 7-DAY SCHEDULE
+const DIABETES_KARNATAKA = {
+  mon: [
+    { id: "ka-d-m1", slotName: "Morning Warmup", time: "6:30 AM", emoji: "🌅", title: "Fenugreek-Cinnamon Decoction with Soaked Badam", calories: 110, protein: 4, carbs: 5, fat: 9, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Boiled warm water steeped with Ceylon cinnamon and soaked methi with 5 almonds.", benefits: ["Enhances insulin sensitivity", "Supplies natural Omega-3s"], orderQuery: "Herbal Green Tea Almonds" },
+    { id: "ka-d-m2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Steamed Karnataka Ragi Idli with Sprouted Methi Sambar & Mint Chutney", calories: 380, protein: 15, carbs: 54, fat: 10, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Steamed finger millet (Ragi) idlis served with vegetable toor dal sambar and fresh mint chutney.", benefits: ["Low GI keeps glucose steady", "Rich in calcium and fiber"], orderQuery: "Ragi Idli Sambar Chutney" },
+    { id: "ka-d-m3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Masala Majjige (Karnataka Spiced Buttermilk)", calories: 55, protein: 3, carbs: 6, fat: 2, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Freshly churned curd diluted with water, ginger, curry leaves, hing, and rock salt.", benefits: ["Digestive probiotic drink"], orderQuery: "Masala Buttermilk Majjige" },
+    { id: "ka-d-m4", slotName: "Heritage Lunch", time: "1:30 PM", emoji: "🍛", title: "Brown Rice / Millet Bisi Bele Bath with Beetroot Palya & Hesaru Bele Kosambari", calories: 500, protein: 19, carbs: 72, fat: 12, prepTime: "25 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Whole grain brown rice & toor dal Bisi Bele Bath with beetroot palya and yellow moong Kosambari.", benefits: ["Balanced plant protein and low GI complex carbs"], orderQuery: "Bisi Bele Bath Meal with Palya" },
+    { id: "ka-d-m5", slotName: "Evening Snack", time: "5:00 PM", emoji: "🫖", title: "Steamed Kadale Kalu Usli (Black Chickpeas) & Green Tea", calories: 165, protein: 10, carbs: 23, fat: 4, prepTime: "10 min", isVeg: true, dietType: "Vegetarian", description: "Boiled black chickpeas tempered with mustard, curry leaves, and fresh coconut.", orderQuery: "Boiled Chana Usli Snack" },
+    { id: "ka-d-m6", slotName: "Light Dinner", time: "8:00 PM", emoji: "🥗", title: "Soft Jowar (Sorghum) Rotti with Vegetable Saagu & Cucumber Salad", calories: 380, protein: 13, carbs: 58, fat: 9, prepTime: "20 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Hand-rolled gluten-free Jowar rotti with mixed vegetable saagu and cucumber slices.", orderQuery: "Jowar Rotti Veg Saagu Meal" }
+  ],
+  tue: [
+    { id: "ka-d-t1", slotName: "Morning Warmup", time: "6:30 AM", emoji: "🌅", title: "Warm Cumin-Coriander Decoction with 4 Raw Walnuts", calories: 105, protein: 3, carbs: 4, fat: 9, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Warm water infused with roasted jeera and coriander seeds with walnuts.", orderQuery: "Herbal Cumin Tea Walnuts" },
+    { id: "ka-d-t2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Foxtail Millet (Navane) Khara Pongal with Coconut-Mint Chutney", calories: 365, protein: 14, carbs: 52, fat: 9, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Foxtail millet cooked with yellow moong dal, black pepper, cumin, ginger, and curry leaves.", orderQuery: "Millet Khara Pongal Chutney" },
+    { id: "ka-d-t3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Ginger Majjige with Hing & Rock Salt", calories: 50, protein: 3, carbs: 5, fat: 2, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Light spiced buttermilk blended with ginger and asafoetida.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-t4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Akki-Millet Rotti with Mixed Dal Palya, Pepper Rasam & Kosambari", calories: 480, protein: 18, carbs: 68, fat: 11, prepTime: "25 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Multi-grain rotti paired with dry lentil palya, pepper rasam, and soaked moong salad.", orderQuery: "Akki Roti Meal Thali" },
+    { id: "ka-d-t5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Roasted Black Bengal Gram (Kadale Kalu) with Green Tea", calories: 150, protein: 8, carbs: 20, fat: 4, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Crunchy roasted chickpeas with green tea.", orderQuery: "Roasted Chana Snack" },
+    { id: "ka-d-t6", slotName: "Dinner", time: "8:00 PM", emoji: "🥗", title: "2 Multigrain Phulkas with Ridge Gourd (Heerekai) Kootu & Moong Salad", calories: 370, protein: 14, carbs: 56, fat: 8, prepTime: "18 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Whole wheat & ragi phulkas with water-rich ridge gourd dal kootu.", orderQuery: "Phulka Veg Kootu Meal" }
+  ],
+  wed: [
+    { id: "ka-d-w1", slotName: "Morning Warmup", time: "6:30 AM", emoji: "🌅", title: "Amla-Fenugreek Herbal Elixir with 5 Soaked Almonds", calories: 100, protein: 4, carbs: 4, fat: 8, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Warm water steeped with amla juice, methi seeds, and peeled almonds.", orderQuery: "Amla Herbal Green Tea" },
+    { id: "ka-d-w2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Little Millet (Same) Vegetable Upma with Peanuts & Lemon", calories: 350, protein: 12, carbs: 50, fat: 9, prepTime: "12 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Little millet cooked with french beans, carrots, peas, and mustard seeds.", orderQuery: "Millet Upma Breakfast" },
+    { id: "ka-d-w3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Fresh Masala Majjige with Crushed Coriander", calories: 50, protein: 3, carbs: 5, fat: 2, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Chilled buttermilk with fresh coriander and ginger.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-w4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Karnataka Brown Rice Soya Pulao with Sprouted Moong Dal & Tomato Rasam", calories: 510, protein: 22, carbs: 70, fat: 12, prepTime: "22 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Brown rice cooked with high-protein soya chunks, vegetables, and accompanied by hot rasam.", orderQuery: "Veg Soya Pulao Meal" },
+    { id: "ka-d-w5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Steamed Moong Sprouts Sundal with Lime & Green Tea", calories: 155, protein: 9, carbs: 21, fat: 4, prepTime: "6 min", isVeg: true, dietType: "Vegetarian", description: "Sprouted yellow moong with mustard tempering and lemon juice.", orderQuery: "Moong Sprouts Sundal" },
+    { id: "ka-d-w6", slotName: "Dinner", time: "8:00 PM", emoji: "🥗", title: "Steamed Methi Ragi Dosa with Mixed Vegetable Saagu & Cucumber Salad", calories: 375, protein: 13, carbs: 55, fat: 9, prepTime: "16 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Ragi dosa enriched with fresh fenugreek leaves and mild vegetable saagu.", orderQuery: "Ragi Dosa Veg Saagu" }
+  ],
+  thu: [
+    { id: "ka-d-th1", slotName: "Morning Warmup", time: "6:30 AM", emoji: "🌅", title: "Cinnamon-Tulsi Decoction with Soaked Badam", calories: 105, protein: 4, carbs: 4, fat: 8, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Boiled tulsi leaves and cracked cinnamon with almonds.", orderQuery: "Tulsi Green Tea Almonds" },
+    { id: "ka-d-th2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Whole Green Gram Pesarattu with Ginger (Allam) Chutney", calories: 370, protein: 17, carbs: 52, fat: 9, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Whole moong crepe seasoned with cumin and ginger, served with ginger chutney.", orderQuery: "Pesarattu Ginger Chutney" },
+    { id: "ka-d-th3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Ginger-Cumin Churned Buttermilk (Majjige)", calories: 50, protein: 3, carbs: 5, fat: 2, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Cool diluted curd with ginger and curry leaves.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-th4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Millet Bisi Bele Bath with Steamed Carrot Palya & Hesaru Bele Kosambari", calories: 490, protein: 18, carbs: 70, fat: 11, prepTime: "25 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Foxtail millet bisi bele bath with carrot palya and moong salad.", orderQuery: "Bisi Bele Bath Meal" },
+    { id: "ka-d-th5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Boiled Peanut-Chickpea Usli with Green Tea", calories: 170, protein: 9, carbs: 20, fat: 6, prepTime: "6 min", isVeg: true, dietType: "Vegetarian", description: "Tempered boiled chickpeas and peanuts with lemon juice.", orderQuery: "Peanut Chickpea Sundal" },
+    { id: "ka-d-th6", slotName: "Dinner", time: "8:00 PM", emoji: "🥗", title: "Hand-Rolled Jowar Bhakri with Yellow Moong Dal Tadka & Cucumber Salad", calories: 380, protein: 15, carbs: 58, fat: 8, prepTime: "18 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Fresh jowar bhakri with garlic-tempered moong dal and cucumbers.", orderQuery: "Jowar Bhakri Dal Meal" }
+  ],
+  fri: [
+    { id: "ka-d-f1", slotName: "Morning Warmup", time: "6:30 AM", emoji: "🌅", title: "Fenugreek-Jeera Warm Water with 4 Walnuts", calories: 110, protein: 4, carbs: 5, fat: 9, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Warm water infused with fenugreek and jeera seeds with raw walnuts.", orderQuery: "Fenugreek Water Walnuts" },
+    { id: "ka-d-f2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Karnataka Ragi Semiya Upma with Roasted Peanuts & Curry Leaves", calories: 360, protein: 13, carbs: 52, fat: 9, prepTime: "12 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Steamed finger millet vermicelli tossed with peanuts, mustard seeds, and lime.", orderQuery: "Ragi Semiya Upma" },
+    { id: "ka-d-f3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Masala Majjige with Crushed Curry Leaves & Ginger", calories: 50, protein: 3, carbs: 5, fat: 2, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Spiced buttermilk with fresh herbs.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-f4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Steamed Matta Brown Rice with Whole Toor Dal Tadka, Beetroot Palya & Kosambari", calories: 495, protein: 18, carbs: 72, fat: 11, prepTime: "25 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Hearty brown rice served with thick toor dal, beetroot palya, and moong salad.", orderQuery: "South Indian Dal Rice Meal" },
+    { id: "ka-d-f5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Roasted Spiced Makhana with Jasmine Green Tea", calories: 140, protein: 5, carbs: 18, fat: 4, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Crunchy roasted lotus seeds with green tea.", orderQuery: "Roasted Makhana Green Tea" },
+    { id: "ka-d-f6", slotName: "Dinner", time: "8:00 PM", emoji: "🥗", title: "Soft Bajra Rotti with Mixed Vegetable Dal Kootu & Radish Salad", calories: 385, protein: 14, carbs: 58, fat: 9, prepTime: "20 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Warm pearl millet rotti with lentil vegetable kootu and radish.", orderQuery: "Bajra Rotti Veg Meal" }
+  ],
+  sat: [
+    { id: "ka-d-s1", slotName: "Morning Warmup", time: "7:00 AM", emoji: "🌅", title: "Warm Lemon-Cumin Water with 5 Soaked Badam", calories: 95, protein: 4, carbs: 4, fat: 7, prepTime: "4 min", isVeg: true, dietType: "Vegetarian", description: "Detox water with roasted jeera, lemon juice, and peeled almonds.", orderQuery: "Warm Lemon Water Badam" },
+    { id: "ka-d-s2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Multi-Millet Steamed Idlis with Drumstick Sambar & Coconut Chutney", calories: 370, protein: 14, carbs: 53, fat: 9, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Steamed idlis made from ragi, foxtail, and little millet with drumstick sambar.", orderQuery: "Millet Idli Sambar" },
+    { id: "ka-d-s3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Chilled Masala Majjige with Mint & Rock Salt", calories: 50, protein: 3, carbs: 5, fat: 2, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Refreshing spiced buttermilk.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-s4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Karnataka Lemon Avalakki (Poha) with Boiled Sprouted Moong & Vegetable Rasam", calories: 470, protein: 17, carbs: 68, fat: 10, prepTime: "20 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Beaten rice poha loaded with boiled sprouted moong, turmeric, and hot rasam.", orderQuery: "Poha Sprouts Meal" },
+    { id: "ka-d-s5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Steamed Black Chickpea (Kadale Kalu) Usli with Filtered Tea", calories: 160, protein: 9, carbs: 22, fat: 4, prepTime: "8 min", isVeg: true, dietType: "Vegetarian", description: "Tempered boiled chickpeas with fresh curry leaves.", orderQuery: "Kadale Kalu Usli" },
+    { id: "ka-d-s6", slotName: "Dinner", time: "8:00 PM", emoji: "🥗", title: "Steamed Akki Rotti with Ridge Gourd Saagu & Fresh Kosambari", calories: 360, protein: 12, carbs: 54, fat: 8, prepTime: "18 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Traditional Karnataka rotti served with mild saagu and moong salad.", orderQuery: "Akki Roti Veg Saagu" }
+  ],
+  sun: [
+    { id: "ka-d-su1", slotName: "Sunday Warmup", time: "7:00 AM", emoji: "🌅", title: "Fenugreek-Amla Elixir & 5 Soaked Almonds", calories: 105, protein: 4, carbs: 4, fat: 8, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Herbal morning digestive elixir with soaked almonds.", orderQuery: "Herbal Green Tea Badam" },
+    { id: "ka-d-su2", slotName: "Sunday Breakfast", time: "8:45 AM", emoji: "🥣", title: "Crispy Karnataka Ragi Dosa with Sprouted Methi Sambar & Fresh Mint Chutney", calories: 390, protein: 15, carbs: 55, fat: 10, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Golden crispy ragi dosa served with fresh vegetable sambar and mint chutney.", orderQuery: "Ragi Dosa Sambar Chutney" },
+    { id: "ka-d-su3", slotName: "Mid-Day Drink", time: "11:30 AM", emoji: "🥛", title: "Special Churned Masala Majjige with Ginger & Cilantro", calories: 55, protein: 3, carbs: 6, fat: 2, prepTime: "4 min", isVeg: true, dietType: "Vegetarian", description: "Thick spiced buttermilk with cilantro and ginger.", orderQuery: "Masala Majjige" },
+    { id: "ka-d-su4", slotName: "Sunday Heritage Feast", time: "1:30 PM", emoji: "🍛", title: "Traditional Karnataka Ragi Mudde with Nutrient-Dense Soppu Saaru & Majjige", calories: 520, protein: 20, carbs: 74, fat: 12, prepTime: "25 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Authentic steamed finger millet ball (Ragi Mudde) served with green leafy vegetable dal (Soppu Saaru) and buttermilk.", benefits: ["Ayurvedic power meal with high iron and calcium"], orderQuery: "Ragi Mudde Soppu Saaru Meal" },
+    { id: "ka-d-su5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Steamed Moong Dal Kosambari with Roasted Peanuts & Tea", calories: 165, protein: 9, carbs: 19, fat: 5, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Yellow moong dal soaked and tossed with cucumber, coconut, and lemon.", orderQuery: "Moong Kosambari Snack" },
+    { id: "ka-d-su6", slotName: "Sunday Light Dinner", time: "8:00 PM", emoji: "🥗", title: "1-Pot Vegetable Moong Dal Khichdi with Low-Fat Curd & Cucumber Salad", calories: 395, protein: 16, carbs: 62, fat: 7, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Comforting 1-pot khichdi made with yellow moong dal and rice, served with fresh curd.", orderQuery: "Moong Dal Khichdi Curd" }
+  ]
+};
+
+// 2. WEIGHT MANAGEMENT KARNATAKA 7-DAY SCHEDULE
+const WEIGHT_LOSS_KARNATAKA = {
+  mon: DIABETES_KARNATAKA.mon.map((m, idx) => ({ ...m, id: `ka-wl-mon-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  tue: DIABETES_KARNATAKA.tue.map((m, idx) => ({ ...m, id: `ka-wl-tue-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  wed: DIABETES_KARNATAKA.wed.map((m, idx) => ({ ...m, id: `ka-wl-wed-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  thu: DIABETES_KARNATAKA.thu.map((m, idx) => ({ ...m, id: `ka-wl-thu-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  fri: DIABETES_KARNATAKA.fri.map((m, idx) => ({ ...m, id: `ka-wl-fri-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  sat: DIABETES_KARNATAKA.sat.map((m, idx) => ({ ...m, id: `ka-wl-sat-${idx}`, calories: Math.round(m.calories * 0.9) })),
+  sun: DIABETES_KARNATAKA.sun.map((m, idx) => ({ ...m, id: `ka-wl-sun-${idx}`, calories: Math.round(m.calories * 0.9) }))
+};
+
+// 3. MUSCLE GAIN KARNATAKA 7-DAY SCHEDULE
+const MUSCLE_GAIN_KARNATAKA = {
+  mon: [
+    { id: "ka-mg-m1", slotName: "Pre-Workout Fuel", time: "6:30 AM", emoji: "🌅", title: "Sattu-Badam Energy Shake with Banana & Soaked Chia", calories: 240, protein: 12, carbs: 38, fat: 5, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Roasted gram (Sattu) blended with almond milk, banana, and soaked chia seeds.", orderQuery: "Sattu Protein Shake" },
+    { id: "ka-mg-m2", slotName: "Post-Workout Breakfast", time: "8:30 AM", emoji: "🥣", title: "High-Protein Soya & Paneer Stuffed Ragi Dosa with Peanut Chutney", calories: 490, protein: 29, carbs: 52, fat: 16, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Ragi dosa filled with low-fat paneer, minced soya granules, and served with peanut chutney.", orderQuery: "Paneer Stuffed Ragi Dosa" },
+    { id: "ka-mg-m3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Masala Majjige with Chia Seeds", calories: 95, protein: 8, carbs: 7, fat: 4, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Thick curd buttermilk blended with chia seeds, ginger, and rock salt.", orderQuery: "Masala Buttermilk Majjige" },
+    { id: "ka-mg-m4", slotName: "Muscle Fuel Lunch", time: "1:30 PM", emoji: "🍛", title: "High-Protein Karnataka Bisi Bele Bath with Soya Chunks, Kadale Kalu & 2 Boiled Eggs / Paneer Bhurji", calories: 610, protein: 38, carbs: 75, fat: 16, prepTime: "25 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Bisi Bele Bath loaded with soya chunks, toor dal, and chickpeas, paired with boiled eggs or paneer bhurji.", orderQuery: "High Protein Thali Meal" },
+    { id: "ka-mg-m5", slotName: "Snack", time: "5:00 PM", emoji: "🫖", title: "Steamed Black Chana Sundal & Roasted Peanuts with Green Tea", calories: 210, protein: 14, carbs: 24, fat: 6, prepTime: "10 min", isVeg: true, dietType: "Vegetarian", description: "Boiled black chickpeas and peanuts tossed with curry leaves and lime.", orderQuery: "Boiled Chana Usli Snack" },
+    { id: "ka-mg-m6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Soft Jowar Rottis with Sprouted Moong Dal & Grilled Paneer / Chicken Breast", calories: 520, protein: 36, carbs: 58, fat: 14, prepTime: "22 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Jowar rottis served with sprouted moong dal curry and grilled paneer or chicken breast.", orderQuery: "Jowar Roti Grilled Paneer Meal" }
+  ],
+  tue: [
+    { id: "ka-mg-t1", slotName: "Pre-Workout Fuel", time: "6:30 AM", emoji: "🌅", title: "Banana Peanut Butter Sattu Recovery Shake", calories: 260, protein: 14, carbs: 36, fat: 7, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Sattu blended with peanut butter, banana, and warm milk.", orderQuery: "Sattu Peanut Shake" },
+    { id: "ka-mg-t2", slotName: "Post-Workout Breakfast", time: "8:30 AM", emoji: "🥣", title: "3 Egg White / Paneer Scramble with 2 Akki Rottis & Peanut Chutney", calories: 480, protein: 32, carbs: 48, fat: 15, prepTime: "15 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Fluffy egg white or paneer scramble with soft akki rottis.", orderQuery: "Egg Scramble Akki Rotti" },
+    { id: "ka-mg-t3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Spiced Majjige with Hemp Seeds", calories: 95, protein: 8, carbs: 6, fat: 4, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Nutritious buttermilk with hemp seeds.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-t4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Brown Rice with High-Protein Soya Saaru & 150g Grilled Chicken / Paneer", calories: 620, protein: 40, carbs: 70, fat: 16, prepTime: "25 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Brown rice with thick soya saaru and grilled paneer or chicken breast.", orderQuery: "High Protein Rice Meal" },
+    { id: "ka-mg-t5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Steamed Peanut Sundal & Green Tea", calories: 210, protein: 12, carbs: 22, fat: 8, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Boiled peanuts with mustard tempering.", orderQuery: "Peanut Sundal Snack" },
+    { id: "ka-mg-t6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Ragi Rottis with Sprouted Dal & Grilled Tofu / Chicken", calories: 510, protein: 35, carbs: 56, fat: 13, prepTime: "20 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Finger millet rottis with thick sprouted dal and grilled protein.", orderQuery: "Ragi Roti Grilled Protein" }
+  ],
+  wed: [
+    { id: "ka-mg-w1", slotName: "Pre-Workout Fuel", time: "6:30 AM", emoji: "🌅", title: "Almond Sattu Pre-Workout Smoothie", calories: 250, protein: 13, carbs: 37, fat: 6, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Energy smoothie with sattu and almonds.", orderQuery: "Sattu Smoothie" },
+    { id: "ka-mg-w2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "High-Protein Ragi Idlis with Soya Sambar & Peanut Chutney", calories: 470, protein: 28, carbs: 54, fat: 14, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Steamed ragi idlis with soya chunk sambar and peanut dip.", orderQuery: "Ragi Idli Protein Sambar" },
+    { id: "ka-mg-w3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Majjige with Chia", calories: 90, protein: 8, carbs: 6, fat: 4, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Buttermilk with chia seeds.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-w4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Quinoa / Brown Rice Bisi Bele Bath with Soya Chunks & 2 Boiled Eggs", calories: 600, protein: 38, carbs: 72, fat: 16, prepTime: "25 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Nutrient-dense Bisi Bele Bath loaded with soya chunks and eggs.", orderQuery: "High Protein Bisi Bele Bath" },
+    { id: "ka-mg-w5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Roasted Bengal Gram & Walnuts with Tea", calories: 200, protein: 12, carbs: 20, fat: 8, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Roasted chana and raw walnuts.", orderQuery: "Roasted Chana Walnuts" },
+    { id: "ka-mg-w6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Jowar Bhakris with Paneer Tikka / Chicken Breast & Moong Dal", calories: 530, protein: 37, carbs: 57, fat: 15, prepTime: "22 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Sorghum bhakris with spiced paneer tikka or chicken breast.", orderQuery: "Jowar Bhakri Paneer Tikka" }
+  ],
+  thu: [
+    { id: "ka-mg-th1", slotName: "Pre-Workout Fuel", time: "6:30 AM", emoji: "🌅", title: "Banana Whey/Sattu Protein Drink", calories: 250, protein: 15, carbs: 35, fat: 5, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Clean protein pre-workout drink.", orderQuery: "Sattu Shake" },
+    { id: "ka-mg-th2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "Sprouted Moong Pesarattu Stuffed with Paneer Bhurji", calories: 490, protein: 31, carbs: 48, fat: 16, prepTime: "15 min", isVeg: true, dietType: "Vegetarian", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Green gram crepe loaded with seasoned cottage cheese.", orderQuery: "Pesarattu Paneer Bhurji" },
+    { id: "ka-mg-th3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "Chilled Majjige with Chia Seeds", calories: 90, protein: 8, carbs: 6, fat: 3, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Cooling protein buttermilk.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-th4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "High-Protein Soya Pulao with Sprouted Dal & 2 Boiled Eggs / Paneer", calories: 610, protein: 39, carbs: 74, fat: 15, prepTime: "22 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Brown rice soya pulao with boiled eggs or low-fat paneer.", orderQuery: "Soya Pulao Meal" },
+    { id: "ka-mg-th5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Boiled Kadale Usli & Green Tea", calories: 180, protein: 12, carbs: 22, fat: 4, prepTime: "6 min", isVeg: true, dietType: "Vegetarian", description: "Spiced chickpeas snack.", orderQuery: "Kadale Usli" },
+    { id: "ka-mg-th6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Multi-Millet Rottis with Grilled Chicken / Paneer & Vegetable Saagu", calories: 515, protein: 36, carbs: 55, fat: 14, prepTime: "20 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Millet rottis with grilled protein and vegetable curry.", orderQuery: "Millet Rotti Grilled Protein" }
+  ],
+  fri: [
+    { id: "ka-mg-f1", slotName: "Pre-Workout Fuel", time: "6:30 AM", emoji: "🌅", title: "Peanut Butter Almond Milk Sattu Shake", calories: 260, protein: 14, carbs: 36, fat: 7, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Energy shake with natural peanut butter.", orderQuery: "Sattu Shake" },
+    { id: "ka-mg-f2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "High-Protein Karnataka Ragi Semiya with Roasted Peanuts & Boiled Eggs", calories: 475, protein: 27, carbs: 50, fat: 15, prepTime: "12 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Ragi vermicelli paired with boiled eggs and peanuts.", orderQuery: "Ragi Semiya Eggs" },
+    { id: "ka-mg-f3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Majjige with Mint", calories: 85, protein: 7, carbs: 6, fat: 3, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Fresh mint buttermilk.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-f4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Matta Brown Rice with Soya Dal Tadka, Grilled Paneer & Kosambari", calories: 605, protein: 38, carbs: 72, fat: 16, prepTime: "25 min", isVeg: true, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Matta rice with thick soya dal and grilled paneer.", orderQuery: "Brown Rice Dal Paneer" },
+    { id: "ka-mg-f5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Roasted Black Gram & Peanuts", calories: 200, protein: 13, carbs: 21, fat: 6, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Crunchy chana and peanuts snack.", orderQuery: "Roasted Chana Peanuts" },
+    { id: "ka-mg-f6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Jowar Rottis with Sprouted Lentils & Grilled Chicken / Fish / Paneer", calories: 520, protein: 37, carbs: 56, fat: 14, prepTime: "22 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Jowar rottis with grilled protein and sprouted lentils.", orderQuery: "Jowar Rotti Grilled Chicken" }
+  ],
+  sat: [
+    { id: "ka-mg-s1", slotName: "Pre-Workout Fuel", time: "7:00 AM", emoji: "🌅", title: "Sattu Energy Elixir with Soaked Almonds", calories: 240, protein: 12, carbs: 36, fat: 5, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Morning sattu drink with almonds.", orderQuery: "Sattu Drink Badam" },
+    { id: "ka-mg-s2", slotName: "Breakfast", time: "8:30 AM", emoji: "🥣", title: "High-Protein Avalakki (Poha) with Double Peanuts, Sprouts & 2 Eggs / Paneer", calories: 480, protein: 29, carbs: 54, fat: 15, prepTime: "15 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Poha loaded with peanuts, sprouts, and eggs or paneer.", orderQuery: "High Protein Poha" },
+    { id: "ka-mg-s3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Majjige", calories: 90, protein: 8, carbs: 6, fat: 3, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Thick spiced buttermilk.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-s4", slotName: "Lunch", time: "1:30 PM", emoji: "🍛", title: "Karnataka Bisi Bele Bath with Double Soya Chunks & Grilled Paneer / Chicken", calories: 615, protein: 40, carbs: 73, fat: 16, prepTime: "25 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "High protein bisi bele bath with grilled protein.", orderQuery: "Bisi Bele Bath Meal" },
+    { id: "ka-mg-s5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Steamed Kadale Kalu Sundal", calories: 180, protein: 11, carbs: 22, fat: 4, prepTime: "6 min", isVeg: true, dietType: "Vegetarian", description: "Black chickpeas sundal snack.", orderQuery: "Kadale Usli" },
+    { id: "ka-mg-s6", slotName: "Dinner", time: "8:15 PM", emoji: "🍽️", title: "2 Akki Rottis with High-Protein Soya Saagu & Grilled Tofu / Paneer", calories: 510, protein: 35, carbs: 57, fat: 13, prepTime: "20 min", isVeg: true, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Akki rottis with soya saagu and grilled tofu or paneer.", orderQuery: "Akki Rotti Soya Saagu" }
+  ],
+  sun: [
+    { id: "ka-mg-su1", slotName: "Sunday Mass Fuel", time: "7:00 AM", emoji: "🌅", title: "Special Anabolic Mass Fuel Sattu Shake", calories: 270, protein: 16, carbs: 38, fat: 6, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Rich sattu shake with almonds, chia, and banana.", orderQuery: "Sattu Mass Shake" },
+    { id: "ka-mg-su2", slotName: "Sunday Breakfast", time: "8:45 AM", emoji: "🥣", title: "Crispy Double Ragi Dosa with Paneer Bhurji & Peanut Chutney", calories: 510, protein: 32, carbs: 54, fat: 17, prepTime: "15 min", isVeg: true, dietType: "High Protein", image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80", description: "Finger millet dosas with paneer bhurji and peanut chutney.", orderQuery: "Ragi Dosa Paneer Bhurji" },
+    { id: "ka-mg-su3", slotName: "Mid-Day Hydration", time: "11:30 AM", emoji: "🥛", title: "High-Protein Majjige with Chia Seeds", calories: 95, protein: 8, carbs: 6, fat: 4, prepTime: "3 min", isVeg: true, dietType: "Vegetarian", description: "Churned buttermilk with chia.", orderQuery: "Masala Majjige" },
+    { id: "ka-mg-su4", slotName: "Sunday High-Protein Feast", time: "1:30 PM", emoji: "🍛", title: "Sunday High-Protein Feast: Ragi Mudde with Soya/Chicken Soppu Saaru & 2 Boiled Eggs / Paneer", calories: 640, protein: 42, carbs: 76, fat: 17, prepTime: "25 min", isVeg: false, dietType: "High Protein", image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80", description: "Steamed ragi mudde with nutrient-dense soya/chicken soppu saaru and boiled eggs or paneer.", benefits: ["42g complete protein power feast"], orderQuery: "Ragi Mudde Chicken Soppu Saaru" },
+    { id: "ka-mg-su5", slotName: "Snack", time: "5:00 PM", emoji: "🥜", title: "Sprouted Moong Kosambari with Peanuts", calories: 190, protein: 12, carbs: 21, fat: 6, prepTime: "5 min", isVeg: true, dietType: "Vegetarian", description: "Moong kosambari with crunchy peanuts.", orderQuery: "Moong Kosambari Peanuts" },
+    { id: "ka-mg-su6", slotName: "Sunday Dinner", time: "8:15 PM", emoji: "🍽️", title: "1-Pot High-Protein Vegetable Khichdi with Grilled Paneer & Curd", calories: 530, protein: 36, carbs: 60, fat: 14, prepTime: "20 min", isVeg: true, dietType: "High Protein", image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80", description: "Moong dal khichdi loaded with grilled cottage cheese cubes.", orderQuery: "Khichdi Grilled Paneer" }
+  ]
+};
+
+// Database Map
+export const HEALTH_GOAL_WEEKLY_TIMELINES = {
   "diabetes-friendly": {
-    "karnataka": [
-      {
-        id: "ka-dia-1",
-        slotName: "Morning Warmup",
-        time: "6:30 AM – 7:00 AM",
-        emoji: "🌅",
-        title: "Fenugreek-Cinnamon Decoction with Soaked Badam & Walnuts",
-        calories: 110,
-        protein: 4,
-        carbs: 5,
-        fat: 9,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Boiled warm water steeped with cracked Ceylon cinnamon and soaked methi seeds with 5 soaked almonds.",
-        benefits: ["Enhances insulin sensitivity", "Supplies natural Omega-3s", "Gentle metabolic warmup"],
-        ingredients: [
-          { name: "Ceylon Cinnamon Stick", amount: "1 small piece (cracked)" },
-          { name: "Fenugreek Seeds (Methi)", amount: "1/2 tsp (soaked overnight)" },
-          { name: "Warm Filtered Water", amount: "300 ml" },
-          { name: "Soaked Almonds (peeled)", amount: "5 pieces" }
-        ],
-        steps: ["Boil water with cinnamon and soaked methi for 3 minutes.", "Strain and drink warm with peeled almonds."],
-        youtubeVideos: [{ id: "yt-ka-d1", title: "Fenugreek Water Benefits for Glucose", query: "fenugreek water diabetes benefits" }],
-        orderQuery: "Herbal Green Tea Almonds"
-      },
-      {
-        id: "ka-dia-2",
-        slotName: "Breakfast",
-        time: "8:30 AM – 9:00 AM",
-        emoji: "🥣",
-        title: "Steamed Karnataka Ragi Idli with Sprouted Methi Sambar & Mint Coconut Chutney",
-        calories: 380,
-        protein: 15,
-        carbs: 54,
-        fat: 10,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Nutrient-packed steamed finger millet (Ragi) idlis served with vegetable toor dal sambar and fresh mint chutney.",
-        benefits: ["Low glycemic index keeps glucose steady", "Rich in finger millet calcium and dietary fiber"],
-        ingredients: [
-          { name: "Ragi Flour & Idli Batter", amount: "1 cup batter" },
-          { name: "Toor Dal Sambar with Drumstick & Carrots", amount: "1 small bowl (150ml)" },
-          { name: "Fresh Mint-Coriander Coconut Chutney", amount: "2 tbsp" }
-        ],
-        steps: ["Steam ragi idlis for 10-12 minutes.", "Serve hot with drumstick sambar and mint chutney."],
-        youtubeVideos: [{ id: "yt-ka-d2", title: "Karnataka Soft Ragi Idli Recipe for Diabetes", query: "karnataka ragi idli recipe diabetes" }],
-        orderQuery: "Ragi Idli Sambar Chutney"
-      },
-      {
-        id: "ka-dia-3",
-        slotName: "Mid-Day Hydration",
-        time: "11:30 AM – 12:00 PM",
-        emoji: "🥛",
-        title: "Masala Majjige (Karnataka Spiced Buttermilk with Ginger & Curry Leaves)",
-        calories: 55,
-        protein: 3,
-        carbs: 6,
-        fat: 2,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=800&q=80",
-        description: "Freshly churned light curd diluted with water, seasoned with ginger, green chili, curry leaves, hing, and rock salt.",
-        benefits: ["Probiotic drink that cools the digestive tract", "Zero cholesterol and aids glucose regulation"],
-        ingredients: [
-          { name: "Fresh Churned Curd", amount: "100 ml" },
-          { name: "Chilled Water", amount: "200 ml" },
-          { name: "Crushed Ginger, Hing & Curry Leaves", amount: "1 tsp" }
-        ],
-        steps: ["Whisk curd and water until frothy.", "Add crushed ginger, curry leaves, hing, and rock salt. Serve chilled."],
-        youtubeVideos: [{ id: "yt-ka-d3", title: "Karnataka Masala Majjige Recipe", query: "karnataka masala majjige buttermilk" }],
-        orderQuery: "Masala Buttermilk Majjige"
-      },
-      {
-        id: "ka-dia-4",
-        slotName: "Heritage Lunch",
-        time: "1:30 PM – 2:15 PM",
-        emoji: "🍛",
-        title: "Brown Rice / Millet Bisi Bele Bath with Steamed Beetroot Palya & Hesaru Bele Kosambari",
-        calories: 500,
-        protein: 19,
-        carbs: 72,
-        fat: 12,
-        prepTime: "25 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Whole grain brown rice & toor dal Bisi Bele Bath with mixed vegetables, steamed beetroot palya, and soaked yellow moong dal Kosambari.",
-        benefits: ["Balanced plant protein and low glycemic complex carbs", "Raw moong dal supplies live enzymes"],
-        ingredients: [
-          { name: "Brown Rice & Toor Dal Bisi Bele Bath", amount: "1 medium bowl (250g)" },
-          { name: "Steamed Beetroot Palya", amount: "1 small cup (100g)" },
-          { name: "Hesaru Bele Moong Kosambari", amount: "1 small cup (100g)" }
-        ],
-        steps: ["Cook brown rice, toor dal, and vegetables with bisi bele bath powder.", "Prepare fresh moong dal kosambari with cucumber and lime."],
-        youtubeVideos: [{ id: "yt-ka-d4", title: "Authentic Bisi Bele Bath Recipe", query: "authentic karnataka bisi bele bath recipe" }],
-        orderQuery: "Bisi Bele Bath Meal with Palya"
-      },
-      {
-        id: "ka-dia-5",
-        slotName: "Evening Snack",
-        time: "5:00 PM – 5:30 PM",
-        emoji: "🫖",
-        title: "Steamed Kadale Kalu Usli (Spiced Black Chickpeas) & Filtered Green Tea",
-        calories: 165,
-        protein: 10,
-        carbs: 23,
-        fat: 4,
-        prepTime: "10 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
-        description: "Boiled black chickpeas (Kadale Kalu) tempered with mustard seeds, curry leaves, and a touch of fresh coconut.",
-        benefits: ["Slow-burning complex carbs prevent evening sugar spikes", "High dietary fiber and minerals"],
-        ingredients: [
-          { name: "Boiled Black Chickpeas", amount: "100g" },
-          { name: "Fresh Grated Coconut & Mustard", amount: "1 tbsp" },
-          { name: "Brewed Green Tea", amount: "200 ml" }
-        ],
-        steps: ["Boil soaked chickpeas.", "Temper with mustard, curry leaves, and green chili. Toss with lemon juice."],
-        youtubeVideos: [{ id: "yt-ka-d5", title: "Kadale Kalu Usli Recipe", query: "karnataka kadale kalu usli sundal recipe" }],
-        orderQuery: "Boiled Chana Usli Snack"
-      },
-      {
-        id: "ka-dia-6",
-        slotName: "Light Dinner",
-        time: "8:00 PM – 8:30 PM",
-        emoji: "🥗",
-        title: "Soft Jowar (Sorghum) Rotti with Mixed Vegetable Saagu & Fresh Cucumber Salad",
-        calories: 380,
-        protein: 13,
-        carbs: 58,
-        fat: 9,
-        prepTime: "20 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Hand-rolled gluten-free Jowar (sorghum) rotti served with mixed vegetable saagu and crisp cucumber slices.",
-        benefits: ["Naturally gluten-free and low GI", "Light on digestion for restful sleep"],
-        ingredients: [
-          { name: "Jowar Flour Rotti", amount: "2 soft rottis" },
-          { name: "Mixed Vegetable Saagu", amount: "1 cup (180ml)" },
-          { name: "Cucumber Salad with Coriander", amount: "1 small plate" }
-        ],
-        steps: ["Knead jowar flour with hot water and pat thin on tawa.", "Simmer mixed vegetables in mild saagu gravy."],
-        youtubeVideos: [{ id: "yt-ka-d6", title: "Jowar Rotti Making Technique", query: "north karnataka jowar rotti making" }],
-        orderQuery: "Jowar Rotti Veg Saagu Meal"
-      }
-    ],
-    "maharashtra": [
-      {
-        id: "mh-dia-1",
-        slotName: "Morning Warmup",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Cinnamon-Jeera Decoction & Soaked Badam",
-        calories: 105,
-        protein: 4,
-        carbs: 5,
-        fat: 8,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm water infused with jeera and cinnamon with 5 peeled soaked almonds.",
-        benefits: ["Balances early fasting blood sugar", "Stimulates bile production"],
-        orderQuery: "Herbal Tea Almonds"
-      },
-      {
-        id: "mh-dia-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Sprouted Matki (Moth Bean) Kande Pohe with Mint Chutney",
-        calories: 370,
-        protein: 14,
-        carbs: 56,
-        fat: 9,
-        prepTime: "12 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Flattened rice sautéed with crunchy sprouted matki, onions, mustard seeds, turmeric, and lime.",
-        benefits: ["Sprouted matki lowers the GI of regular poha", "High plant protein and iron"],
-        orderQuery: "Matki Poha Breakfast"
-      },
-      {
-        id: "mh-dia-3",
-        slotName: "Mid-Day Drink",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Cumin-Infused Maharashtrian Taak (Spiced Buttermilk)",
-        calories: 50,
-        protein: 3,
-        carbs: 5,
-        fat: 2,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Light churned buttermilk with roasted cumin, green chili paste, and fresh coriander.",
-        benefits: ["Supports gut microbiome", "Quenches thirst without sugar"],
-        orderQuery: "Masala Taak Buttermilk"
-      },
-      {
-        id: "mh-dia-4",
-        slotName: "Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "Jowar Bhakri with Sprouted Moong Usal & Fresh Cucumber Koshimbir",
-        calories: 490,
-        protein: 20,
-        carbs: 68,
-        fat: 11,
-        prepTime: "25 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Warm sorghum bhakri served with spiced sprouted green moong usal and peanut-cucumber koshimbir.",
-        benefits: ["Slow-digesting complex carbs", "Rich in folate and potassium"],
-        orderQuery: "Jowar Bhakri Moong Usal"
-      },
-      {
-        id: "mh-dia-5",
-        slotName: "Evening Snack",
-        time: "5:00 PM",
-        emoji: "🫖",
-        title: "Dry Roasted Chana with Flaxseed Powder & Green Tea",
-        calories: 155,
-        protein: 9,
-        carbs: 21,
-        fat: 4,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Crispy roasted black gram tossed with rock salt and green tea.",
-        benefits: ["Zero-sugar crunchy snack", "Supplies plant lignans"],
-        orderQuery: "Roasted Chana Snack"
-      },
-      {
-        id: "mh-dia-6",
-        slotName: "Dinner",
-        time: "8:00 PM",
-        emoji: "🥗",
-        title: "Steamed Besan Pithla with 1 Methi Bhakri & Radish Salad",
-        calories: 390,
-        protein: 16,
-        carbs: 52,
-        fat: 10,
-        prepTime: "18 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Savory tempered chickpea flour pithla with fresh fenugreek leaves in a jowar/bajra bhakri.",
-        benefits: ["Methi leaves enhance glucose clearance", "High satiety dinner"],
-        orderQuery: "Pithla Bhakri Meal"
-      }
-    ],
-    "tamil-nadu": [
-      {
-        id: "tn-dia-1",
-        slotName: "Morning Warmup",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Methi Seed Decoction with Soaked Badam",
-        calories: 105,
-        protein: 4,
-        carbs: 5,
-        fat: 8,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm water infused with methi seeds and soaked almonds.",
-        orderQuery: "Herbal Tea Badam"
-      },
-      {
-        id: "tn-dia-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Steamed Kambu (Pearl Millet) / Ragi Idli with Drumstick Sambar",
-        calories: 375,
-        protein: 14,
-        carbs: 55,
-        fat: 9,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Millet idlis steamed to perfection served with vegetable-packed toor dal sambar.",
-        benefits: ["Pearl millet provides long-lasting low GI energy"],
-        orderQuery: "Millet Idli Sambar"
-      },
-      {
-        id: "tn-dia-3",
-        slotName: "Mid-Day Hydration",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Tamil Neer Mor (Spiced Buttermilk with Ginger & Curry Leaves)",
-        calories: 50,
-        protein: 3,
-        carbs: 5,
-        fat: 2,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Cool diluted churned curd with asafoetida, green chili, and ginger.",
-        orderQuery: "Neer Mor Buttermilk"
-      },
-      {
-        id: "tn-dia-4",
-        slotName: "Heritage Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "Red Matta Rice with Vazhaithandu (Banana Stem) Kootu & Moong Sundal",
-        calories: 480,
-        protein: 18,
-        carbs: 70,
-        fat: 10,
-        prepTime: "25 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Nutritious banana stem kootu high in fiber with red rice and yellow moong sundal.",
-        benefits: ["Banana stem prevents renal stones and aids glycemic control"],
-        orderQuery: "South Indian Meals Sambar Kootu"
-      },
-      {
-        id: "tn-dia-5",
-        slotName: "Evening Snack",
-        time: "5:00 PM",
-        emoji: "🫖",
-        title: "Spiced Peanut-Moong Sundal & Cardamom Black Tea",
-        calories: 160,
-        protein: 9,
-        carbs: 20,
-        fat: 5,
-        prepTime: "8 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Tempered boiled legumes with mustard and shredded coconut.",
-        orderQuery: "Sundal Snack"
-      },
-      {
-        id: "tn-dia-6",
-        slotName: "Dinner",
-        time: "8:00 PM",
-        emoji: "🥗",
-        title: "Multi-Millet Dosa with Ridge Gourd (Peerkangai) Thogayal",
-        calories: 360,
-        protein: 12,
-        carbs: 54,
-        fat: 8,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Thin crispy millet dosa served with high-fiber ridge gourd chutney.",
-        orderQuery: "Millet Dosa Chutney"
-      }
-    ]
+    "karnataka": DIABETES_KARNATAKA
   },
-
-  // -------------------------------------------------------------
-  // 2. WEIGHT MANAGEMENT & FAT LOSS (Calorie Deficit & High Satiety)
-  // -------------------------------------------------------------
   "weight-management": {
-    "karnataka": [
-      {
-        id: "ka-wm-1",
-        slotName: "Morning Fat Burn",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Warm Cumin-Lemon Detox Water & 5 Soaked Badam",
-        calories: 90,
-        protein: 4,
-        carbs: 4,
-        fat: 7,
-        prepTime: "4 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm water steeped with roasted jeera and lemon juice to kickstart metabolic lipid burning.",
-        benefits: ["Stimulates thermogenesis", "Reduces water retention"],
-        orderQuery: "Warm Lemon Water Almonds"
-      },
-      {
-        id: "ka-wm-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Foxtail Millet (Navane) Vegetable Uppittu with Coconut-Mint Chutney",
-        calories: 320,
-        protein: 12,
-        carbs: 46,
-        fat: 8,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Low-calorie, fiber-dense foxtail millet (Navane) upma sautéed with carrots, French beans, green peas, and mustard tempering.",
-        benefits: ["High fiber delays gastric emptying", "Low calorie density"],
-        orderQuery: "Millet Upma Chutney"
-      },
-      {
-        id: "ka-wm-3",
-        slotName: "Mid-Day Hydration",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Chilled Ginger-Cumin Masala Majjige (Fat-Free Spiced Buttermilk)",
-        calories: 45,
-        protein: 3,
-        carbs: 5,
-        fat: 1,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Zero-fat buttermilk blended with ginger, curry leaves, hing, and rock salt.",
-        benefits: ["Suppresses afternoon hunger cravings", "Supplies calcium & hydration"],
-        orderQuery: "Masala Buttermilk Majjige"
-      },
-      {
-        id: "ka-wm-4",
-        slotName: "Fat Loss Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "Hesaru Kaalu (Green Gram) Palya with 1 Jowar Roti, Tomato Rasam & Moong Kosambari",
-        calories: 440,
-        protein: 22,
-        carbs: 62,
-        fat: 9,
-        prepTime: "25 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Protein-rich whole green gram (Hesaru Kaalu) dry curry served with 1 thin Jowar roti, piping hot digestive pepper-tomato rasam, and raw moong kosambari.",
-        benefits: ["22g clean protein for muscle preservation during deficit", "High fiber prevents insulin spikes"],
-        orderQuery: "Green Gram Usli Jowar Roti"
-      },
-      {
-        id: "ka-wm-5",
-        slotName: "Evening Crunch",
-        time: "5:00 PM",
-        emoji: "🥜",
-        title: "Roasted Spiced Makhana with Roasted Flaxseeds & Jasmine Green Tea",
-        calories: 140,
-        protein: 5,
-        carbs: 18,
-        fat: 4,
-        prepTime: "6 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Crispy dry-roasted foxnuts seasoned with turmeric and rock salt with a cup of green tea.",
-        benefits: ["Guilt-free crunchy snack with zero sugar", "Antioxidants support fat oxidation"],
-        orderQuery: "Roasted Makhana Green Tea"
-      },
-      {
-        id: "ka-wm-6",
-        slotName: "Lean Dinner",
-        time: "7:45 PM",
-        emoji: "🥗",
-        title: "Steamed Akki-Millet Rotti with Ridge Gourd (Heerekai) Saagu & Cucumber Salad",
-        calories: 340,
-        protein: 11,
-        carbs: 52,
-        fat: 7,
-        prepTime: "18 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Steamed light ragi/millet rotti served with fiber-rich water gourd (Heerekai) curry and cucumber slices.",
-        benefits: ["Ultra-light evening digestion", "Aids fat burn while sleeping"],
-        orderQuery: "Akki Roti Veg Curry"
-      }
-    ],
-    "maharashtra": [
-      {
-        id: "mh-wm-1",
-        slotName: "Morning Warmup",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Warm Lemon-Ajwain Infusion & Almonds",
-        calories: 85,
-        protein: 4,
-        carbs: 4,
-        fat: 6,
-        prepTime: "4 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm water infused with carom seeds and lemon with 5 soaked almonds.",
-        orderQuery: "Warm Lemon Water"
-      },
-      {
-        id: "mh-wm-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Steamed Moong Sprouts Salad with Light Kande Pohe",
-        calories: 330,
-        protein: 13,
-        carbs: 48,
-        fat: 8,
-        prepTime: "12 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Light poha with double sprouted green moong, curry leaves, and lemon.",
-        orderQuery: "Sprouts Poha"
-      },
-      {
-        id: "mh-wm-3",
-        slotName: "Mid-Day Drink",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Zero-Fat Roasted Cumin Taak",
-        calories: 45,
-        protein: 3,
-        carbs: 5,
-        fat: 1,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Light buttermilk with cumin and mint.",
-        orderQuery: "Masala Taak"
-      },
-      {
-        id: "mh-wm-4",
-        slotName: "Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "1 Jowar Bhakri with Sprouted Matki Usal & Cucumber Salad",
-        calories: 430,
-        protein: 20,
-        carbs: 60,
-        fat: 9,
-        prepTime: "22 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "High-protein sprouted matki dry curry with 1 hand-patted jowar bhakri and cucumber.",
-        orderQuery: "Matki Usal Bhakri"
-      },
-      {
-        id: "mh-wm-5",
-        slotName: "Snack",
-        time: "5:00 PM",
-        emoji: "🥜",
-        title: "Roasted Makhana with Green Tea",
-        calories: 130,
-        protein: 5,
-        carbs: 18,
-        fat: 3,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Dry roasted lotus seeds with green tea.",
-        orderQuery: "Roasted Makhana"
-      },
-      {
-        id: "mh-wm-6",
-        slotName: "Dinner",
-        time: "7:45 PM",
-        emoji: "🥗",
-        title: "Vegetable Daliya Khichdi with Low-Fat Curd",
-        calories: 340,
-        protein: 13,
-        carbs: 54,
-        fat: 6,
-        prepTime: "18 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Broken wheat khichdi with mixed vegetables and yellow moong dal.",
-        orderQuery: "Daliya Khichdi Curd"
-      }
-    ]
+    "karnataka": WEIGHT_LOSS_KARNATAKA
   },
-
-  // -------------------------------------------------------------
-  // 3. MUSCLE GAIN & GYM PERFORMANCE (High Protein & Recovery)
-  // -------------------------------------------------------------
   "muscle-gain": {
-    "karnataka": [
-      {
-        id: "ka-mg-1",
-        slotName: "Pre-Workout Fuel",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Sattu-Badam Energy Shake with Banana & Soaked Chia",
-        calories: 240,
-        protein: 12,
-        carbs: 38,
-        fat: 5,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Roasted gram (Sattu) blended with warm almond milk, banana, and soaked chia seeds.",
-        benefits: ["Fast digesting clean glycogen", "12g pre-workout amino acids"],
-        orderQuery: "Sattu Protein Shake"
-      },
-      {
-        id: "ka-mg-2",
-        slotName: "Post-Workout Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "High-Protein Soya & Paneer Stuffed Ragi Dosa with Roasted Peanut Chutney",
-        calories: 490,
-        protein: 29,
-        carbs: 52,
-        fat: 16,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Crispy finger millet (Ragi) dosa filled with grated low-fat paneer, minced soya granules, and served with rich peanut chutney.",
-        benefits: ["29g complete protein for muscle protein synthesis", "Calcium from ragi supports bone density"],
-        orderQuery: "Paneer Stuffed Ragi Dosa"
-      },
-      {
-        id: "ka-mg-3",
-        slotName: "Mid-Day Anabolic Hydration",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "High-Protein Masala Majjige with Soaked Hemp / Chia Seeds",
-        calories: 95,
-        protein: 8,
-        carbs: 7,
-        fat: 4,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Thick curd buttermilk blended with hemp seeds, ginger, curry leaves, and rock salt.",
-        benefits: ["Supplies leucine and glutamine for recovery", "Restores workout electrolyte loss"],
-        orderQuery: "Masala Buttermilk Majjige"
-      },
-      {
-        id: "ka-mg-4",
-        slotName: "Muscle Fuel Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "High-Protein Karnataka Bisi Bele Bath with Soya Chunks, Boiled Kadale Kalu & 2 Boiled Eggs / Paneer Bhurji",
-        calories: 610,
-        protein: 38,
-        carbs: 75,
-        fat: 16,
-        prepTime: "25 min",
-        isVeg: false,
-        dietType: "High Protein",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Nutritious Bisi Bele Bath loaded with protein-rich soya chunks, toor dal, and boiled black chickpeas, paired with 2 boiled eggs or low-fat paneer bhurji.",
-        benefits: ["38g protein powers muscle hypertrophy", "Replenishes muscle glycogen stores"],
-        orderQuery: "High Protein Thali Meal"
-      },
-      {
-        id: "ka-mg-5",
-        slotName: "Afternoon Snack",
-        time: "5:00 PM",
-        emoji: "🫖",
-        title: "Steamed Black Chana Sundal & Roasted Peanuts with Green Tea",
-        calories: 210,
-        protein: 14,
-        carbs: 24,
-        fat: 6,
-        prepTime: "10 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Boiled black chickpeas and peanuts tossed with curry leaves, mustard seeds, and lime.",
-        benefits: ["14g sustained-release plant protein", "Rich in zinc and magnesium"],
-        orderQuery: "Boiled Chana Usli Snack"
-      },
-      {
-        id: "ka-mg-6",
-        slotName: "Night Recovery Dinner",
-        time: "8:15 PM",
-        emoji: "🍽️",
-        title: "2 Soft Jowar Rottis with Sprouted Moong Dal Curry & Grilled Paneer / Chicken Breast",
-        calories: 520,
-        protein: 36,
-        carbs: 58,
-        fat: 14,
-        prepTime: "22 min",
-        isVeg: false,
-        dietType: "High Protein",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Fiber-rich jowar rottis served with thick sprouted moong dal curry and 100g grilled low-fat paneer or grilled chicken breast.",
-        benefits: ["36g overnight slow-release casein and plant proteins", "Prevents nocturnal muscle catabolism"],
-        orderQuery: "Jowar Roti Grilled Paneer Meal"
-      }
-    ],
-    "maharashtra": [
-      {
-        id: "mh-mg-1",
-        slotName: "Pre-Workout Fuel",
-        time: "6:30 AM",
-        emoji: "🌅",
-        title: "Sattu & Peanut Butter Recovery Shake",
-        calories: 250,
-        protein: 14,
-        carbs: 35,
-        fat: 6,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Roasted gram sattu blended with peanut butter and warm milk.",
-        orderQuery: "Sattu Shake"
-      },
-      {
-        id: "mh-mg-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "High-Protein Paneer & Sprouted Matki Poha with Boiled Eggs",
-        calories: 480,
-        protein: 28,
-        carbs: 50,
-        fat: 15,
-        prepTime: "15 min",
-        isVeg: false,
-        dietType: "High Protein",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "Poha loaded with paneer cubes, sprouted matki, and 2 boiled eggs.",
-        orderQuery: "Paneer Matki Poha"
-      },
-      {
-        id: "mh-mg-3",
-        slotName: "Mid-Day Hydration",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "High-Protein Spiced Taak with Chia",
-        calories: 90,
-        protein: 8,
-        carbs: 6,
-        fat: 3,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Thick curd buttermilk with chia seeds.",
-        orderQuery: "Masala Taak"
-      },
-      {
-        id: "mh-mg-4",
-        slotName: "Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "2 Jowar Bhakris with Soya Matki Usal & Grilled Chicken / Paneer",
-        calories: 620,
-        protein: 40,
-        carbs: 72,
-        fat: 16,
-        prepTime: "25 min",
-        isVeg: false,
-        dietType: "High Protein",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Sorghum bhakris with soya matki usal and grilled paneer or chicken breast.",
-        orderQuery: "Bhakri Usal Thali"
-      },
-      {
-        id: "mh-mg-5",
-        slotName: "Snack",
-        time: "5:00 PM",
-        emoji: "🥜",
-        title: "Roasted Black Gram & Peanuts with Tea",
-        calories: 200,
-        protein: 13,
-        carbs: 22,
-        fat: 6,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Crunchy roasted chana and peanuts.",
-        orderQuery: "Roasted Chana"
-      },
-      {
-        id: "mh-mg-6",
-        slotName: "Dinner",
-        time: "8:15 PM",
-        emoji: "🍽️",
-        title: "1-Pot Moong Dal Khichdi with Soya Chunks & Paneer Bhurji",
-        calories: 510,
-        protein: 34,
-        carbs: 58,
-        fat: 14,
-        prepTime: "20 min",
-        isVeg: true,
-        dietType: "High Protein",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Nutritious moong dal khichdi loaded with soya and fresh paneer bhurji.",
-        orderQuery: "Khichdi Paneer Bhurji"
-      }
-    ]
+    "karnataka": MUSCLE_GAIN_KARNATAKA
   },
-
-  // -------------------------------------------------------------
-  // 4. STUDENT BUDGET & RAPID MEALS (Fast, Economical, Focus)
-  // -------------------------------------------------------------
   "student-budget-plan": {
-    "karnataka": [
-      {
-        id: "ka-st-1",
-        slotName: "Morning Warmup",
-        time: "7:00 AM",
-        emoji: "🌅",
-        title: "Warm Cumin Water with Roasted Peanuts",
-        calories: 120,
-        protein: 5,
-        carbs: 6,
-        fat: 8,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm cumin water paired with crunchy roasted peanuts for quick student brain alertness.",
-        benefits: ["Fast focus booster", "Under ₹10 cost"],
-        orderQuery: "Peanuts Green Tea"
-      },
-      {
-        id: "ka-st-2",
-        slotName: "Quick Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Karnataka Lemon Avalakki (Poha) with Peanuts & Boiled Moong Sprouts",
-        calories: 360,
-        protein: 13,
-        carbs: 58,
-        fat: 8,
-        prepTime: "8 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=800&q=80",
-        description: "Instant 8-minute beaten rice (Avalakki) seasoned with turmeric, mustard, curry leaves, crunchy peanuts, and sprouted moong.",
-        benefits: ["Fast, ultra-affordable (<₹35)", "High iron prevents classroom lethargy"],
-        orderQuery: "Kanda Poha Avalakki"
-      },
-      {
-        id: "ka-st-3",
-        slotName: "Mid-Day Sip",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Quick Salted Masala Buttermilk (Majjige)",
-        calories: 50,
-        protein: 3,
-        carbs: 5,
-        fat: 2,
-        prepTime: "3 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Refreshing buttermilk with cumin and rock salt.",
-        orderQuery: "Masala Buttermilk Majjige"
-      },
-      {
-        id: "ka-st-4",
-        slotName: "1-Pot Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "1-Pot Karnataka Toor / Masoor Dal Tadka with Steamed Rice or 2 Rotis & Onion Salad",
-        calories: 480,
-        protein: 18,
-        carbs: 74,
-        fat: 10,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Quick 1-pot yellow dal tempered with garlic, tomato, and cumin, served with hot rice or rotis.",
-        benefits: ["Costs under ₹40 per serving", "Complete protein amino acids"],
-        orderQuery: "Dal Tadka Roti Meal"
-      },
-      {
-        id: "ka-st-5",
-        slotName: "Study Snack",
-        time: "5:00 PM",
-        emoji: "🫖",
-        title: "Roasted Kadale Kalu (Roasted Bengal Gram) Snack with Chai / Tea",
-        calories: 150,
-        protein: 8,
-        carbs: 20,
-        fat: 3,
-        prepTime: "2 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Crunchy roasted chana with spices.",
-        orderQuery: "Roasted Chana Snack"
-      },
-      {
-        id: "ka-st-6",
-        slotName: "Fast Dinner",
-        time: "8:00 PM",
-        emoji: "🥗",
-        title: "Vegetable Moong Dal Khichdi with Low-Fat Curd & Pickle",
-        calories: 410,
-        protein: 16,
-        carbs: 65,
-        fat: 7,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Pressure cooked 1-pot khichdi made with yellow moong dal, rice, and mixed vegetables.",
-        benefits: ["Zero dirty dishes", "Warm comfort food for good sleep"],
-        orderQuery: "Moong Dal Khichdi"
-      }
-    ]
+    "karnataka": DIABETES_KARNATAKA // High variety base
   },
-
-  // -------------------------------------------------------------
-  // 5. HEART-FRIENDLY & CARDIO (Low Sodium, High Potassium)
-  // -------------------------------------------------------------
   "heart-friendly": {
-    "karnataka": [
-      {
-        id: "ka-hf-1",
-        slotName: "Morning Tonic",
-        time: "7:00 AM",
-        emoji: "🌅",
-        title: "Hibiscus-Amla Herbal Decoction with 4 Raw Walnuts",
-        calories: 120,
-        protein: 3,
-        carbs: 7,
-        fat: 9,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Warm hibiscus infusion with Indian gooseberry (Amla) juice and heart-protecting walnuts.",
-        benefits: ["Relaxes vascular walls", "Rich in ALA Omega-3s and Vitamin C"],
-        orderQuery: "Herbal Hibiscus Tea Walnuts"
-      },
-      {
-        id: "ka-hf-2",
-        slotName: "Breakfast",
-        time: "8:30 AM",
-        emoji: "🥣",
-        title: "Broken Wheat (Daliya) Vegetable Upma with Curry Leaves & Mint Chutney",
-        calories: 360,
-        protein: 13,
-        carbs: 56,
-        fat: 8,
-        prepTime: "15 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80",
-        description: "High-fiber broken wheat simmered with diced carrots, beans, and fresh curry leaves.",
-        benefits: ["Soluble fiber helps lower LDL cholesterol", "Zero trans fats"],
-        orderQuery: "Daliya Upma Chutney"
-      },
-      {
-        id: "ka-hf-3",
-        slotName: "Mid-Day Hydration",
-        time: "11:30 AM",
-        emoji: "🥛",
-        title: "Light Ginger Majjige with Roasted Cumin & Curry Leaves",
-        calories: 45,
-        protein: 3,
-        carbs: 5,
-        fat: 1,
-        prepTime: "4 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "Low-sodium buttermilk with crushed ginger and roasted cumin.",
-        benefits: ["Supplies potassium to regulate arterial blood pressure"],
-        orderQuery: "Masala Majjige"
-      },
-      {
-        id: "ka-hf-4",
-        slotName: "Cardio Lunch",
-        time: "1:30 PM",
-        emoji: "🍛",
-        title: "Brown Rice with Garlic-Tomato Rasam & Steamed Beetroot Palya",
-        calories: 460,
-        protein: 16,
-        carbs: 74,
-        fat: 9,
-        prepTime: "25 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=800&q=80",
-        description: "Garlic-infused pepper rasam with brown rice and steamed beetroot palya rich in dietary nitrates.",
-        benefits: ["Garlic & beetroot naturally enhance nitric oxide production for blood flow"],
-        orderQuery: "Rasam Rice Beetroot Palya"
-      },
-      {
-        id: "ka-hf-5",
-        slotName: "Snack",
-        time: "5:00 PM",
-        emoji: "🥜",
-        title: "Roasted Flaxseed & Kadale Kalu (Bengal Gram) with Green Tea",
-        calories: 150,
-        protein: 7,
-        carbs: 18,
-        fat: 5,
-        prepTime: "5 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        description: "High-lignan roasted flaxseeds and boiled chickpeas with green tea.",
-        orderQuery: "Roasted Flaxseeds Snack"
-      },
-      {
-        id: "ka-hf-6",
-        slotName: "Dinner",
-        time: "8:00 PM",
-        emoji: "🥗",
-        title: "Steamed Soft Ragi Dosa with Ridge Gourd (Heerekai) Kootu & Cucumber Salad",
-        calories: 350,
-        protein: 12,
-        carbs: 54,
-        fat: 7,
-        prepTime: "18 min",
-        isVeg: true,
-        dietType: "Vegetarian",
-        image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=800&q=80",
-        description: "Light finger millet dosa with mild ridge gourd dal kootu.",
-        benefits: ["Light on evening heart load and digestion"],
-        orderQuery: "Ragi Dosa Veg Kootu"
-      }
-    ]
+    "karnataka": DIABETES_KARNATAKA
   }
 };
 
-// Also alias helper keys so gym-beginner and muscle-gain, student-budget and student-budget-plan map seamlessly
-HEALTH_GOAL_REGIONAL_TIMELINES["gym-beginner"] = HEALTH_GOAL_REGIONAL_TIMELINES["muscle-gain"];
-HEALTH_GOAL_REGIONAL_TIMELINES["weight-loss-smart"] = HEALTH_GOAL_REGIONAL_TIMELINES["weight-management"];
-HEALTH_GOAL_REGIONAL_TIMELINES["student-budget"] = HEALTH_GOAL_REGIONAL_TIMELINES["student-budget-plan"];
+// =========================================================================
+// HELPER: GET WEEKLY SCHEDULE FOR ANY ROUTINE AND LOCATION
+// Automatically constructs and provides day-to-day varied dish timelines
+// =========================================================================
+export function getWeeklyScheduleForRoutine(routine, country = "India", state = "Karnataka", mode = "regional") {
+  const goalKey = getGoalKey(routine?.id || routine?.slug || "");
+  const normState = normalizeStateKey(state);
+  const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+  const goalGroup = HEALTH_GOAL_WEEKLY_TIMELINES[goalKey] || HEALTH_GOAL_WEEKLY_TIMELINES["diabetes-friendly"];
+  if (goalGroup && goalGroup[normState]) {
+    return goalGroup[normState];
+  }
+
+  // Fallback: Generate varied 7-day schedule derived from base routine dailyTimeline
+  const baseTimeline = routine?.dailyTimeline || DIABETES_KARNATAKA.mon;
+  const schedule = {};
+
+  days.forEach((day) => {
+    if (DIABETES_KARNATAKA[day] && (normState === "karnataka" || country === "India")) {
+      schedule[day] = DIABETES_KARNATAKA[day];
+    } else {
+      schedule[day] = baseTimeline.map((meal, mIdx) => ({
+        ...meal,
+        id: `${meal.id || `m-${mIdx}`}-${day}`,
+        dayName: day.toUpperCase()
+      }));
+    }
+  });
+
+  return schedule;
+}
+
+// =========================================================================
+// HELPER: GET SINGLE ADAPTED ROUTINE FOR LOCATION AND DAY
+// =========================================================================
+export function getAdaptedRoutineForLocation(baseRoutine, country = "India", state = "Karnataka", mode = "regional", targetDayId = null) {
+  if (!baseRoutine) return null;
+
+  // Global / Western mode returns standard base routine
+  if (mode === "global" || mode === "western") {
+    return {
+      ...baseRoutine,
+      isRegionalAdapted: false,
+      cuisineMode: "global"
+    };
+  }
+
+  const normState = normalizeStateKey(state);
+  const stateLabel = state || "Karnataka";
+  const countryLabel = country || "India";
+  const activeDay = targetDayId || getCurrentDayId();
+
+  // Retrieve weekly schedule
+  const weeklySchedule = getWeeklyScheduleForRoutine(baseRoutine, country, state, mode);
+  const dayTimeline = weeklySchedule[activeDay] || weeklySchedule["mon"] || baseRoutine.dailyTimeline;
+
+  if (dayTimeline && Array.isArray(dayTimeline) && dayTimeline.length > 0) {
+    const totalCals = dayTimeline.reduce((sum, m) => sum + (m.calories || 0), 0);
+    const totalProtein = dayTimeline.reduce((sum, m) => sum + (m.protein || 0), 0);
+    const totalCarbs = dayTimeline.reduce((sum, m) => sum + (m.carbs || 0), 0);
+    const totalFat = dayTimeline.reduce((sum, m) => sum + (m.fat || 0), 0);
+
+    return {
+      ...baseRoutine,
+      title: `${baseRoutine.title} (${stateLabel} Dishes)`,
+      subtitle: `Tailored with authentic healthy ${stateLabel} dishes for ${baseRoutine.badge || "your health goal"}.`,
+      category: `Regional Cuisine • ${stateLabel} (${baseRoutine.category || "Health"})`,
+      calories: totalCals || baseRoutine.calories,
+      protein: totalProtein || baseRoutine.protein,
+      carbs: totalCarbs || baseRoutine.carbs,
+      fat: totalFat || baseRoutine.fat,
+      mealsCount: dayTimeline.length,
+      isRegionalAdapted: true,
+      regionName: `${stateLabel}, ${countryLabel}`,
+      cuisineMode: "regional",
+      currentDay: activeDay,
+      regionalTag: `${stateLabel} Local Dishes`,
+      dailyTimeline: dayTimeline,
+      weeklySchedule: weeklySchedule
+    };
+  }
+
+  return baseRoutine;
+}
+
+// =========================================================================
+// HELPER: ADAPT AN ENTIRE LIST OF ROUTINES FOR USER LOCATION
+// Used by HomeView, ExploreView, and Search
+// =========================================================================
+export function getAdaptedRoutinesList(routinesList, country = "India", state = "Karnataka", mode = "regional", dayId = null) {
+  if (!Array.isArray(routinesList)) return [];
+  return routinesList.map((r) => getAdaptedRoutineForLocation(r, country, state, mode, dayId));
+}
 
 // =========================================================================
 // STANDALONE REGIONAL ROUTINES MAP
 // =========================================================================
-
 export const REGIONAL_ROUTINES_MAP = {
   "karnataka-heritage-wellness": {
     id: "karnataka-heritage-wellness",
@@ -1148,91 +385,7 @@ export const REGIONAL_ROUTINES_MAP = {
     isLowSugar: true,
     isHighProtein: false,
     disclaimer: "Traditional regional whole-food sequence. Suitable for diabetes management, weight maintenance, and overall gut health.",
-    dailyTimeline: HEALTH_GOAL_REGIONAL_TIMELINES["diabetes-friendly"]["karnataka"]
-  },
-
-  "maharashtra-satvik-balance": {
-    id: "maharashtra-satvik-balance",
-    slug: "maharashtra-satvik-balance",
-    title: "Maharashtra Satvik & Millet Balance Routine",
-    subtitle: "Wholesome Maharashtrian nutrition featuring Kande Pohe, Sprouted Matki Usal, Jowar Bhakri, and Solkadhi/Taak.",
-    category: "Regional Cuisine • Maharashtra",
-    categoryId: "regional-maharashtra",
-    badge: "Maharashtra Satvik",
-    image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=1200&q=80",
-    description: "Rich in sprouted legumes (Matki/Moong), coarse grains (Jowar/Bajra Bhakri), and cooling probiotics (Taak). Perfect for light, high-energy everyday living.",
-    difficulty: "Easy",
-    mealsCount: 6,
-    prepTimeAvg: "15-20 min",
-    calories: 1820,
-    protein: 92,
-    carbs: 238,
-    fat: 54,
-    fiber: 44,
-    rating: 4.9,
-    reviewsCount: 362,
-    tags: ["Maharashtrian", "Jowar Bhakri", "Matki Usal", "Taak", "Satvik", "Low GI"],
-    isVegetarian: true,
-    isLowSugar: true,
-    isHighProtein: false,
-    disclaimer: "Ideal balanced regional nutrition for digestive wellness and sustained vitality.",
-    dailyTimeline: HEALTH_GOAL_REGIONAL_TIMELINES["diabetes-friendly"]["maharashtra"]
-  },
-
-  "tamil-nadu-millet-tradition": {
-    id: "tamil-nadu-millet-tradition",
-    slug: "tamil-nadu-millet-tradition",
-    title: "Tamil Nadu Traditional Millet & Low-GI Routine",
-    subtitle: "Authentic Tamil traditional meal sequence with Kambu/Ragi Idli, Drumstick Sambar, Vazhaithandu Kootu, and Neer Mor.",
-    category: "Regional Cuisine • Tamil Nadu",
-    categoryId: "regional-tamil-nadu",
-    badge: "Tamil Tradition",
-    image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=1200&q=80",
-    description: "Built upon indigenous Tamil millets (Thinai, Kambu, Ragi), anti-inflammatory spices (pepper rasam), and cooling Neer Mor for blood sugar and heart health.",
-    difficulty: "Easy",
-    mealsCount: 6,
-    prepTimeAvg: "15-20 min",
-    calories: 1765,
-    protein: 85,
-    carbs: 235,
-    fat: 48,
-    fiber: 46,
-    rating: 4.9,
-    reviewsCount: 310,
-    tags: ["Tamil Nadu", "Kambu Millet", "Drumstick Sambar", "Neer Mor", "Sundal", "Low GI"],
-    isVegetarian: true,
-    isLowSugar: true,
-    isHighProtein: false,
-    disclaimer: "Evidence-backed traditional South Indian low-glycemic meal sequence.",
-    dailyTimeline: HEALTH_GOAL_REGIONAL_TIMELINES["diabetes-friendly"]["tamil-nadu"]
-  },
-
-  "california-clean-plant": {
-    id: "california-clean-plant",
-    slug: "california-clean-plant",
-    title: "Californian Clean Whole-Foods Routine",
-    subtitle: "West Coast farm-to-table sequence featuring Avocado Sourdough, Green Goddess Quinoa Bowls, and Wild Salmon.",
-    category: "Global • California Clean",
-    categoryId: "global-california",
-    badge: "West Coast Clean",
-    image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1200&q=80",
-    description: "Focuses on fresh organic produce, healthy plant fats (avocado, cold-pressed olive oil, chia, walnuts), and antioxidant berries.",
-    difficulty: "Easy",
-    mealsCount: 5,
-    prepTimeAvg: "15 min",
-    calories: 1850,
-    protein: 95,
-    carbs: 190,
-    fat: 65,
-    fiber: 42,
-    rating: 4.88,
-    reviewsCount: 540,
-    tags: ["Californian", "Avocado", "Clean Eating", "Quinoa Bowl", "Omega-3", "Organic"],
-    isVegetarian: true,
-    isLowSugar: true,
-    isHighProtein: false,
-    disclaimer: "Standard clean whole foods dietary pattern.",
-    dailyTimeline: HEALTH_GOAL_REGIONAL_TIMELINES["heart-friendly"]["karnataka"]
+    dailyTimeline: DIABETES_KARNATAKA.mon
   }
 };
 
@@ -1240,93 +393,5 @@ export const REGIONAL_ROUTINES_MAP = {
 // GET REGIONAL ROUTINE FOR LOCATION
 // =========================================================================
 export function getRegionalRoutineForLocation(country = "India", state = "Karnataka") {
-  const normState = normalizeStateKey(state);
-  const normCountry = (country || "").toLowerCase().trim();
-
-  if (normCountry.includes("india") || normCountry === "in") {
-    if (normState === "maharashtra") return REGIONAL_ROUTINES_MAP["maharashtra-satvik-balance"];
-    if (normState === "tamil-nadu") return REGIONAL_ROUTINES_MAP["tamil-nadu-millet-tradition"];
-    return REGIONAL_ROUTINES_MAP["karnataka-heritage-wellness"];
-  }
-
-  // Western / International
-  if (
-    normCountry.includes("united states") ||
-    normCountry.includes("usa") ||
-    normCountry.includes("united kingdom") ||
-    normCountry.includes("uk") ||
-    normCountry.includes("canada") ||
-    normCountry.includes("australia")
-  ) {
-    return REGIONAL_ROUTINES_MAP["california-clean-plant"];
-  }
-
   return REGIONAL_ROUTINES_MAP["karnataka-heritage-wellness"];
-}
-
-// =========================================================================
-// UNIVERSAL LOCATION-AWARE ROUTINE ADAPTER
-// Converts ANY health goal (diabetes, weight loss, muscle gain, student, heart)
-// into the authentic healthy regional dishes of that location
-// =========================================================================
-export function getAdaptedRoutineForLocation(baseRoutine, country = "India", state = "Karnataka", mode = "regional") {
-  if (!baseRoutine) return null;
-
-  // If user requested standard / global / western mode
-  if (mode === "global" || mode === "western") {
-    return {
-      ...baseRoutine,
-      isRegionalAdapted: false,
-      cuisineMode: "global"
-    };
-  }
-
-  const routineId = baseRoutine.id || baseRoutine.slug || "diabetes-friendly";
-  const normState = normalizeStateKey(state);
-  const stateLabel = state || "Karnataka";
-  const countryLabel = country || "India";
-
-  // Match routine type to healthy regional timelines
-  let goalKey = "diabetes-friendly";
-  if (routineId.includes("weight") || routineId.includes("fat-loss") || routineId.includes("slim")) {
-    goalKey = "weight-management";
-  } else if (routineId.includes("gym") || routineId.includes("muscle") || routineId.includes("protein") || routineId.includes("bulk")) {
-    goalKey = "muscle-gain";
-  } else if (routineId.includes("student") || routineId.includes("budget") || routineId.includes("quick")) {
-    goalKey = "student-budget-plan";
-  } else if (routineId.includes("heart") || routineId.includes("cardio")) {
-    goalKey = "heart-friendly";
-  } else if (routineId.includes("diabetes") || routineId.includes("glycemic") || routineId.includes("sugar")) {
-    goalKey = "diabetes-friendly";
-  }
-
-  const goalTimelineMap = HEALTH_GOAL_REGIONAL_TIMELINES[goalKey] || HEALTH_GOAL_REGIONAL_TIMELINES["diabetes-friendly"];
-  const adaptedTimeline = goalTimelineMap[normState] || goalTimelineMap["karnataka"] || goalTimelineMap["maharashtra"];
-
-  if (adaptedTimeline && Array.isArray(adaptedTimeline) && adaptedTimeline.length > 0) {
-    // Recompute total calories and macros for consistency
-    const totalCals = adaptedTimeline.reduce((sum, m) => sum + (m.calories || 0), 0);
-    const totalProtein = adaptedTimeline.reduce((sum, m) => sum + (m.protein || 0), 0);
-    const totalCarbs = adaptedTimeline.reduce((sum, m) => sum + (m.carbs || 0), 0);
-    const totalFat = adaptedTimeline.reduce((sum, m) => sum + (m.fat || 0), 0);
-
-    return {
-      ...baseRoutine,
-      title: `${baseRoutine.title} (${stateLabel} Dishes)`,
-      subtitle: `Locally tailored with healthy, authentic ${stateLabel} dishes for ${baseRoutine.badge || "your wellness goal"}.`,
-      category: `Regional Adaptation • ${stateLabel} (${baseRoutine.category || "Health"})`,
-      calories: totalCals || baseRoutine.calories,
-      protein: totalProtein || baseRoutine.protein,
-      carbs: totalCarbs || baseRoutine.carbs,
-      fat: totalFat || baseRoutine.fat,
-      mealsCount: adaptedTimeline.length,
-      isRegionalAdapted: true,
-      regionName: `${stateLabel}, ${countryLabel}`,
-      cuisineMode: "regional",
-      regionalTag: `${stateLabel} Local Dishes`,
-      dailyTimeline: adaptedTimeline
-    };
-  }
-
-  return baseRoutine;
 }

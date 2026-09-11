@@ -56,9 +56,15 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
   const activeDayObj = days.find((d) => d.id === activeDay) || days[0];
   const todayDayObj = days.find((d) => d.id === todayId) || days[0];
 
-  const safeTimeline = (routine && Array.isArray(routine.dailyTimeline) && routine.dailyTimeline.length > 0)
-    ? routine.dailyTimeline
-    : (ROUTINES_DATA[0].dailyTimeline || []);
+  const safeTimeline = useMemo(() => {
+    if (routine?.weeklySchedule && routine.weeklySchedule[activeDay]) {
+      return routine.weeklySchedule[activeDay];
+    }
+    if (routine && Array.isArray(routine.dailyTimeline) && routine.dailyTimeline.length > 0) {
+      return routine.dailyTimeline;
+    }
+    return ROUTINES_DATA[0].dailyTimeline || [];
+  }, [routine, activeDay]);
 
   const safeTitle = routine?.title || "Active Routine";
 

@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from "react";
 import RoutineCard from "../components/RoutineCard";
 import { ROUTINES_DATA } from "../data/routinesData";
+import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
-import { Search, SlidersHorizontal, RotateCcw, Sparkles, Filter, Check } from "lucide-react";
+import { Search, SlidersHorizontal, RotateCcw, Sparkles, Filter, Check, MapPin } from "lucide-react";
 
 export default function ExploreView({
+  userProfile,
   initialQuery = "",
   initialCategory = "all",
   onSelectRoutine,
@@ -20,6 +22,13 @@ export default function ExploreView({
   const [maxPrepTime, setMaxPrepTime] = useState(60); // minutes
   const [calorieRange, setCalorieRange] = useState(3200); // max kcal
 
+  const userCountry = userProfile?.country || "India";
+  const userState = userProfile?.state || "Karnataka";
+
+  const adaptedRoutines = useMemo(() => {
+    return getAdaptedRoutinesList(ROUTINES_DATA, userCountry, userState);
+  }, [userCountry, userState]);
+
   const handleResetFilters = () => {
     setSearchQuery("");
     setSelectedCategory("all");
@@ -32,7 +41,7 @@ export default function ExploreView({
 
   // Filtered routines logic
   const filteredRoutines = useMemo(() => {
-    return ROUTINES_DATA.filter((routine) => {
+    return adaptedRoutines.filter((routine) => {
       // 1. Search query match (title, description, tags, dish names)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
