@@ -5,10 +5,14 @@ const KEYS = {
   COMPLETED_MEALS: "fhr_completed_meals",
   WATER_INTAKE: "fhr_water_intake",
   USER_PROFILE: "fhr_user_profile",
-  SHOPPING_LIST_CHECKED: "fhr_shopping_checked"
+  SHOPPING_LIST_CHECKED: "fhr_shopping_checked",
+  UNLOCKED_BADGES: "fhr_unlocked_badges",
+  STREAK_DAYS: "fhr_streak_days",
+  COMPLETED_DAYS_HISTORY: "fhr_completed_days_history"
 };
 
 import { DEFAULT_AVATAR } from "../data/avatarsData";
+import { calculateStage } from "../data/badgesData";
 
 // Default user profile
 export const DEFAULT_USER_PROFILE = {
@@ -46,13 +50,16 @@ export const setStoredItem = (key, value) => {
 
 export const getUserProfile = () => {
   const profile = getStoredItem(KEYS.USER_PROFILE, DEFAULT_USER_PROFILE);
+  const streak = getStreakDays();
   return {
     ...DEFAULT_USER_PROFILE,
     ...profile,
     country: profile.country || DEFAULT_USER_PROFILE.country,
-    state: profile.state || DEFAULT_USER_PROFILE.state
+    state: profile.state || DEFAULT_USER_PROFILE.state,
+    streakDays: streak
   };
 };
+
 export const saveUserProfile = (profile) => setStoredItem(KEYS.USER_PROFILE, profile);
 
 export const getSavedRoutines = () => getStoredItem(KEYS.SAVED_ROUTINES, ["diabetes-friendly", "gym-beginner"]);
@@ -120,4 +127,101 @@ export const toggleShoppingChecked = (itemKey) => {
   const updated = exists ? current.filter((k) => k !== itemKey) : [...current, itemKey];
   setStoredItem(KEYS.SHOPPING_LIST_CHECKED, updated);
   return updated;
+};
+
+// =========================================================================
+// BADGES & STREAKS STORAGE & EVALUATION SYSTEM
+// =========================================================================
+
+export const getStreakDays = () => {
+  return Number(getStoredItem(KEYS.STREAK_DAYS, 7));
+};
+
+export const setStreakDays = (days) => {
+  setStoredItem(KEYS.STREAK_DAYS, Number(days));
+  const profile = getUserProfile();
+  saveUserProfile({ ...profile, streakDays: Number(days) });
+};
+
+export const getUserBadges = () => {
+  return getStoredItem(KEYS.UNLOCKED_BADGES, ["daily-starter", "weekly-warrior", "regional-foodie"]);
+};
+
+export const unlockBadge = (badgeId) => {
+  const current = getUserBadges();
+  if (!current.includes(badgeId)) {
+    const updated = [...current, badgeId];
+    setStoredItem(KEYS.UNLOCKED_BADGES, updated);
+    return { isNew: true, updated };
+  }
+  return { isNew: false, updated: current };
+};
+
+export const evaluateMilestones = ({
+  completedMealsCount = 0,
+  totalMealsCount = 6,
+  waterGlasses = 0,
+  savedRecipesCount = 0,
+  isRegionalPlan = true
+}) => {
+  const newlyUnlocked = [];
+  const currentStreak = getStreakDays();
+
+  // 1. Daily routine completion
+  if (completedMealsCount >= totalMealsCount && totalMealsCount > 0) {
+    const res = unlockBadge("daily-starter");
+    if (res.isNew) newlyUnlocked.push("daily-starter");
+  }
+
+  // 2. Weekly routine completion (7+ days streak)
+  if (currentStreak >= 7) {
+    const res = unlockBadge("weekly-warrior");
+    if (res.isNew) newlyUnlocked.push("weekly-warrior");
+  }
+
+  // 3. 14 Days consistency
+  if (currentStreak >= 14) {
+    const res = unlockBadge("fortnight-legend");
+    if (res.isNew) newlyUnlocked.push("fortnight-legend");
+  }
+
+  // 4. 30 Days Month completion
+  if (currentStreak >= 30) {
+    const res = unlockBadge("monthly-grandmaster");
+    if (res.isNew) newlyUnlocked.push("monthly-grandmaster");
+  }
+
+  // 5. 60 Days (2 Months) completion
+  if (currentStreak >= 60) {
+    const res = unlockBadge("sixty-day-titan");
+    if (res.isNew) newlyUnlocked.push("sixty-day-titan");
+  }
+
+  // 6. Regional cuisine badge
+  if (isRegionalPlan) {
+    const res = unlockBadge("regional-foodie");
+    if (res.isNew) newlyUnlocked.push("regional-foodie");
+  }
+
+  // 7. Hydration goal
+  if (waterGlasses >= 8) {
+    const res = unlockBadge("hydration-hero");
+    if (res.isNew) newlyUnlocked.push("hydration-hero");
+  }
+
+  // 8. Recipe curator
+  if (savedRecipesCount >= 3) {
+    const res = unlockBadge("recipe-curator");
+    if (res.isNew) newlyUnlocked.push("recipe-curator");
+  }
+
+  const allBadges = getUserBadges();
+  const currentStage = calculateStage(currentStreak);
+
+  return {
+    newlyUnlocked,
+    allBadges,
+    streakDays: currentStreak,
+    stage: currentStage
+  };
 };

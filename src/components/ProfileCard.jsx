@@ -16,11 +16,16 @@ import {
   Globe,
   UtensilsCrossed,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Award,
+  Crown,
+  Zap,
+  Diamond
 } from "lucide-react";
-import { saveUserProfile, setActivePlan } from "../utils/storage";
+import { saveUserProfile, setActivePlan, getUserBadges, getStreakDays } from "../utils/storage";
 import { AVATAR_COLLECTION } from "../data/avatarsData";
 import { REGIONAL_COUNTRIES, getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
+import { BADGES_DATA, STAGES_CONFIG, calculateStage } from "../data/badgesData";
 import AvatarPickerModal from "./AvatarPickerModal";
 
 export default function ProfileCard({
@@ -50,6 +55,10 @@ export default function ProfileCard({
     profile.country || "India",
     profile.state || "Karnataka"
   );
+
+  const currentStreak = profile.streakDays || getStreakDays();
+  const currentStage = calculateStage(currentStreak);
+  const unlockedBadgesList = getUserBadges();
 
   const handleCountryChange = (e) => {
     const newCountry = e.target.value;
@@ -165,6 +174,23 @@ export default function ProfileCard({
                 >
                   <MapPin size={11} />
                   <span>{profile.state || "Karnataka"}, {profile.country || "India"}</span>
+                </span>
+                <span
+                  style={{
+                    background: "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)",
+                    color: "#92400E",
+                    border: "1px solid #F59E0B",
+                    borderRadius: "var(--radius-full)",
+                    padding: "0.2rem 0.65rem",
+                    fontSize: "0.74rem",
+                    fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem"
+                  }}
+                >
+                  <span>{currentStage.badgeIcon}</span>
+                  <span>{currentStage.name}</span>
                 </span>
               </div>
 
@@ -520,22 +546,13 @@ export default function ProfileCard({
         </div>
       )}
 
-      {/* Avatar Selection Modal */}
-      <AvatarPickerModal
-        isOpen={isAvatarModalOpen}
-        onClose={() => setIsAvatarModalOpen(false)}
-        currentAvatar={profile.avatar}
-        onSelectAvatar={handleAvatarSelect}
-        onShowToast={onShowToast}
-      />
-
       {/* Stats Summary Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.75rem" }}>
         <div className="widget-card" style={{ textAlign: "center", padding: "1.25rem" }}>
           <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "#FEF3C7", color: "#D97706", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.5rem" }}>
-            <Flame size={20} />
+            <Flame size={20} fill="#F59E0B" />
           </div>
-          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>{profile.streakDays || 7} Days</div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>{currentStreak} Days</div>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Active Habit Streak</div>
         </div>
 
@@ -549,10 +566,113 @@ export default function ProfileCard({
 
         <div className="widget-card" style={{ textAlign: "center", padding: "1.25rem" }}>
           <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "#FEE2E2", color: "#EF4444", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.5rem" }}>
-            <Heart size={20} />
+            <Heart size={20} fill="#EF4444" />
           </div>
           <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>{favoriteMealsCount}</div>
           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Favorite Recipes</div>
+        </div>
+
+        <div className="widget-card" style={{ textAlign: "center", padding: "1.25rem" }}>
+          <div style={{ width: "42px", height: "42px", borderRadius: "50%", background: "#FAF5FF", color: "#9333EA", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.5rem" }}>
+            <Award size={20} />
+          </div>
+          <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>{unlockedBadgesList.length}/{BADGES_DATA.length}</div>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Badges Unlocked</div>
+        </div>
+      </div>
+
+      {/* Milestones, Stages & Trophy Showcase Section */}
+      <div className="widget-card" style={{ marginBottom: "1.75rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.5rem" }}>
+          <div>
+            <h3 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
+              Milestone Badges & Stage Progression
+            </h3>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.2rem 0 0" }}>
+              Earn badges after completing each daily routine, each full week (7-day streak), and each full month (30-day streak)!
+            </p>
+          </div>
+
+          <span
+            style={{
+              background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)",
+              color: "#38BDF8",
+              border: "1.5px solid #38BDF8",
+              padding: "0.35rem 0.85rem",
+              borderRadius: "var(--radius-full)",
+              fontSize: "0.82rem",
+              fontWeight: 800,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.4rem"
+            }}
+          >
+            <span>{currentStage.badgeIcon}</span>
+            <span>Stage {currentStage.stage}: {currentStage.name}</span>
+          </span>
+        </div>
+
+        {/* 8 Badges Grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.85rem" }}>
+          {BADGES_DATA.map((badge) => {
+            const isUnlocked = unlockedBadgesList.includes(badge.id);
+            return (
+              <div
+                key={badge.id}
+                style={{
+                  background: isUnlocked ? badge.gradient : "var(--bg-card-subtle)",
+                  border: isUnlocked ? `2px solid ${badge.borderColor}` : "1px dashed var(--border-subtle)",
+                  borderRadius: "var(--radius-xl)",
+                  padding: "1rem",
+                  transition: "all 0.22s ease",
+                  position: "relative"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                  <span style={{ fontSize: "1.8rem", filter: isUnlocked ? "none" : "grayscale(100%) opacity(40%)" }}>
+                    {badge.icon}
+                  </span>
+                  {isUnlocked ? (
+                    <span
+                      style={{
+                        background: "#10B981",
+                        color: "#FFFFFF",
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "var(--radius-full)"
+                      }}
+                    >
+                      UNLOCKED
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        background: "#E2E8F0",
+                        color: "#64748B",
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "var(--radius-full)"
+                      }}
+                    >
+                      LOCKED
+                    </span>
+                  )}
+                </div>
+
+                <h4 style={{ fontSize: "0.92rem", fontWeight: 800, color: isUnlocked ? "var(--primary-900)" : "var(--text-secondary)", margin: "0 0 0.2rem" }}>
+                  {badge.title}
+                </h4>
+                <div style={{ fontSize: "0.72rem", color: isUnlocked ? "var(--primary-700)" : "var(--text-muted)", fontWeight: 600, marginBottom: "0.4rem" }}>
+                  {badge.category}
+                </div>
+                <p style={{ fontSize: "0.75rem", color: isUnlocked ? "var(--text-primary)" : "var(--text-muted)", margin: 0, lineHeight: 1.3 }}>
+                  {badge.criteria}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -619,6 +739,15 @@ export default function ProfileCard({
           </div>
         )}
       </div>
+
+      {/* Avatar Selection Modal */}
+      <AvatarPickerModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        currentAvatar={profile.avatar}
+        onSelectAvatar={handleAvatarSelect}
+        onShowToast={onShowToast}
+      />
     </div>
   );
 }

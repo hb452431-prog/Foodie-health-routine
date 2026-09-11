@@ -132,7 +132,16 @@ export default function MyPlanView({
     if (onToggleMealCompleted) onToggleMealCompleted(mealId);
     const isNowDone = !completedMealsList.includes(mealId);
     if (onShowToast) {
-      onShowToast(isNowDone ? `✅ Completed ${mealTitle}!` : `Unchecked ${mealTitle}`);
+      if (isNowDone) {
+        const nextCount = completedMealsList.length + 1;
+        if (nextCount >= safeDailyTimeline.length) {
+          onShowToast(`🎉 All ${safeDailyTimeline.length} meals completed today! Daily Routine Master badge unlocked!`);
+        } else {
+          onShowToast(`✅ Completed ${mealTitle}! (${nextCount}/${safeDailyTimeline.length} meals done)`);
+        }
+      } else {
+        onShowToast(`Unchecked ${mealTitle}`);
+      }
     }
   };
 
