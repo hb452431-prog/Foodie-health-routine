@@ -9,7 +9,8 @@ export default function ProfileView({
   favoriteMeals,
   onShowToast,
   onSelectRoutine,
-  onOpenPlanWizard
+  onOpenPlanWizard,
+  onApplyPlan
 }) {
   const savedRoutinesList = ROUTINES_DATA.filter((r) => savedRoutines.includes(r.id));
 
@@ -34,6 +35,7 @@ export default function ProfileView({
           onSelectRoutine={onSelectRoutine}
           savedRoutinesList={savedRoutinesList}
           onOpenPlanWizard={onOpenPlanWizard}
+          onApplyPlan={onApplyPlan}
         />
       </div>
     </div>

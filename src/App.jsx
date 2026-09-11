@@ -222,6 +222,12 @@ export default function App() {
     showToast("✨ Your custom nutrition routine is now active!");
   };
 
+  const handleApplyPlan = (newPlan) => {
+    setActivePlan(newPlan);
+    setActivePlanState(newPlan);
+    showToast(`✨ Active routine updated to "${newPlan.title || "Custom Plan"}"!`);
+  };
+
   return (
     <div className="app-wrapper">
       {/* Desktop Header */}
@@ -265,11 +271,13 @@ export default function App() {
         {activeTab === "my-plan" && (
           <MyPlanView
             activePlan={activePlan}
+            userProfile={userProfile}
             onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
             onOpenRecipe={handleOpenRecipe}
             onOpenYouTube={handleOpenYouTube}
             onOpenOrder={handleOpenOrder}
             onShareRoutine={handleOpenShare}
+            onApplyPlan={handleApplyPlan}
             waterGlasses={waterGlasses}
             onUpdateWater={handleUpdateWater}
             completedMealsData={completedMealsData}
@@ -291,6 +299,7 @@ export default function App() {
             onShowToast={showToast}
             onSelectRoutine={handleSelectRoutine}
             onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onApplyPlan={handleApplyPlan}
           />
         )}
       </main>

@@ -1,7 +1,26 @@
 import React, { useState } from "react";
-import { User, Mail, Target, Salad, Activity, Flame, Heart, Sparkles, Check, Edit2, Camera, UserCheck } from "lucide-react";
-import { saveUserProfile } from "../utils/storage";
+import {
+  User,
+  Mail,
+  Target,
+  Salad,
+  Activity,
+  Flame,
+  Heart,
+  Sparkles,
+  Check,
+  Edit2,
+  Camera,
+  UserCheck,
+  MapPin,
+  Globe,
+  UtensilsCrossed,
+  ArrowRight,
+  ShieldCheck
+} from "lucide-react";
+import { saveUserProfile, setActivePlan } from "../utils/storage";
 import { AVATAR_COLLECTION } from "../data/avatarsData";
+import { REGIONAL_COUNTRIES, getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
 import AvatarPickerModal from "./AvatarPickerModal";
 
 export default function ProfileCard({
@@ -12,11 +31,36 @@ export default function ProfileCard({
   onShowToast,
   onSelectRoutine,
   savedRoutinesList,
-  onOpenPlanWizard
+  onOpenPlanWizard,
+  onApplyPlan
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ ...profile });
+  const [formData, setFormData] = useState({
+    ...profile,
+    country: profile.country || "India",
+    state: profile.state || "Karnataka"
+  });
+
+  const selectedCountryObj = REGIONAL_COUNTRIES.find(
+    (c) => c.name.toLowerCase() === (formData.country || "").toLowerCase()
+  ) || REGIONAL_COUNTRIES[0];
+
+  const regionalRoutine = getRegionalRoutineForLocation(
+    profile.country || "India",
+    profile.state || "Karnataka"
+  );
+
+  const handleCountryChange = (e) => {
+    const newCountry = e.target.value;
+    const countryObj = REGIONAL_COUNTRIES.find((c) => c.name === newCountry) || REGIONAL_COUNTRIES[0];
+    const defaultState = countryObj.states[0]?.name || "";
+    setFormData({
+      ...formData,
+      country: newCountry,
+      state: defaultState
+    });
+  };
 
   const handleAvatarSelect = (newAvatarUrl) => {
     const updated = { ...profile, ...formData, avatar: newAvatarUrl };
@@ -30,7 +74,21 @@ export default function ProfileCard({
     onProfileUpdate(formData);
     saveUserProfile(formData);
     setIsEditing(false);
-    onShowToast("Profile preferences updated!");
+    if (onShowToast) {
+      onShowToast(`✅ Location set to ${formData.state}, ${formData.country}! Food routines customized.`);
+    }
+  };
+
+  const handleApplyRegionalPlan = () => {
+    if (regionalRoutine) {
+      setActivePlan(regionalRoutine);
+      if (onApplyPlan) {
+        onApplyPlan(regionalRoutine);
+      }
+      if (onShowToast) {
+        onShowToast(`🎉 Applied ${regionalRoutine.title} to My Plan!`);
+      }
+    }
   };
 
   return (
@@ -46,7 +104,7 @@ export default function ProfileCard({
             gap: "1.5rem"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
             {/* Interactive Avatar Container */}
             <div
               style={{ position: "relative", cursor: "pointer" }}
@@ -89,17 +147,33 @@ export default function ProfileCard({
             </div>
 
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
                   {profile.name}
                 </h2>
                 <span className="badge badge-green">Active Member</span>
+                <span
+                  className="badge"
+                  style={{
+                    background: "rgba(2, 132, 199, 0.12)",
+                    color: "#0284C7",
+                    border: "1px solid rgba(2, 132, 199, 0.25)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem"
+                  }}
+                >
+                  <MapPin size={11} />
+                  <span>{profile.state || "Karnataka"}, {profile.country || "India"}</span>
+                </span>
               </div>
-              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+
+              <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.3rem", marginTop: "0.25rem" }}>
                 <Mail size={14} />
                 <span>{profile.email}</span>
               </p>
-              <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.4rem", flexWrap: "wrap", alignItems: "center" }}>
+
+              <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.45rem", flexWrap: "wrap", alignItems: "center" }}>
                 <span className="badge badge-amber">🎯 {profile.goal}</span>
                 <span className="badge badge-blue">🥗 {profile.dietPreference}</span>
                 <button
@@ -132,7 +206,7 @@ export default function ProfileCard({
               onClick={() => setIsEditing(!isEditing)}
             >
               <Edit2 size={14} />
-              <span>{isEditing ? "Cancel" : "Edit Preferences"}</span>
+              <span>{isEditing ? "Cancel" : "Edit Profile & Location"}</span>
             </button>
           </div>
         </div>
@@ -141,14 +215,14 @@ export default function ProfileCard({
         {isEditing && (
           <form onSubmit={handleSave} style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--border-subtle)" }}>
             <h4 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "1rem", color: "var(--primary-900)" }}>
-              Update Wellness & Diet Preferences
+              Update Profile, Country & Regional Cuisine Preferences
             </h4>
 
             {/* Quick Avatar Row */}
             <div style={{ marginBottom: "1.25rem", padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
                 <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--primary-900)", margin: 0 }}>
-                  Choose Your Snapchat Bitmoji Avatar
+                  Choose Your Profile Avatar
                 </label>
                 <button
                   type="button"
@@ -176,7 +250,7 @@ export default function ProfileCard({
                         cursor: "pointer",
                         flexShrink: 0
                       }}
-                      title={`${av.name} (${av.gender === "boy" ? "Boy" : "Girl"}) - ${av.tag}`}
+                      title={`${av.name} - ${av.tag}`}
                     >
                       <img
                         src={av.url}
@@ -216,22 +290,73 @@ export default function ProfileCard({
               </div>
             </div>
 
+            {/* Inputs Grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1.25rem" }}>
               <div>
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
-                  Your Name
+                  Your Full Name
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}
+                  required
                 />
               </div>
 
               <div>
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
-                  Primary Goal
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}
+                  required
+                />
+              </div>
+
+              {/* Country Selection */}
+              <div>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
+                  Country
+                </label>
+                <select
+                  value={formData.country}
+                  onChange={handleCountryChange}
+                  style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}
+                >
+                  {REGIONAL_COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.emoji} {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* State Selection */}
+              <div>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
+                  State / Province / Region
+                </label>
+                <select
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  style={{ width: "100%", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)" }}
+                >
+                  {selectedCountryObj.states.map((st) => (
+                    <option key={st.id} value={st.name}>
+                      {st.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
+                  Primary Health Goal
                 </label>
                 <select
                   value={formData.goal}
@@ -248,7 +373,7 @@ export default function ProfileCard({
 
               <div>
                 <label style={{ fontSize: "0.82rem", fontWeight: 600, display: "block", marginBottom: "0.3rem" }}>
-                  Diet Preference
+                  Dietary Preference
                 </label>
                 <select
                   value={formData.dietPreference}
@@ -263,13 +388,137 @@ export default function ProfileCard({
               </div>
             </div>
 
+            {/* Regional Cuisine Preview Info Box */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)",
+                border: "1px solid #86EFAC",
+                borderRadius: "var(--radius-lg)",
+                padding: "0.85rem 1rem",
+                marginBottom: "1.25rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem"
+              }}
+            >
+              <span style={{ fontSize: "1.5rem" }}>📍</span>
+              <div>
+                <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "#14532D" }}>
+                  Matched Regional Cuisine for {formData.state}, {formData.country}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "#15803D" }}>
+                  Your daily meal timelines, recipe ingredients, and ordering links will automatically adapt to traditional {formData.state} dishes!
+                </div>
+              </div>
+            </div>
+
             <button type="submit" className="btn btn-primary btn-sm">
               <Check size={14} />
-              <span>Save Preferences</span>
+              <span>Save & Update Profile</span>
             </button>
           </form>
         )}
       </div>
+
+      {/* Regional Cuisine Recommendation Card */}
+      {regionalRoutine && (
+        <div
+          className="widget-card"
+          style={{
+            background: "linear-gradient(135deg, #0F382A 0%, #14532D 100%)",
+            color: "#FFFFFF",
+            marginBottom: "1.75rem",
+            position: "relative",
+            overflow: "hidden"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              gap: "1.5rem"
+            }}
+          >
+            <div style={{ maxWidth: "560px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <span className="badge" style={{ background: "rgba(16, 185, 129, 0.25)", color: "#86EFAC", border: "1px solid rgba(16, 185, 129, 0.4)" }}>
+                  📍 {profile.state || "Karnataka"}, {profile.country || "India"} Heritage Food Routine
+                </span>
+                <span className="badge" style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF" }}>
+                  {regionalRoutine.calories} kcal • 6 Meals
+                </span>
+              </div>
+
+              <h3 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.4rem" }}>
+                {regionalRoutine.title}
+              </h3>
+              <p style={{ fontSize: "0.85rem", color: "#E2E8F0", marginBottom: "1rem" }}>
+                {regionalRoutine.subtitle}
+              </p>
+
+              {/* Sample Dish Badges */}
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
+                {regionalRoutine.dailyTimeline?.map((m) => (
+                  <span
+                    key={m.id}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.12)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: "var(--radius-full)",
+                      padding: "0.25rem 0.65rem",
+                      fontSize: "0.75rem",
+                      color: "#FFFFFF"
+                    }}
+                  >
+                    {m.emoji} {m.title.split("with")[0].split("(")[0]}
+                  </span>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                <button
+                  className="btn btn-accent btn-sm"
+                  onClick={handleApplyRegionalPlan}
+                  style={{ boxShadow: "0 4px 14px rgba(245, 158, 11, 0.4)" }}
+                >
+                  <Sparkles size={15} />
+                  <span>Apply {profile.state || "Karnataka"} Plan to My Routine</span>
+                </button>
+
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => onSelectRoutine && onSelectRoutine(regionalRoutine.id)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.15)",
+                    color: "#FFFFFF",
+                    border: "1px solid rgba(255, 255, 255, 0.25)"
+                  }}
+                >
+                  <span>View All 6 Recipes</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+
+            {regionalRoutine.image && (
+              <img
+                src={regionalRoutine.image}
+                alt={regionalRoutine.title}
+                style={{
+                  width: "160px",
+                  height: "160px",
+                  borderRadius: "var(--radius-xl)",
+                  objectFit: "cover",
+                  border: "2px solid rgba(255, 255, 255, 0.2)",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)"
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Avatar Selection Modal */}
       <AvatarPickerModal
@@ -309,8 +558,8 @@ export default function ProfileCard({
 
       {/* Saved Routines Collection */}
       <div className="widget-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+          <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
             My Saved Routines
           </h3>
           <button
@@ -335,7 +584,8 @@ export default function ProfileCard({
                   background: "var(--bg-card-subtle)",
                   borderRadius: "var(--radius-lg)",
                   border: "1px solid var(--border-subtle)",
-                  gap: "1rem"
+                  gap: "1rem",
+                  flexWrap: "wrap"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
@@ -345,11 +595,11 @@ export default function ProfileCard({
                     style={{ width: "48px", height: "48px", borderRadius: "var(--radius-md)", objectFit: "cover" }}
                   />
                   <div>
-                    <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    <h4 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 0.2rem" }}>
                       {routine.title}
                     </h4>
                     <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      {routine.category} • {routine.calories} kcal • {routine.mealsCount} meals
+                      {routine.category} • {routine.calories} kcal • {routine.mealsCount || 6} meals
                     </div>
                   </div>
                 </div>

@@ -14,6 +14,8 @@ import { DEFAULT_AVATAR } from "../data/avatarsData";
 export const DEFAULT_USER_PROFILE = {
   name: "Harsha",
   email: "harsha.wellness@example.com",
+  country: "India",
+  state: "Karnataka",
   avatar: DEFAULT_AVATAR,
   goal: "Healthy Lifestyle & Metabolic Energy",
   dietPreference: "Vegetarian",
@@ -42,7 +44,15 @@ export const setStoredItem = (key, value) => {
   }
 };
 
-export const getUserProfile = () => getStoredItem(KEYS.USER_PROFILE, DEFAULT_USER_PROFILE);
+export const getUserProfile = () => {
+  const profile = getStoredItem(KEYS.USER_PROFILE, DEFAULT_USER_PROFILE);
+  return {
+    ...DEFAULT_USER_PROFILE,
+    ...profile,
+    country: profile.country || DEFAULT_USER_PROFILE.country,
+    state: profile.state || DEFAULT_USER_PROFILE.state
+  };
+};
 export const saveUserProfile = (profile) => setStoredItem(KEYS.USER_PROFILE, profile);
 
 export const getSavedRoutines = () => getStoredItem(KEYS.SAVED_ROUTINES, ["diabetes-friendly", "gym-beginner"]);

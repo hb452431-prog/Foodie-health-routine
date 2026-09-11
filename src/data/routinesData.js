@@ -1,4 +1,6 @@
-export const ROUTINES_DATA = [
+import { REGIONAL_ROUTINES_MAP } from "./regionalCuisinesData";
+
+export const BASE_ROUTINES_DATA = [
   {
     id: "diabetes-friendly",
     slug: "diabetes-friendly",
@@ -1386,6 +1388,12 @@ export const ROUTINES_DATA = [
       }
     ]
   }
+];
+
+// Merged global list with all standard routines and rich regional & western routines
+export const ROUTINES_DATA = [
+  ...BASE_ROUTINES_DATA,
+  ...Object.values(REGIONAL_ROUTINES_MAP)
 ];
 
 // Helper lookup methods
