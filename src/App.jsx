@@ -331,6 +331,7 @@ export default function App() {
       {selectedRoutine && (
         <RoutineDetailModal
           routine={selectedRoutine}
+          userProfile={userProfile}
           onClose={() => setSelectedRoutine(null)}
           onOpenRecipe={handleOpenRecipe}
           onOpenYouTube={handleOpenYouTube}

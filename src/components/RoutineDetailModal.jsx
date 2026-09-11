@@ -1,9 +1,24 @@
-import React, { useEffect } from "react";
-import { X, Clock, Flame, Utensils, Heart, ShoppingBag, ShieldAlert, CheckCircle, Share2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  X,
+  Clock,
+  Flame,
+  Utensils,
+  Heart,
+  ShoppingBag,
+  ShieldAlert,
+  CheckCircle,
+  Share2,
+  MapPin,
+  Globe,
+  Sparkles
+} from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import { getAdaptedRoutineForLocation } from "../data/regionalCuisinesData";
 
 export default function RoutineDetailModal({
   routine,
+  userProfile,
   onClose,
   onOpenRecipe,
   onOpenYouTube,
@@ -15,6 +30,8 @@ export default function RoutineDetailModal({
   onToggleSaveRoutine,
   onShowToast
 }) {
+  const [cuisineMode, setCuisineMode] = useState("regional"); // "regional" | "global"
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
@@ -25,9 +42,20 @@ export default function RoutineDetailModal({
 
   if (!routine) return null;
 
+  const userCountry = userProfile?.country || "India";
+  const userState = userProfile?.state || "Karnataka";
+
+  // Compute location-adapted version of this health routine
+  const displayedRoutine = getAdaptedRoutineForLocation(
+    routine,
+    userCountry,
+    userState,
+    cuisineMode
+  ) || routine;
+
   const handleShare = () => {
     if (onOpenShare) {
-      onOpenShare(routine);
+      onOpenShare(displayedRoutine);
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       onShowToast("Routine link copied to clipboard!");
@@ -42,8 +70,8 @@ export default function RoutineDetailModal({
         {/* Header with Background Image and Gradient Overlay */}
         <div className="detail-modal-header">
           <img
-            src={routine.image}
-            alt={routine.title}
+            src={displayedRoutine.image || routine.image}
+            alt={displayedRoutine.title}
             className="detail-header-img"
           />
           <button
@@ -56,14 +84,18 @@ export default function RoutineDetailModal({
 
           <div className="detail-header-overlay">
             <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
-              <span className="badge badge-green">{routine.category}</span>
-              <span className="badge badge-amber">{routine.badge}</span>
+              <span className="badge badge-green">{displayedRoutine.category}</span>
+              <span className="badge badge-amber">{displayedRoutine.badge || routine.badge}</span>
+              <span className="badge badge-blue" style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                <MapPin size={11} />
+                <span>{userState}, {userCountry}</span>
+              </span>
             </div>
             <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.3rem" }}>
-              {routine.title}
+              {displayedRoutine.title}
             </h2>
             <p style={{ fontSize: "0.9rem", color: "#E2E8F0", maxWidth: "600px" }}>
-              {routine.subtitle || routine.description}
+              {displayedRoutine.subtitle || displayedRoutine.description}
             </p>
           </div>
         </div>
@@ -80,21 +112,21 @@ export default function RoutineDetailModal({
               gap: "1rem",
               paddingBottom: "1.25rem",
               borderBottom: "1px solid var(--border-subtle)",
-              marginBottom: "1.5rem"
+              marginBottom: "1.25rem"
             }}
           >
             <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
               <div style={{ background: "var(--bg-card-subtle)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
-                <strong>{routine.calories}</strong> <span style={{ color: "var(--text-muted)" }}>Total kcal</span>
+                <strong>{displayedRoutine.calories}</strong> <span style={{ color: "var(--text-muted)" }}>Total kcal</span>
               </div>
               <div style={{ background: "var(--bg-card-subtle)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
-                <strong>{routine.protein}g</strong> <span style={{ color: "var(--text-muted)" }}>Protein</span>
+                <strong>{displayedRoutine.protein}g</strong> <span style={{ color: "var(--text-muted)" }}>Protein</span>
               </div>
               <div style={{ background: "var(--bg-card-subtle)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
-                <strong>{routine.carbs}g</strong> <span style={{ color: "var(--text-muted)" }}>Carbs</span>
+                <strong>{displayedRoutine.carbs}g</strong> <span style={{ color: "var(--text-muted)" }}>Carbs</span>
               </div>
               <div style={{ background: "var(--bg-card-subtle)", padding: "0.4rem 0.8rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem" }}>
-                <strong>{routine.fat}g</strong> <span style={{ color: "var(--text-muted)" }}>Fats</span>
+                <strong>{displayedRoutine.fat}g</strong> <span style={{ color: "var(--text-muted)" }}>Fats</span>
               </div>
             </div>
 
@@ -104,7 +136,7 @@ export default function RoutineDetailModal({
                 onClick={() => onToggleSaveRoutine(routine.id)}
               >
                 <Heart size={15} fill={isSavedRoutine ? "#FFFFFF" : "none"} />
-                <span>{isSavedRoutine ? "Saved in My Plan" : "Save Routine"}</span>
+                <span>{isSavedRoutine ? "Saved in My Library" : "Save Routine"}</span>
               </button>
 
               <button
@@ -114,6 +146,69 @@ export default function RoutineDetailModal({
               >
                 <Share2 size={15} />
                 <span>Share</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Location-Aware Regional vs Global Dishes Toggle */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #F0FDF4 0%, #ECFDF5 100%)",
+              border: "1.5px solid #86EFAC",
+              borderRadius: "var(--radius-lg)",
+              padding: "0.85rem 1rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.75rem"
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 800, color: "#14532D", fontSize: "0.9rem" }}>
+                <Sparkles size={16} color="#059669" />
+                <span>Cultural Cuisine Adaptation ({userState}, {userCountry})</span>
+              </div>
+              <p style={{ fontSize: "0.78rem", color: "#15803D", margin: "0.15rem 0 0" }}>
+                Showing healthy {cuisineMode === "regional" ? `traditional ${userState} dishes` : "standard / Western dishes"} tailored for this routine.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.35rem", background: "#FFFFFF", padding: "0.25rem", borderRadius: "var(--radius-full)", border: "1px solid #BAE6FD" }}>
+              <button
+                type="button"
+                onClick={() => setCuisineMode("regional")}
+                style={{
+                  padding: "0.3rem 0.75rem",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  background: cuisineMode === "regional" ? "#059669" : "transparent",
+                  color: cuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                📍 {userState} Dishes
+              </button>
+              <button
+                type="button"
+                onClick={() => setCuisineMode("global")}
+                style={{
+                  padding: "0.3rem 0.75rem",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  background: cuisineMode === "global" ? "#0F382A" : "transparent",
+                  color: cuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)",
+                  transition: "all 0.15s ease"
+                }}
+              >
+                🌎 Western / Global
               </button>
             </div>
           </div>
@@ -141,23 +236,26 @@ export default function RoutineDetailModal({
             </div>
           </div>
 
-          <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.5rem" }}>
-            Daily Meal Timeline
+          <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.4rem" }}>
+            Daily Meal Timeline ({displayedRoutine.dailyTimeline?.length || 6} Meals)
           </h3>
-          <p style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
-            Follow this structured timeline throughout your day for peak metabolic response and energy.
+          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1.5rem" }}>
+            Follow this structured timeline throughout your day for peak metabolic response, steady energy, and health goal satisfaction.
           </p>
 
           {/* Daily Timeline */}
           <div className="timeline-container">
-            {routine.dailyTimeline && routine.dailyTimeline.map((meal) => {
+            {displayedRoutine.dailyTimeline && displayedRoutine.dailyTimeline.map((meal) => {
               const isFav = favoriteMeals.includes(meal.id);
+              const dishName = meal.orderQuery || meal.title;
+              const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dishName)}`;
+              const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(dishName)}`;
 
               return (
                 <div key={meal.id} className="timeline-slot">
                   {/* Timeline Node */}
                   <div className="timeline-dot">
-                    <span>{meal.emoji}</span>
+                    <span>{meal.emoji || "🥗"}</span>
                   </div>
 
                   {/* Slot Time Header */}
@@ -168,12 +266,14 @@ export default function RoutineDetailModal({
                   {/* Meal Card */}
                   <div className="meal-card-timeline">
                     <div className="meal-card-top">
-                      <img
-                        src={meal.image}
-                        alt={meal.title}
-                        className="meal-img-timeline"
-                        loading="lazy"
-                      />
+                      {meal.image && (
+                        <img
+                          src={meal.image}
+                          alt={meal.title}
+                          className="meal-img-timeline"
+                          loading="lazy"
+                        />
+                      )}
                       <div className="meal-card-content">
                         <div>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", marginBottom: "0.25rem" }}>
@@ -198,75 +298,123 @@ export default function RoutineDetailModal({
                                   display: "inline-block"
                                 }}
                               />
-                              {meal.dietType || (meal.isVeg ? "Vegetarian" : "Non-Veg")}
+                              <span>{meal.dietType || (meal.isVeg ? "Veg" : "Non-Veg")}</span>
                             </span>
 
                             <button
                               onClick={() => onToggleFavoriteMeal(meal.id)}
-                              style={{
-                                color: isFav ? "#EF4444" : "var(--text-muted)",
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "0.2rem"
-                              }}
-                              title={isFav ? "Saved in favorite meals" : "Save meal to favorites"}
+                              className={`fav-btn ${isFav ? "active" : ""}`}
+                              title={isFav ? "Remove from favorite recipes" : "Add to favorite recipes"}
+                              style={{ background: "none", border: "none", cursor: "pointer", padding: "0.2rem" }}
                             >
-                              <Heart size={18} fill={isFav ? "#EF4444" : "none"} />
+                              <Heart size={17} fill={isFav ? "#EF4444" : "none"} color={isFav ? "#EF4444" : "var(--text-muted)"} />
                             </button>
                           </div>
 
-                          <h4 className="meal-title">{meal.title}</h4>
-                          <p className="meal-desc">{meal.description}</p>
+                          <h4 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "0.35rem" }}>
+                            {meal.title}
+                          </h4>
+                          <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "0.75rem", lineHeight: 1.45 }}>
+                            {meal.description}
+                          </p>
                         </div>
 
-                        {/* Nutrition Pills */}
-                        <div className="meal-pill-group">
-                          <span style={{ color: "var(--primary-800)", background: "#ECFDF5", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                        {/* Nutrition Macros Pill Bar */}
+                        <div className="meal-macros-row">
+                          <span className="macro-pill">
                             🔥 {meal.calories} kcal
                           </span>
-                          <span style={{ color: "#0369A1", background: "#F0F9FF", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                          <span className="macro-pill">
                             🍗 {meal.protein}g protein
                           </span>
-                          <span style={{ color: "#B45309", background: "#FEF3C7", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                          <span className="macro-pill">
                             🌾 {meal.carbs}g carbs
                           </span>
-                          <span style={{ color: "var(--text-muted)", background: "var(--bg-card-subtle)", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
-                            ⏱️ {meal.prepTime}
+                          <span className="macro-pill">
+                            🥑 {meal.fat}g fat
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Meal Actions Row */}
-                    <div className="meal-actions-row">
-                      <div className="meal-actions-left">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={() => onOpenRecipe(meal, routine)}
-                        >
-                          <Utensils size={14} />
-                          <span>View Recipe</span>
-                        </button>
+                    {/* Meal Card Actions (Recipe, YouTube, Swiggy, Zomato) */}
+                    <div className="meal-card-actions">
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => onOpenRecipe(meal, displayedRoutine)}
+                      >
+                        <Utensils size={14} />
+                        <span>View Recipe</span>
+                      </button>
 
+                      {onOpenYouTube && (
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => onOpenYouTube(meal)}
-                          style={{ color: "#DC2626" }}
+                          style={{ color: "#DC2626", background: "#FEF2F2", border: "1px solid #FECACA" }}
+                          title="Watch video preparation guides"
                         >
-                          <YouTubeIcon size={15} color="#DC2626" />
+                          <YouTubeIcon size={14} color="#DC2626" fill={true} />
                           <span>Watch Video</span>
                         </button>
-                      </div>
+                      )}
 
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => onOpenOrder(meal)}
-                        style={{ color: "#D97706" }}
+                      {onOpenOrder && (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => onOpenOrder(meal)}
+                          style={{ color: "#D97706", background: "#FFFBEB", border: "1px solid #FDE68A" }}
+                          title="Order food delivery"
+                        >
+                          <ShoppingBag size={14} />
+                          <span>Order Food</span>
+                        </button>
+                      )}
+
+                      {/* Direct Swiggy & Zomato Quick Delivery Pills */}
+                      <a
+                        href={swiggyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          padding: "0.35rem 0.65rem",
+                          borderRadius: "var(--radius-full)",
+                          background: "rgba(252, 128, 25, 0.1)",
+                          color: "#C2410C",
+                          border: "1px solid rgba(252, 128, 25, 0.25)",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          textDecoration: "none"
+                        }}
+                        title={`Search "${dishName}" on Swiggy`}
                       >
-                        <ShoppingBag size={14} />
-                        <span>Order Food</span>
-                      </button>
+                        <span>🛵 Swiggy</span>
+                      </a>
+
+                      <a
+                        href={zomatoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          padding: "0.35rem 0.65rem",
+                          borderRadius: "var(--radius-full)",
+                          background: "rgba(226, 55, 68, 0.1)",
+                          color: "#B91C1C",
+                          border: "1px solid rgba(226, 55, 68, 0.25)",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          textDecoration: "none"
+                        }}
+                        title={`Search "${dishName}" on Zomato`}
+                      >
+                        <span>🍴 Zomato</span>
+                      </a>
                     </div>
                   </div>
                 </div>

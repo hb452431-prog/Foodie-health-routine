@@ -3,7 +3,7 @@ import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import YouTubeIcon from "../components/YouTubeIcon";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
-import { getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
+import { getRegionalRoutineForLocation, getAdaptedRoutineForLocation } from "../data/regionalCuisinesData";
 import {
   Sparkles,
   CheckCircle2,
@@ -43,6 +43,7 @@ export default function MyPlanView({
 }) {
   // Live Real-Time Clock & Date State
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [planCuisineMode, setPlanCuisineMode] = useState("regional"); // "regional" | "global"
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -106,7 +107,16 @@ export default function MyPlanView({
   const userCountry = userProfile?.country || "India";
   const userState = userProfile?.state || "Karnataka";
   const regionalRoutine = getRegionalRoutineForLocation(userCountry, userState);
-  const isCurrentlyRegional = routine.id === regionalRoutine?.id || routine.slug === regionalRoutine?.slug;
+  
+  // Adapted routine based on selected cuisine mode
+  const displayedRoutine = getAdaptedRoutineForLocation(
+    routine,
+    userCountry,
+    userState,
+    planCuisineMode
+  ) || routine;
+
+  const isCurrentlyRegional = planCuisineMode === "regional" || displayedRoutine.isRegionalAdapted;
 
   const completedMealsList =
     completedMealsData && Array.isArray(completedMealsData.meals)
@@ -129,9 +139,9 @@ export default function MyPlanView({
     if (onToggleFavoriteMeal) onToggleFavoriteMeal(mealId);
   };
 
-  const safeDailyTimeline = Array.isArray(routine.dailyTimeline)
-    ? routine.dailyTimeline
-    : ROUTINES_DATA[0].dailyTimeline;
+  const safeDailyTimeline = Array.isArray(displayedRoutine.dailyTimeline)
+    ? displayedRoutine.dailyTimeline
+    : (routine.dailyTimeline || ROUTINES_DATA[0].dailyTimeline);
 
   return (
     <div style={{ padding: "2rem 0 4rem" }}>
@@ -162,10 +172,10 @@ export default function MyPlanView({
                   border: "1px solid rgba(16, 185, 129, 0.4)"
                 }}
               >
-                {routine.isCustom ? "✨ Custom Active Routine" : isCurrentlyRegional ? `📍 ${userState} Heritage Routine` : "⭐ Standard Active Routine"}
+                {displayedRoutine.isCustom ? "✨ Custom Active Routine" : isCurrentlyRegional ? `📍 ${userState} Heritage Routine` : "⭐ Standard Active Routine"}
               </span>
               <span className="badge" style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF" }}>
-                {routine.category || "Health & Wellness"}
+                {displayedRoutine.category || "Health & Wellness"}
               </span>
               <span className="badge" style={{ background: "rgba(2, 132, 199, 0.2)", color: "#7DD3FC", border: "1px solid rgba(56, 189, 248, 0.3)" }}>
                 📍 {userState}, {userCountry}
@@ -173,10 +183,10 @@ export default function MyPlanView({
             </div>
 
             <h1 style={{ fontSize: "1.9rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.3rem" }}>
-              {routine.title || "My Daily Nutrition Plan"}
+              {displayedRoutine.title || "My Daily Nutrition Plan"}
             </h1>
             <p style={{ color: "#E2E8F0", fontSize: "0.9rem", maxWidth: "600px", marginBottom: "0.75rem" }}>
-              {routine.subtitle || routine.description || "Personalized daily food routine for health and vitality."}
+              {displayedRoutine.subtitle || displayedRoutine.description || "Personalized daily food routine for health and vitality."}
             </p>
 
             {/* Live Real-Time Date & Clock Bar */}
@@ -219,7 +229,7 @@ export default function MyPlanView({
             {onShareRoutine && (
               <button
                 className="btn btn-secondary btn-sm"
-                onClick={() => onShareRoutine(routine)}
+                onClick={() => onShareRoutine(displayedRoutine)}
                 style={{
                   background: "#25D366",
                   color: "#FFFFFF",
@@ -235,7 +245,7 @@ export default function MyPlanView({
 
             <button
               className="btn btn-secondary btn-sm"
-              onClick={() => onSelectRoutine && onSelectRoutine(routine.id || "diabetes-friendly")}
+              onClick={() => onSelectRoutine && onSelectRoutine(displayedRoutine.id || routine.id || "diabetes-friendly")}
               style={{
                 background: "rgba(255,255,255,0.15)",
                 color: "#FFFFFF",
@@ -247,77 +257,93 @@ export default function MyPlanView({
           </div>
         </div>
 
-        {/* Location & Regional Cuisine Adaptive Switcher Bar */}
-        {regionalRoutine && !isCurrentlyRegional && (
+        {/* Location-Aware Cuisine Dishes Switcher Bar */}
+        <div
+          style={{
+            background: planCuisineMode === "regional" 
+              ? "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)" 
+              : "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+            border: planCuisineMode === "regional" ? "1.5px solid #6EE7B7" : "1.5px solid #93C5FD",
+            borderRadius: "var(--radius-xl)",
+            padding: "0.9rem 1.25rem",
+            marginBottom: "1.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "1rem",
+            boxShadow: "var(--shadow-xs)",
+            transition: "all 0.25s ease"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.5rem" }}>{planCuisineMode === "regional" ? "📍" : "🌎"}</span>
+            <div>
+              <div style={{ fontSize: "0.92rem", fontWeight: 800, color: planCuisineMode === "regional" ? "#065F46" : "#1E40AF" }}>
+                {planCuisineMode === "regional"
+                  ? `Showing Authentic Healthy ${userState} Dishes for ${routine.badge || "this Health Plan"}`
+                  : `Showing Western & Global Dishes for ${routine.badge || "this Health Plan"}`}
+              </div>
+              <div style={{ fontSize: "0.8rem", color: planCuisineMode === "regional" ? "#047857" : "#3B82F6" }}>
+                {planCuisineMode === "regional"
+                  ? `Featuring authentic ${userState} low-GI / nutrient-dense dishes tailored for ${routine.title}`
+                  : `Featuring standard international whole-food recipes tailored for ${routine.title}`}
+              </div>
+            </div>
+          </div>
+
           <div
             style={{
-              background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
-              border: "1.5px solid #6EE7B7",
-              borderRadius: "var(--radius-xl)",
-              padding: "1rem 1.25rem",
-              marginBottom: "1.5rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "1rem",
+              display: "inline-flex",
+              background: "#FFFFFF",
+              padding: "0.25rem",
+              borderRadius: "var(--radius-full)",
+              border: "1px solid rgba(0,0,0,0.08)",
               boxShadow: "var(--shadow-xs)"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span style={{ fontSize: "1.6rem" }}>📍</span>
-              <div>
-                <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#065F46" }}>
-                  Regional Food Routine Available for {userState}, {userCountry}
-                </div>
-                <div style={{ fontSize: "0.82rem", color: "#047857" }}>
-                  Switch your daily routine to authentic {userState} dishes (e.g. {userState === "Karnataka" ? "Ragi Idli, Bisi Bele Bath, Hesaru Bele Kosambari, Masala Majjige, Jowar Rotti" : "traditional local dishes"}).
-                </div>
-              </div>
-            </div>
-
             <button
-              className="btn btn-primary btn-sm"
-              onClick={() => onApplyPlan && onApplyPlan(regionalRoutine)}
-              style={{ background: "#059669", color: "#FFFFFF", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              type="button"
+              onClick={() => {
+                setPlanCuisineMode("regional");
+                if (onShowToast) onShowToast(`📍 Switched to authentic ${userState} healthy dishes!`);
+              }}
+              style={{
+                padding: "0.35rem 0.85rem",
+                borderRadius: "var(--radius-full)",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                border: "none",
+                cursor: "pointer",
+                background: planCuisineMode === "regional" ? "#059669" : "transparent",
+                color: planCuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)",
+                transition: "all 0.18s ease"
+              }}
             >
-              <Sparkles size={14} />
-              <span>Switch to {userState} Heritage Plan</span>
+              📍 {userState} Dishes
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPlanCuisineMode("global");
+                if (onShowToast) onShowToast("🌎 Switched to Western / Global healthy dishes!");
+              }}
+              style={{
+                padding: "0.35rem 0.85rem",
+                borderRadius: "var(--radius-full)",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                border: "none",
+                cursor: "pointer",
+                background: planCuisineMode === "global" ? "#2563EB" : "transparent",
+                color: planCuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)",
+                transition: "all 0.18s ease"
+              }}
+            >
+              🌎 Western / Global
             </button>
           </div>
-        )}
-
-        {isCurrentlyRegional && (
-          <div
-            style={{
-              background: "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)",
-              border: "1px solid #86EFAC",
-              borderRadius: "var(--radius-xl)",
-              padding: "0.75rem 1.25rem",
-              marginBottom: "1.5rem",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "0.75rem"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <span style={{ fontSize: "1.2rem" }}>✨</span>
-              <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#14532D" }}>
-                Active Routine is synchronized with authentic <strong>{userState}, {userCountry}</strong> regional cuisine dishes!
-              </span>
-            </div>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => onApplyPlan && onApplyPlan(ROUTINES_DATA[0])}
-              style={{ fontSize: "0.78rem" }}
-            >
-              <Globe size={13} />
-              <span>Switch to Global / Western Routine</span>
-            </button>
-          </div>
-        )}
+        </div>
 
         {/* 2-Column Dashboard Grid */}
         <div className="dashboard-grid">
@@ -393,7 +419,7 @@ export default function MyPlanView({
                         transition: "all 0.22s ease",
                         cursor: "pointer"
                       }}
-                      onClick={() => onOpenRecipe && onOpenRecipe(meal, routine)}
+                      onClick={() => onOpenRecipe && onOpenRecipe(meal, displayedRoutine)}
                       title="Click to view full recipe, YouTube guides and delivery options"
                     >
                       {/* Top Info Header */}
@@ -533,7 +559,7 @@ export default function MyPlanView({
                         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                           <button
                             className="btn btn-primary btn-sm"
-                            onClick={() => onOpenRecipe && onOpenRecipe(meal, routine)}
+                            onClick={() => onOpenRecipe && onOpenRecipe(meal, displayedRoutine)}
                             title="View full ingredient checklist and preparation steps"
                           >
                             <Utensils size={14} />
@@ -630,7 +656,7 @@ export default function MyPlanView({
 
             {/* Weekly Timetable Schedule (Auto-synced with current week) */}
             <WeeklyPlanner
-              routine={routine}
+              routine={displayedRoutine}
               onOpenRecipe={onOpenRecipe}
               onOpenYouTube={onOpenYouTube}
               onOpenOrder={onOpenOrder}
@@ -645,7 +671,7 @@ export default function MyPlanView({
               completedMealsData={completedMealsData}
               totalMealsCount={safeDailyTimeline.length}
               onToggleMealCompleted={onToggleMealCompleted}
-              routine={routine}
+              routine={displayedRoutine}
               savedRecipesCount={safeFavoriteMeals.length}
               onShowToast={onShowToast}
             />
