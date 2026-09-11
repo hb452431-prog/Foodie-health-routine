@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
-import ShoppingList from "../components/ShoppingList";
 import YouTubeIcon from "../components/YouTubeIcon";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
 import {
@@ -14,7 +13,9 @@ import {
   ShoppingBag,
   ExternalLink,
   ChevronRight,
-  Share2
+  Share2,
+  Clock,
+  Calendar
 } from "lucide-react";
 
 export default function MyPlanView({
@@ -34,6 +35,53 @@ export default function MyPlanView({
   onExploreClick,
   onSelectRoutine
 }) {
+  // Live Real-Time Clock & Date State
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Formatted date and time strings
+  const dayName = currentTime.toLocaleDateString(undefined, { weekday: "long" });
+  const fullDateStr = currentTime.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  });
+  const shortDateStr = currentTime.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+  const timeStr = currentTime.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+
+  const currentHour = currentTime.getHours();
+  let greeting = "Good Evening";
+  let greetingEmoji = "🌆";
+  if (currentHour >= 5 && currentHour < 12) {
+    greeting = "Good Morning";
+    greetingEmoji = "🌅";
+  } else if (currentHour >= 12 && currentHour < 17) {
+    greeting = "Good Afternoon";
+    greetingEmoji = "☀️";
+  } else if (currentHour >= 17 && currentHour < 21) {
+    greeting = "Good Evening";
+    greetingEmoji = "🌆";
+  } else {
+    greeting = "Good Night";
+    greetingEmoji = "🌙";
+  }
+
   // Ultra-robust routine resolution
   let routine = activePlan;
   if (typeof routine === "string") {
@@ -76,7 +124,7 @@ export default function MyPlanView({
   return (
     <div style={{ padding: "2rem 0 4rem" }}>
       <div className="container">
-        {/* Header with Active Routine Banner */}
+        {/* Header with Active Routine Banner & Live Clock */}
         <div
           style={{
             background: "linear-gradient(135deg, #0F382A 0%, #14532D 100%)",
@@ -93,7 +141,7 @@ export default function MyPlanView({
           }}
         >
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem", flexWrap: "wrap" }}>
               <span
                 className="badge"
                 style={{
@@ -109,12 +157,42 @@ export default function MyPlanView({
               </span>
             </div>
 
-            <h1 style={{ fontSize: "1.9rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.4rem" }}>
+            <h1 style={{ fontSize: "1.9rem", fontWeight: 800, color: "#FFFFFF", marginBottom: "0.3rem" }}>
               {routine.title || "My Daily Nutrition Plan"}
             </h1>
-            <p style={{ color: "#E2E8F0", fontSize: "0.9rem", maxWidth: "600px" }}>
+            <p style={{ color: "#E2E8F0", fontSize: "0.9rem", maxWidth: "600px", marginBottom: "0.75rem" }}>
               {routine.subtitle || routine.description || "Personalized daily food routine for health and vitality."}
             </p>
+
+            {/* Live Real-Time Date & Clock Bar */}
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.6rem",
+                background: "rgba(255, 255, 255, 0.12)",
+                backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255, 255, 255, 0.22)",
+                padding: "0.35rem 0.85rem",
+                borderRadius: "var(--radius-full)",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                color: "#FFFFFF",
+                flexWrap: "wrap"
+              }}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                <span className="live-pulsing-dot" />
+                <span style={{ color: "#86EFAC", fontWeight: 700 }}>{dayName}, {fullDateStr}</span>
+              </span>
+              <span style={{ opacity: 0.4 }}>•</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", color: "#FEF08A", fontFamily: "monospace", fontWeight: 700, fontSize: "0.88rem" }}>
+                <Clock size={13} />
+                <span>{timeStr}</span>
+              </span>
+              <span style={{ opacity: 0.4 }}>•</span>
+              <span>{greetingEmoji} {greeting}</span>
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -156,7 +234,7 @@ export default function MyPlanView({
 
         {/* 2-Column Dashboard Grid */}
         <div className="dashboard-grid">
-          {/* Left Column: Today's Schedule & Meal Tracker + Weekly Planner */}
+          {/* Left Column: Today's Schedule & Meal Tracker + Weekly Planner Timetable */}
           <div>
             {/* Today's Schedule Box */}
             <div className="widget-card">
@@ -165,6 +243,8 @@ export default function MyPlanView({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "0.75rem",
                   marginBottom: "1.25rem"
                 }}
               >
@@ -173,13 +253,34 @@ export default function MyPlanView({
                     Today's Routine Timeline
                   </h3>
                   <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                    Click any meal to view preparation recipe, YouTube guides, or Swiggy & Zomato ordering.
+                    Real-time meal schedule for {dayName}, {fullDateStr}. Click any meal to view recipes, YouTube guides, or order food.
                   </p>
                 </div>
 
-                <span className="badge badge-green">
-                  {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
-                </span>
+                {/* Live Date, Time & Day Tag */}
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    background: "#F0FDF4",
+                    border: "1.5px solid #86EFAC",
+                    padding: "0.4rem 0.85rem",
+                    borderRadius: "var(--radius-lg)",
+                    boxShadow: "var(--shadow-xs)"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                    <span className="live-pulsing-dot-green" />
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#065F46" }}>
+                      {shortDateStr}
+                    </span>
+                  </div>
+                  <span style={{ color: "#86EFAC" }}>|</span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#047857", fontFamily: "monospace" }}>
+                    {timeStr}
+                  </span>
+                </div>
               </div>
 
               {/* Meal Completion Cards */}
@@ -264,7 +365,7 @@ export default function MyPlanView({
                             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                               <span
                                 style={{
-                                  fontSize: "0.72rem",
+                                   fontSize: "0.72rem",
                                   fontWeight: 700,
                                   textTransform: "uppercase",
                                   color: "var(--primary-700)"
@@ -440,7 +541,7 @@ export default function MyPlanView({
               </div>
             </div>
 
-            {/* Weekly Schedule */}
+            {/* Weekly Timetable Schedule (Auto-synced with current week) */}
             <WeeklyPlanner
               routine={routine}
               onOpenRecipe={onOpenRecipe}
@@ -449,7 +550,7 @@ export default function MyPlanView({
             />
           </div>
 
-          {/* Right Column: Dashboard Widgets & Smart Shopping List */}
+          {/* Right Column: Dashboard Widgets (Hydration, Progress, Streaks) */}
           <div>
             <DashboardWidgets
               waterGlasses={waterGlasses}
@@ -461,8 +562,6 @@ export default function MyPlanView({
               savedRecipesCount={safeFavoriteMeals.length}
               onShowToast={onShowToast}
             />
-
-            <ShoppingList routine={routine} onShowToast={onShowToast} />
           </div>
         </div>
       </div>
