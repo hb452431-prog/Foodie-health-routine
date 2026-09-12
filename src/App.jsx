@@ -45,11 +45,58 @@ import {
 
 import "./App.css";
 
+// Route helper for direct URLs (/explore, /plan, /profile, /routines, /health, /fitness, etc.)
+const getTabFromPath = (path) => {
+  try {
+    const clean = (path || window.location.pathname || "").toLowerCase().replace(/^\/+|\/+$/g, "");
+    if (!clean || clean === "home") return "home";
+    if (["explore", "routines", "recipe", "recipes", "health", "fitness"].includes(clean)) return "explore";
+    if (["plan", "my-plan", "myplan"].includes(clean)) return "my-plan";
+    if (["profile", "settings"].includes(clean)) return "profile";
+    return "home";
+  } catch (e) {
+    return "home";
+  }
+};
+
 export default function App() {
-  // Navigation State
-  const [activeTab, setActiveTab] = useState("home");
+  // Navigation State with SPA direct URL support
+  const [activeTab, setActiveTab] = useState(() => getTabFromPath(window.location.pathname));
   const [exploreQuery, setExploreQuery] = useState("");
-  const [exploreCategory, setExploreCategory] = useState("all");
+  const [exploreCategory, setExploreCategory] = useState(() => {
+    try {
+      const clean = (window.location.pathname || "").toLowerCase().replace(/^\/+|\/+$/g, "");
+      if (clean === "health") return "healthy";
+      if (clean === "fitness") return "high-protein";
+      return "all";
+    } catch (e) {
+      return "all";
+    }
+  });
+
+  // Helper to change tabs and push state cleanly
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    try {
+      const targetPath = newTab === "home" ? "/" : `/${newTab}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({ tab: newTab }, "", targetPath);
+      }
+    } catch (e) {
+      // Safe fallback if history API is restricted
+    }
+  };
+
+  // Sync with browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getTabFromPath(window.location.pathname);
+      setActiveTab(tab);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   // Local Storage Synchronized States
   const [userProfile, setUserProfile] = useState(() => getUserProfile());
@@ -116,16 +163,16 @@ export default function App() {
       // 3. Number keys 1-4 to switch tabs when not typing
       if (!isInput && !isCommandPaletteOpen && !isPlanWizardOpen && !selectedRoutine && !selectedRecipeMeal) {
         if (e.key === "1") {
-          setActiveTab("home");
+          handleTabChange("home");
           showToast("🏠 Switched to Home");
         } else if (e.key === "2") {
-          setActiveTab("explore");
+          handleTabChange("explore");
           showToast("🧭 Switched to Explore");
         } else if (e.key === "3") {
-          setActiveTab("my-plan");
+          handleTabChange("my-plan");
           showToast("📅 Switched to My Plan");
         } else if (e.key === "4") {
-          setActiveTab("profile");
+          handleTabChange("profile");
           showToast("👤 Switched to Profile");
         }
       }
@@ -220,13 +267,13 @@ export default function App() {
   const handleHeroSearchSubmit = (query) => {
     setExploreQuery(query);
     setExploreCategory("all");
-    setActiveTab("explore");
+    handleTabChange("explore");
   };
 
   const handleCategorySelect = (categoryId) => {
     setExploreCategory(categoryId);
     setExploreQuery("");
-    setActiveTab("explore");
+    handleTabChange("explore");
   };
 
   const handleFilterSelect = (filterType) => {
@@ -235,14 +282,14 @@ export default function App() {
     } else if (filterType === "high-protein") {
       setExploreCategory("high-protein");
     }
-    setActiveTab("explore");
+    handleTabChange("explore");
   };
 
   const handlePlanGenerated = (customPlan) => {
     setActivePlan(customPlan);
     setActivePlanState(customPlan);
     setIsPlanWizardOpen(false);
-    setActiveTab("my-plan");
+    handleTabChange("my-plan");
     showToast("✨ Your custom nutrition routine is now active!");
   };
 
@@ -258,7 +305,7 @@ export default function App() {
         {/* Desktop Header */}
         <Navbar
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           onOpenSearch={() => setIsCommandPaletteOpen(true)}
           onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
           waterGlasses={waterGlasses}
@@ -274,7 +321,7 @@ export default function App() {
               userProfile={userProfile}
               onSearchSubmit={handleHeroSearchSubmit}
               onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-              onExploreClick={() => setActiveTab("explore")}
+              onExploreClick={() => handleTabChange("explore")}
               onSelectCategory={handleCategorySelect}
               onSelectRoutine={handleSelectRoutine}
               onOpenRecipe={handleOpenRecipe}
@@ -317,7 +364,7 @@ export default function App() {
               favoriteMeals={favoriteMeals}
               onToggleFavoriteMeal={handleToggleFavoriteMeal}
               onShowToast={showToast}
-              onExploreClick={() => setActiveTab("explore")}
+              onExploreClick={() => handleTabChange("explore")}
               onSelectRoutine={handleSelectRoutine}
             />
           )}
@@ -340,7 +387,7 @@ export default function App() {
         <CommandPalette
           isOpen={isCommandPaletteOpen}
           onClose={() => setIsCommandPaletteOpen(false)}
-          onNavigateTab={setActiveTab}
+          onNavigateTab={handleTabChange}
           onSelectRoutine={handleSelectRoutine}
           onOpenRecipe={handleOpenRecipe}
           onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
@@ -436,12 +483,12 @@ export default function App() {
         {/* Mobile Bottom Navigation Bar */}
         <MobileNav
           activeTab={activeTab}
-          setActiveTab={setActiveTab}
+          setActiveTab={handleTabChange}
           onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
         />
 
         {/* Footer */}
-        <Footer onNavigateTab={setActiveTab} />
+        <Footer onNavigateTab={handleTabChange} />
       </div>
     </LocationProvider>
   );

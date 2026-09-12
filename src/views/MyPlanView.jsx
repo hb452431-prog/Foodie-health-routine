@@ -16,7 +16,8 @@ import {
   Share2,
   Clock,
   Calendar,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ExternalLink
 } from "lucide-react";
 
 export default function MyPlanView({
