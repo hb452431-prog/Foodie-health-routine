@@ -3,7 +3,8 @@ import RoutineCard from "../components/RoutineCard";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
-import { Search, SlidersHorizontal, RotateCcw, Sparkles, Filter, Check, MapPin } from "lucide-react";
+import { useLocation } from "../context/LocationContext";
+import { Search, SlidersHorizontal, RotateCcw, Sparkles, Filter, Check, MapPin, ShieldAlert, HeartPulse, Dumbbell } from "lucide-react";
 
 export default function ExploreView({
   userProfile,
@@ -14,6 +15,7 @@ export default function ExploreView({
   savedRoutines,
   onToggleSaveRoutine
 }) {
+  const { locationData, setIsManualModalOpen } = useLocation();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [filterVegOnly, setFilterVegOnly] = useState(false);
@@ -22,12 +24,25 @@ export default function ExploreView({
   const [maxPrepTime, setMaxPrepTime] = useState(60); // minutes
   const [calorieRange, setCalorieRange] = useState(3200); // max kcal
 
-  const userCountry = userProfile?.country || "India";
-  const userState = userProfile?.state || "Karnataka";
+  const userCountry = locationData?.country || userProfile?.country || "India";
+  const userState = locationData?.state || userProfile?.state || "Karnataka";
+  const userCity = locationData?.city || "Bengaluru";
 
   const adaptedRoutines = useMemo(() => {
     return getAdaptedRoutinesList(ROUTINES_DATA, userCountry, userState);
   }, [userCountry, userState]);
+
+  // Check if search query matches health condition
+  const isHealthConditionQuery = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return q.includes("diabetes") || q.includes("sugar") || q.includes("heart") || q.includes("pressure") || q.includes("bp") || q.includes("cholesterol");
+  }, [searchQuery]);
+
+  // Check if search query matches fitness
+  const isFitnessQuery = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return q.includes("gym") || q.includes("muscle") || q.includes("protein") || q.includes("hypertrophy") || q.includes("workout");
+  }, [searchQuery]);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -101,18 +116,109 @@ export default function ExploreView({
     <div style={{ padding: "2rem 0 4rem" }}>
       <div className="container">
         {/* Page Title & Search Header */}
-        <div style={{ marginBottom: "2rem" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--primary-600)", fontWeight: 700, fontSize: "0.85rem", marginBottom: "0.4rem" }}>
-            <Sparkles size={15} />
-            <span>Discover & Filter</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1rem", marginBottom: "2rem" }}>
+          <div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: "var(--primary-600)", fontWeight: 700, fontSize: "0.85rem", marginBottom: "0.4rem" }}>
+              <Sparkles size={15} />
+              <span>Discover & Filter</span>
+            </div>
+            <h1 style={{ fontSize: "2.2rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.5rem" }}>
+              Explore Food Routines
+            </h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", maxWidth: "600px" }}>
+              Find the exact meal schedule suited for your metabolism, fitness targets, and lifestyle.
+            </p>
           </div>
-          <h1 style={{ fontSize: "2.2rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.5rem" }}>
-            Explore Food Routines
-          </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", maxWidth: "600px" }}>
-            Find the exact meal schedule suited for your metabolism, fitness targets, and lifestyle.
-          </p>
+
+          {/* Location Context Badge */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              background: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              padding: "0.4rem 0.85rem",
+              borderRadius: "var(--radius-full)",
+              boxShadow: "var(--shadow-xs)"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.82rem", fontWeight: 700, color: "var(--primary-800)" }}>
+              <MapPin size={14} color="#059669" />
+              <span>Adapted for {userCity}, {userState}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsManualModalOpen(true)}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                color: "var(--primary-600)",
+                cursor: "pointer",
+                paddingLeft: "0.3rem",
+                borderLeft: "1px solid var(--border-subtle)"
+              }}
+            >
+              Change
+            </button>
+          </div>
         </div>
+
+        {/* Health Condition Search Disclaimer Banner */}
+        {isHealthConditionQuery && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #FEF3C7 0%, #FFFBEB 100%)",
+              border: "1.5px solid #FCD34D",
+              borderRadius: "var(--radius-lg)",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "0.85rem",
+              boxShadow: "var(--shadow-xs)"
+            }}
+          >
+            <ShieldAlert size={22} style={{ color: "#D97706", flexShrink: 0, marginTop: "2px" }} />
+            <div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#92400E", marginBottom: "0.2rem" }}>
+                🩺 Diabetes & Metabolic Health Food Routine (Adapted for {userCity}, {userState})
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "#B45309", lineHeight: 1.45 }}>
+                For general educational information only. Food requirements may vary by individual. Consult a qualified healthcare professional or certified dietitian for personalized medical advice.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Fitness / Muscle Query Banner */}
+        {isFitnessQuery && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%)",
+              border: "1.5px solid #93C5FD",
+              borderRadius: "var(--radius-lg)",
+              padding: "1rem 1.25rem",
+              marginBottom: "1.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.85rem",
+              boxShadow: "var(--shadow-xs)"
+            }}
+          >
+            <Dumbbell size={22} style={{ color: "#2563EB", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#1E40AF", marginBottom: "0.15rem" }}>
+                💪 High-Protein & Fitness Food Routines Near {userCity}
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "#3B82F6", margin: 0 }}>
+                Showing protein-dense meals, athletic macros, and muscle recovery food routines available in your region.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Search & Filter Toolbar */}
         <div

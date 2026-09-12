@@ -1,7 +1,10 @@
 import React, { useEffect } from "react";
 import { X, ExternalLink, ShoppingBag, MapPin, Sparkles } from "lucide-react";
+import { useLocation } from "../context/LocationContext";
 
 export default function OrderModal({ meal, onClose }) {
+  const { locationData } = useLocation();
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
@@ -12,9 +15,10 @@ export default function OrderModal({ meal, onClose }) {
 
   if (!meal) return null;
 
+  const cityName = locationData?.city || "Bengaluru";
   const dishName = meal.orderQuery || meal.title;
-  const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dishName)}`;
-  const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(dishName)}`;
+  const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(dishName + " " + cityName)}`;
+  const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(dishName + " " + cityName)}`;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -37,11 +41,29 @@ export default function OrderModal({ meal, onClose }) {
               <ShoppingBag size={20} />
             </div>
             <div>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)" }}>
-                Order from Nearby Kitchens
-              </h3>
-              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                Fast delivery matching "{dishName}"
+              <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
+                  Order from Nearby Kitchens
+                </h3>
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    background: "#ECFDF5",
+                    color: "#059669",
+                    padding: "0.15rem 0.45rem",
+                    borderRadius: "var(--radius-full)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.2rem"
+                  }}
+                >
+                  <MapPin size={10} />
+                  <span>{cityName}</span>
+                </span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.15rem 0 0" }}>
+                Fast delivery matching "{dishName}" in {cityName}
               </p>
             </div>
           </div>

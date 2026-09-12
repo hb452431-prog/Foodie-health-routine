@@ -1,5 +1,6 @@
 import React from "react";
 import Logo from "./Logo";
+import LocationIndicator from "./location/LocationIndicator";
 import { Search, Sparkles, User, Calendar, Compass, Home, Droplet, Flame, Plus } from "lucide-react";
 
 export default function Navbar({
@@ -87,6 +88,9 @@ export default function Navbar({
 
         {/* Action CTAs Desktop */}
         <div className="nav-actions-desktop">
+          {/* Location Indicator Badge */}
+          <LocationIndicator />
+
           {/* Universal Search Button with ⌘K Badge */}
           <button
             className="nav-search-btn"
@@ -153,6 +157,9 @@ export default function Navbar({
 
         {/* Action CTAs Mobile */}
         <div className="nav-actions-mobile">
+          {/* Location Indicator Mobile */}
+          <LocationIndicator />
+
           {/* Quick Water Log for Mobile Header */}
           <button
             className="mobile-header-water-btn"

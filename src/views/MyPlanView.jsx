@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import YouTubeIcon from "../components/YouTubeIcon";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
-import { getRegionalRoutineForLocation, getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
+import { getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
+import { useLocation } from "../context/LocationContext";
 import {
   Sparkles,
   CheckCircle2,
@@ -12,14 +13,10 @@ import {
   Heart,
   RotateCw,
   ShoppingBag,
-  ExternalLink,
-  ChevronRight,
   Share2,
   Clock,
   Calendar,
-  MapPin,
-  Globe,
-  ArrowRight
+  SlidersHorizontal
 } from "lucide-react";
 
 export default function MyPlanView({
@@ -30,7 +27,6 @@ export default function MyPlanView({
   onOpenYouTube,
   onOpenOrder,
   onShareRoutine,
-  onApplyPlan,
   waterGlasses = 0,
   onUpdateWater,
   completedMealsData = { meals: [] },
@@ -38,9 +34,13 @@ export default function MyPlanView({
   favoriteMeals = [],
   onToggleFavoriteMeal,
   onShowToast,
-  onExploreClick,
   onSelectRoutine
 }) {
+  const {
+    locationData,
+    setIsManualModalOpen
+  } = useLocation();
+
   // Live Real-Time Clock & Date State
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [planCuisineMode, setPlanCuisineMode] = useState("regional"); // "regional" | "global"
@@ -104,10 +104,10 @@ export default function MyPlanView({
     routine = (routine && routine.id && getRoutineById(routine.id)) || ROUTINES_DATA[0];
   }
 
-  // Regional cuisine resolution for user's country & state
-  const userCountry = userProfile?.country || "India";
-  const userState = userProfile?.state || "Karnataka";
-  const regionalRoutine = getRegionalRoutineForLocation(userCountry, userState);
+  // Location cuisine resolution based on active location (GPS or manual)
+  const userCountry = locationData?.country || userProfile?.country || "India";
+  const userState = locationData?.state || userProfile?.state || "Karnataka";
+  const userCity = locationData?.city || "Bengaluru";
   
   // Adapted routine based on selected cuisine mode and selected day of week
   const displayedRoutine = getAdaptedRoutineForLocation(
@@ -292,67 +292,86 @@ export default function MyPlanView({
             <div>
               <div style={{ fontSize: "0.92rem", fontWeight: 800, color: planCuisineMode === "regional" ? "#065F46" : "#1E40AF" }}>
                 {planCuisineMode === "regional"
-                  ? `Showing Authentic Healthy ${userState} Dishes for ${routine.badge || "this Health Plan"}`
+                  ? `Showing Authentic Healthy ${userCity}, ${userState} Dishes for ${routine.badge || "this Health Plan"}`
                   : `Showing Western & Global Dishes for ${routine.badge || "this Health Plan"}`}
               </div>
               <div style={{ fontSize: "0.8rem", color: planCuisineMode === "regional" ? "#047857" : "#3B82F6" }}>
                 {planCuisineMode === "regional"
-                  ? `Featuring authentic ${userState} low-GI / nutrient-dense dishes tailored for ${routine.title}`
+                  ? `Featuring authentic ${userCity} & ${userState} low-GI / nutrient-dense dishes tailored for ${routine.title}`
                   : `Featuring standard international whole-food recipes tailored for ${routine.title}`}
               </div>
             </div>
           </div>
 
-          <div
-            style={{
-              display: "inline-flex",
-              background: "#FFFFFF",
-              padding: "0.25rem",
-              borderRadius: "var(--radius-full)",
-              border: "1px solid rgba(0,0,0,0.08)",
-              boxShadow: "var(--shadow-xs)"
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => {
-                setPlanCuisineMode("regional");
-                if (onShowToast) onShowToast(`📍 Switched to authentic ${userState} healthy dishes!`);
-              }}
+              className="btn btn-secondary btn-sm"
+              onClick={() => setIsManualModalOpen(true)}
               style={{
-                padding: "0.35rem 0.85rem",
+                background: "#FFFFFF",
+                border: "1px solid rgba(0,0,0,0.1)",
+                color: "var(--text-secondary)",
+                padding: "0.35rem 0.75rem",
+                fontSize: "0.78rem"
+              }}
+              title="Change your location"
+            >
+              <SlidersHorizontal size={13} />
+              <span>Change City ({userCity})</span>
+            </button>
+
+            <div
+              style={{
+                display: "inline-flex",
+                background: "#FFFFFF",
+                padding: "0.25rem",
                 borderRadius: "var(--radius-full)",
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                background: planCuisineMode === "regional" ? "#059669" : "transparent",
-                color: planCuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)",
-                transition: "all 0.18s ease"
+                border: "1px solid rgba(0,0,0,0.08)",
+                boxShadow: "var(--shadow-xs)"
               }}
             >
-              📍 {userState} Dishes
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPlanCuisineMode("global");
-                if (onShowToast) onShowToast("🌎 Switched to Western / Global healthy dishes!");
-              }}
-              style={{
-                padding: "0.35rem 0.85rem",
-                borderRadius: "var(--radius-full)",
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                border: "none",
-                cursor: "pointer",
-                background: planCuisineMode === "global" ? "#2563EB" : "transparent",
-                color: planCuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)",
-                transition: "all 0.18s ease"
-              }}
-            >
-              🌎 Western / Global
-            </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlanCuisineMode("regional");
+                  if (onShowToast) onShowToast(`📍 Switched to authentic ${userCity}, ${userState} healthy dishes!`);
+                }}
+                style={{
+                  padding: "0.35rem 0.85rem",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  background: planCuisineMode === "regional" ? "#059669" : "transparent",
+                  color: planCuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)",
+                  transition: "all 0.18s ease"
+                }}
+              >
+                📍 {userCity} Dishes
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPlanCuisineMode("global");
+                  if (onShowToast) onShowToast("🌎 Switched to Western / Global healthy dishes!");
+                }}
+                style={{
+                  padding: "0.35rem 0.85rem",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  border: "none",
+                  cursor: "pointer",
+                  background: planCuisineMode === "global" ? "#2563EB" : "transparent",
+                  color: planCuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)",
+                  transition: "all 0.18s ease"
+                }}
+              >
+                🌎 Western / Global
+              </button>
+            </div>
           </div>
         </div>
 

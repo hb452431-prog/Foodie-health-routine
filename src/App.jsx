@@ -6,6 +6,11 @@ import Toast from "./components/Toast";
 import CommandPalette from "./components/CommandPalette";
 import FloatingQuickBar from "./components/FloatingQuickBar";
 
+// Location Layer
+import { LocationProvider } from "./context/LocationContext";
+import LocationPermissionModal from "./components/location/LocationPermissionModal";
+import ManualLocationModal from "./components/location/ManualLocationModal";
+
 // Modals
 import RoutineDetailModal from "./components/RoutineDetailModal";
 import RecipeModal from "./components/RecipeModal";
@@ -248,183 +253,196 @@ export default function App() {
   };
 
   return (
-    <div className="app-wrapper">
-      {/* Desktop Header */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenSearch={() => setIsCommandPaletteOpen(true)}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-        waterGlasses={waterGlasses}
-        onUpdateWater={handleUpdateWater}
-        userProfile={userProfile}
-        onShowToast={showToast}
-      />
+    <LocationProvider>
+      <div className="app-wrapper">
+        {/* Desktop Header */}
+        <Navbar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenSearch={() => setIsCommandPaletteOpen(true)}
+          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+          waterGlasses={waterGlasses}
+          onUpdateWater={handleUpdateWater}
+          userProfile={userProfile}
+          onShowToast={showToast}
+        />
 
-      {/* Main View Switcher */}
-      <main className="main-content">
-        {activeTab === "home" && (
-          <HomeView
-            userProfile={userProfile}
-            onSearchSubmit={handleHeroSearchSubmit}
-            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-            onExploreClick={() => setActiveTab("explore")}
-            onSelectCategory={handleCategorySelect}
-            onSelectRoutine={handleSelectRoutine}
-            onOpenShare={handleOpenShare}
-            savedRoutines={savedRoutines}
-            onToggleSaveRoutine={handleToggleSaveRoutine}
-          />
-        )}
+        {/* Main View Switcher */}
+        <main className="main-content">
+          {activeTab === "home" && (
+            <HomeView
+              userProfile={userProfile}
+              onSearchSubmit={handleHeroSearchSubmit}
+              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+              onExploreClick={() => setActiveTab("explore")}
+              onSelectCategory={handleCategorySelect}
+              onSelectRoutine={handleSelectRoutine}
+              onOpenRecipe={handleOpenRecipe}
+              onOpenYouTube={handleOpenYouTube}
+              onOpenOrder={handleOpenOrder}
+              onOpenShare={handleOpenShare}
+              savedRoutines={savedRoutines}
+              onToggleSaveRoutine={handleToggleSaveRoutine}
+              favoriteMeals={favoriteMeals}
+              onToggleFavoriteMeal={handleToggleFavoriteMeal}
+            />
+          )}
 
-        {activeTab === "explore" && (
-          <ExploreView
-            userProfile={userProfile}
-            initialQuery={exploreQuery}
-            initialCategory={exploreCategory}
-            onSelectRoutine={handleSelectRoutine}
-            onOpenShare={handleOpenShare}
-            savedRoutines={savedRoutines}
-            onToggleSaveRoutine={handleToggleSaveRoutine}
-          />
-        )}
+          {activeTab === "explore" && (
+            <ExploreView
+              userProfile={userProfile}
+              initialQuery={exploreQuery}
+              initialCategory={exploreCategory}
+              onSelectRoutine={handleSelectRoutine}
+              onOpenShare={handleOpenShare}
+              savedRoutines={savedRoutines}
+              onToggleSaveRoutine={handleToggleSaveRoutine}
+            />
+          )}
 
-        {activeTab === "my-plan" && (
-          <MyPlanView
-            activePlan={activePlan}
+          {activeTab === "my-plan" && (
+            <MyPlanView
+              activePlan={activePlan}
+              userProfile={userProfile}
+              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+              onOpenRecipe={handleOpenRecipe}
+              onOpenYouTube={handleOpenYouTube}
+              onOpenOrder={handleOpenOrder}
+              onShareRoutine={handleOpenShare}
+              onApplyPlan={handleApplyPlan}
+              waterGlasses={waterGlasses}
+              onUpdateWater={handleUpdateWater}
+              completedMealsData={completedMealsData}
+              onToggleMealCompleted={handleToggleMealCompleted}
+              favoriteMeals={favoriteMeals}
+              onToggleFavoriteMeal={handleToggleFavoriteMeal}
+              onShowToast={showToast}
+              onExploreClick={() => setActiveTab("explore")}
+              onSelectRoutine={handleSelectRoutine}
+            />
+          )}
+
+          {activeTab === "profile" && (
+            <ProfileView
+              userProfile={userProfile}
+              onProfileUpdate={handleProfileUpdate}
+              savedRoutines={savedRoutines}
+              favoriteMeals={favoriteMeals}
+              onShowToast={showToast}
+              onSelectRoutine={handleSelectRoutine}
+              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+              onApplyPlan={handleApplyPlan}
+            />
+          )}
+        </main>
+
+        {/* Universal Command Palette (Ctrl+K / ⌘K) */}
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onNavigateTab={setActiveTab}
+          onSelectRoutine={handleSelectRoutine}
+          onOpenRecipe={handleOpenRecipe}
+          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+          onUpdateWater={handleUpdateWater}
+          waterGlasses={waterGlasses}
+          onShowToast={showToast}
+          onCategorySelect={handleCategorySelect}
+          onFilterSelect={handleFilterSelect}
+        />
+
+        {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
+        <FloatingQuickBar
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          waterGlasses={waterGlasses}
+          onUpdateWater={handleUpdateWater}
+          onShowToast={showToast}
+        />
+
+        {/* Location Permission Modal (First visit & prompt) */}
+        <LocationPermissionModal />
+
+        {/* Manual Location Modal (Country / State / City selector) */}
+        <ManualLocationModal />
+
+        {/* Routine Detail Modal */}
+        {selectedRoutine && (
+          <RoutineDetailModal
+            routine={selectedRoutine}
             userProfile={userProfile}
-            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onClose={() => setSelectedRoutine(null)}
             onOpenRecipe={handleOpenRecipe}
             onOpenYouTube={handleOpenYouTube}
             onOpenOrder={handleOpenOrder}
-            onShareRoutine={handleOpenShare}
-            onApplyPlan={handleApplyPlan}
-            waterGlasses={waterGlasses}
-            onUpdateWater={handleUpdateWater}
-            completedMealsData={completedMealsData}
-            onToggleMealCompleted={handleToggleMealCompleted}
+            onOpenShare={handleOpenShare}
             favoriteMeals={favoriteMeals}
             onToggleFavoriteMeal={handleToggleFavoriteMeal}
+            isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
+            onToggleSaveRoutine={handleToggleSaveRoutine}
             onShowToast={showToast}
-            onExploreClick={() => setActiveTab("explore")}
-            onSelectRoutine={handleSelectRoutine}
           />
         )}
 
-        {activeTab === "profile" && (
-          <ProfileView
-            userProfile={userProfile}
-            onProfileUpdate={handleProfileUpdate}
-            savedRoutines={savedRoutines}
-            favoriteMeals={favoriteMeals}
+        {/* Recipe Detail Modal */}
+        {selectedRecipeMeal && (
+          <RecipeModal
+            meal={selectedRecipeMeal}
+            routine={selectedRecipeRoutine}
+            onClose={() => setSelectedRecipeMeal(null)}
+            isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
+            onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
             onShowToast={showToast}
-            onSelectRoutine={handleSelectRoutine}
-            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-            onApplyPlan={handleApplyPlan}
           />
         )}
-      </main>
 
-      {/* Universal Command Palette (Ctrl+K / ⌘K) */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigateTab={setActiveTab}
-        onSelectRoutine={handleSelectRoutine}
-        onOpenRecipe={handleOpenRecipe}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-        onUpdateWater={handleUpdateWater}
-        waterGlasses={waterGlasses}
-        onShowToast={showToast}
-        onCategorySelect={handleCategorySelect}
-        onFilterSelect={handleFilterSelect}
-      />
+        {/* YouTube Video Modal */}
+        {selectedYouTubeMeal && (
+          <YouTubeModal
+            meal={selectedYouTubeMeal}
+            onClose={() => setSelectedYouTubeMeal(null)}
+          />
+        )}
 
-      {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
-      <FloatingQuickBar
-        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        waterGlasses={waterGlasses}
-        onUpdateWater={handleUpdateWater}
-        onShowToast={showToast}
-      />
+        {/* Swiggy / Zomato Order Modal */}
+        {selectedOrderMeal && (
+          <OrderModal
+            meal={selectedOrderMeal}
+            onClose={() => setSelectedOrderMeal(null)}
+          />
+        )}
 
-      {/* Routine Detail Modal */}
-      {selectedRoutine && (
-        <RoutineDetailModal
-          routine={selectedRoutine}
-          userProfile={userProfile}
-          onClose={() => setSelectedRoutine(null)}
-          onOpenRecipe={handleOpenRecipe}
-          onOpenYouTube={handleOpenYouTube}
-          onOpenOrder={handleOpenOrder}
-          onOpenShare={handleOpenShare}
-          favoriteMeals={favoriteMeals}
-          onToggleFavoriteMeal={handleToggleFavoriteMeal}
-          isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
-          onToggleSaveRoutine={handleToggleSaveRoutine}
-          onShowToast={showToast}
+        {/* Share Routine Modal */}
+        {selectedShareRoutine && (
+          <ShareModal
+            isOpen={!!selectedShareRoutine}
+            routine={selectedShareRoutine}
+            onClose={() => setSelectedShareRoutine(null)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* Plan Builder 5-Step Wizard / Custom Creator */}
+        {isPlanWizardOpen && (
+          <PlanBuilder
+            onPlanGenerated={handlePlanGenerated}
+            onClose={() => setIsPlanWizardOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+
+        {/* Toast Notification Manager */}
+        <Toast message={toastMessage} onClear={() => setToastMessage("")} />
+
+        {/* Mobile Bottom Navigation Bar */}
+        <MobileNav
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
         />
-      )}
 
-      {/* Recipe Detail Modal */}
-      {selectedRecipeMeal && (
-        <RecipeModal
-          meal={selectedRecipeMeal}
-          routine={selectedRecipeRoutine}
-          onClose={() => setSelectedRecipeMeal(null)}
-          isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
-          onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
-          onShowToast={showToast}
-        />
-      )}
-
-      {/* YouTube Video Modal */}
-      {selectedYouTubeMeal && (
-        <YouTubeModal
-          meal={selectedYouTubeMeal}
-          onClose={() => setSelectedYouTubeMeal(null)}
-        />
-      )}
-
-      {/* Swiggy / Zomato Order Modal */}
-      {selectedOrderMeal && (
-        <OrderModal
-          meal={selectedOrderMeal}
-          onClose={() => setSelectedOrderMeal(null)}
-        />
-      )}
-
-      {/* Share Routine Modal */}
-      {selectedShareRoutine && (
-        <ShareModal
-          isOpen={!!selectedShareRoutine}
-          routine={selectedShareRoutine}
-          onClose={() => setSelectedShareRoutine(null)}
-          onShowToast={showToast}
-        />
-      )}
-
-      {/* Plan Builder 5-Step Wizard / Custom Creator */}
-      {isPlanWizardOpen && (
-        <PlanBuilder
-          onPlanGenerated={handlePlanGenerated}
-          onClose={() => setIsPlanWizardOpen(false)}
-          onShowToast={showToast}
-        />
-      )}
-
-      {/* Toast Notification Manager */}
-      <Toast message={toastMessage} onClear={() => setToastMessage("")} />
-
-      {/* Mobile Bottom Navigation Bar */}
-      <MobileNav
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-      />
-
-      {/* Footer */}
-      <Footer onNavigateTab={setActiveTab} />
-    </div>
+        {/* Footer */}
+        <Footer onNavigateTab={setActiveTab} />
+      </div>
+    </LocationProvider>
   );
 }

@@ -3,8 +3,10 @@ import HeroSection from "../components/HeroSection";
 import CategorySection from "../components/CategorySection";
 import RoutineCard from "../components/RoutineCard";
 import NutritionCalculator from "../components/NutritionCalculator";
+import NearbyFoodSection from "../components/location/NearbyFoodSection";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
+import { useLocation } from "../context/LocationContext";
 import { Sparkles, ArrowRight, ShieldCheck, Heart, Flame, Zap, Award, MapPin } from "lucide-react";
 
 export default function HomeView({
@@ -14,12 +16,18 @@ export default function HomeView({
   onExploreClick,
   onSelectCategory,
   onSelectRoutine,
+  onOpenRecipe,
+  onOpenYouTube,
+  onOpenOrder,
   onOpenShare,
   savedRoutines,
-  onToggleSaveRoutine
+  onToggleSaveRoutine,
+  favoriteMeals = [],
+  onToggleFavoriteMeal
 }) {
-  const userCountry = userProfile?.country || "India";
-  const userState = userProfile?.state || "Karnataka";
+  const { locationData } = useLocation();
+  const userCountry = locationData?.country || userProfile?.country || "India";
+  const userState = locationData?.state || userProfile?.state || "Karnataka";
   
   const adaptedRoutines = getAdaptedRoutinesList(ROUTINES_DATA, userCountry, userState);
   const featuredRoutines = adaptedRoutines.slice(0, 6);
@@ -32,6 +40,15 @@ export default function HomeView({
         onOpenPlanWizard={onOpenPlanWizard}
         onExploreClick={onExploreClick}
         onSelectRoutine={onSelectRoutine}
+      />
+
+      {/* Location-Based Food Around You Section */}
+      <NearbyFoodSection
+        onOpenRecipe={onOpenRecipe}
+        onOpenYouTube={onOpenYouTube}
+        onOpenOrder={onOpenOrder}
+        favoriteMeals={favoriteMeals}
+        onToggleFavoriteMeal={onToggleFavoriteMeal}
       />
 
       {/* Quick Category Section */}
