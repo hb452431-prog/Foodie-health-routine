@@ -255,7 +255,7 @@ export default function HomeView({
               </button>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
+            <div className="method-benefits-grid">
               <div style={{ background: "rgba(255, 255, 255, 0.08)", padding: "1.25rem", borderRadius: "var(--radius-lg)", border: "1px solid rgba(255, 255, 255, 0.12)" }}>
                 <div style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>🥗</div>
                 <h4 style={{ color: "#FFFFFF", fontSize: "1rem", fontWeight: 700, marginBottom: "0.3rem" }}>Zero Starvation</h4>

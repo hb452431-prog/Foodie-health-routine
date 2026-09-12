@@ -62,10 +62,11 @@ export default function Logo({ size = 38, showText = true, isDark = false }) {
 
       {showText && (
         <span
+          className="brand-logo-text"
           style={{
             fontFamily: "var(--font-heading)",
             fontWeight: 800,
-            fontSize: size >= 38 ? "1.22rem" : "1.05rem",
+            fontSize: size >= 38 ? "clamp(0.95rem, 3.8vw, 1.22rem)" : "clamp(0.85rem, 3.2vw, 1.05rem)",
             color: isDark ? "#FFFFFF" : "var(--primary-900)",
             letterSpacing: "-0.03em",
             lineHeight: 1.15,

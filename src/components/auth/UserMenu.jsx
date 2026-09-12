@@ -112,6 +112,7 @@ export default function UserMenu({ onNavigateTab, userProfile, onShowToast }) {
         )}
 
         <span
+          className="user-menu-name-text"
           style={{
             fontSize: "0.85rem",
             fontWeight: 700,
@@ -126,6 +127,7 @@ export default function UserMenu({ onNavigateTab, userProfile, onShowToast }) {
         </span>
 
         <span
+          className="user-menu-streak-badge"
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -142,7 +144,7 @@ export default function UserMenu({ onNavigateTab, userProfile, onShowToast }) {
           <span>{streakDays}d</span>
         </span>
 
-        <ChevronDown size={13} color="var(--text-muted)" style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }} />
+        <ChevronDown size={13} className="user-menu-chevron" color="var(--text-muted)" style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }} />
       </button>
 
       {/* Popover Dropdown */}
