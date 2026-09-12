@@ -93,7 +93,7 @@ export default function Footer({ onNavigateTab }) {
               Our Promise
             </h4>
             <p style={{ fontSize: "0.82rem", color: "#94A3B8", lineHeight: 1.5 }}>
-              Foodie-Routine-ADDA bridges the gap between everyday delicious food and long-term vitality. Clean nutrition made accessible to everyone.
+              Foodie-Health-Routine bridges the gap between everyday delicious food and long-term vitality. Clean nutrition made accessible to everyone.
             </p>
 
             <div className="footer-disclaimer-box">
@@ -109,7 +109,7 @@ export default function Footer({ onNavigateTab }) {
         {/* Bottom Bar */}
         <div className="footer-bottom-bar">
           <div>
-            © {new Date().getFullYear()} Foodie-Routine-ADDA — Eat Better. Live Better. Every Day. All rights reserved.
+            © {new Date().getFullYear()} Foodie-Health-Routine — Eat Better. Live Better. Every Day. All rights reserved.
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <span>Crafted with</span>

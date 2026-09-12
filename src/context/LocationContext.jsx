@@ -120,15 +120,7 @@ export function LocationProvider({ children }) {
           permObj = permStatus;
           setPermissionState(permStatus.state);
 
-          if (permStatus.state === "prompt") {
-            const dismissed = localStorage.getItem(STORAGE_KEYS.PROMPT_DISMISSED) === "true";
-            if (!dismissed) {
-              const timer = setTimeout(() => {
-                if (isMounted) setIsPermissionModalOpen(true);
-              }, 1500);
-              return () => clearTimeout(timer);
-            }
-          } else if (permStatus.state === "denied") {
+          if (permStatus.state === "denied") {
             setPermissionState("denied");
           }
 
@@ -137,15 +129,6 @@ export function LocationProvider({ children }) {
               setPermissionState(permStatus.state);
             }
           };
-        } else {
-          // Permissions API unsupported (e.g. iOS Safari) -> check if prompt dismissed
-          const dismissed = localStorage.getItem(STORAGE_KEYS.PROMPT_DISMISSED) === "true";
-          if (!dismissed) {
-            const timer = setTimeout(() => {
-              if (isMounted) setIsPermissionModalOpen(true);
-            }, 1500);
-            return () => clearTimeout(timer);
-          }
         }
       } catch (e) {
         // Fail-safe: app continues normally

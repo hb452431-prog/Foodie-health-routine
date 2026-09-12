@@ -1,7 +1,9 @@
 import React from "react";
 import Logo from "./Logo";
 import LocationIndicator from "./location/LocationIndicator";
-import { Search, Sparkles, User, Calendar, Compass, Home, Droplet, Flame, Plus } from "lucide-react";
+import UserMenu from "./auth/UserMenu";
+import { useAuth } from "../context/AuthContext";
+import { Search, Sparkles, User, Calendar, Compass, Home, Droplet, Plus } from "lucide-react";
 
 export default function Navbar({
   activeTab,
@@ -13,6 +15,8 @@ export default function Navbar({
   userProfile,
   onShowToast
 }) {
+  const { requireAuth } = useAuth();
+
   const handleQuickWater = (e) => {
     e.stopPropagation();
     if (onUpdateWater) {
@@ -24,17 +28,37 @@ export default function Navbar({
     }
   };
 
-  const streakDays = userProfile?.streakDays || 7;
-  const avatarUrl = userProfile?.avatar?.url || userProfile?.avatar;
+  const handleTabClick = (tab, reason) => {
+    if (tab === "home") {
+      setActiveTab("home");
+      return;
+    }
+
+    requireAuth(() => {
+      setActiveTab(tab);
+    }, reason);
+  };
+
+  const handleCreatePlanClick = () => {
+    requireAuth(() => {
+      if (onOpenPlanWizard) onOpenPlanWizard();
+    }, "Sign in to create your AI-tailored personalized nutrition blueprint.");
+  };
+
+  const handleSearchClick = () => {
+    requireAuth(() => {
+      if (onOpenSearch) onOpenSearch();
+    }, "Sign in to search healthy recipes, disease-specific routines, and macronutrients.");
+  };
 
   return (
     <header className="navbar-header">
       <div className="container navbar-container">
-        {/* Brand Logo */}
+        {/* Brand Logo: Foodie-Health-Routine */}
         <button
           onClick={() => setActiveTab("home")}
           style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer" }}
-          aria-label="Foodie-Routine-ADDA Home"
+          aria-label="Foodie-Health-Routine Home"
         >
           <Logo size={36} />
         </button>
@@ -45,7 +69,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "home" ? "active" : ""}`}
-                onClick={() => setActiveTab("home")}
+                onClick={() => handleTabClick("home")}
                 title="Go to Home overview (Press 1)"
               >
                 <Home size={17} />
@@ -55,7 +79,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "explore" ? "active" : ""}`}
-                onClick={() => setActiveTab("explore")}
+                onClick={() => handleTabClick("explore", "Sign in to explore all curated food and nutrition routines.")}
                 title="Explore all Food Routines (Press 2)"
               >
                 <Compass size={17} />
@@ -65,7 +89,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "my-plan" ? "active" : ""}`}
-                onClick={() => setActiveTab("my-plan")}
+                onClick={() => handleTabClick("my-plan", "Sign in to view your live daily meal schedule and weekly timetable.")}
                 title="View today's live nutrition schedule & timetable (Press 3)"
               >
                 <Calendar size={17} />
@@ -76,7 +100,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "profile" ? "active" : ""}`}
-                onClick={() => setActiveTab("profile")}
+                onClick={() => handleTabClick("profile", "Sign in to view your health profile, goals, and saved routines.")}
                 title="View your Health Profile & saved routines (Press 4)"
               >
                 <User size={17} />
@@ -91,18 +115,18 @@ export default function Navbar({
           {/* Location Indicator Badge */}
           <LocationIndicator />
 
-          {/* Universal Search Button with ⌘K Badge */}
+          {/* Quick Search Button */}
           <button
             className="nav-search-btn"
-            onClick={onOpenSearch}
-            title="Search food routines, recipes & quick actions (Ctrl+K / ⌘K)"
+            onClick={handleSearchClick}
+            title="Search food routines, recipes & macros (Ctrl+K / ⌘K)"
           >
             <Search size={14} />
             <span>Search routines, recipes...</span>
             <kbd className="nav-search-kbd">⌘K</kbd>
           </button>
 
-          {/* Quick Water Pill in Header */}
+          {/* Quick Water Pill */}
           <div
             className="nav-water-pill"
             onClick={handleQuickWater}
@@ -121,43 +145,26 @@ export default function Navbar({
             </button>
           </div>
 
-          {/* User Profile Quick Pill */}
-          <button
-            className="nav-profile-pill"
-            onClick={() => setActiveTab("profile")}
-            title="Open your Profile & Streaks"
-          >
-            <span className="nav-streak-tag">
-              <Flame size={12} fill="#EA580C" color="#EA580C" />
-              <span>{streakDays}d</span>
-            </span>
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="nav-avatar-img"
-              />
-            ) : (
-              <div className="nav-avatar-placeholder">
-                <User size={13} />
-              </div>
-            )}
-          </button>
+          {/* User Menu / Sign In Button */}
+          <UserMenu
+            onNavigateTab={setActiveTab}
+            userProfile={userProfile}
+            onShowToast={onShowToast}
+          />
 
-          {/* Create Plan CTA */}
+          {/* Primary CTA: Create My Plan */}
           <button
             className="btn btn-accent btn-sm"
-            onClick={onOpenPlanWizard}
+            onClick={handleCreatePlanClick}
             title="Create your AI-tailored personalized nutrition routine"
           >
             <Sparkles size={15} />
-            <span>Create Plan</span>
+            <span>Create My Plan</span>
           </button>
         </div>
 
         {/* Action CTAs Mobile */}
         <div className="nav-actions-mobile">
-          {/* Location Indicator Mobile */}
           <LocationIndicator />
 
           {/* Quick Water Log for Mobile Header */}
@@ -174,22 +181,18 @@ export default function Navbar({
 
           <button
             className="mobile-header-icon-btn"
-            onClick={onOpenSearch}
+            onClick={handleSearchClick}
             title="Universal Search (Tap to search)"
             aria-label="Search"
           >
             <Search size={17} />
           </button>
 
-          <button
-            className="mobile-header-plan-btn"
-            onClick={onOpenPlanWizard}
-            title="Create your personalized food plan"
-            aria-label="Create Plan"
-          >
-            <Sparkles size={14} />
-            <span>Plan</span>
-          </button>
+          <UserMenu
+            onNavigateTab={setActiveTab}
+            userProfile={userProfile}
+            onShowToast={onShowToast}
+          />
         </div>
       </div>
     </header>

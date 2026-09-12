@@ -6,6 +6,11 @@ import Toast from "./components/Toast";
 import CommandPalette from "./components/CommandPalette";
 import FloatingQuickBar from "./components/FloatingQuickBar";
 
+// Auth Layer
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import LoginModal from "./components/auth/LoginModal";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 // Location Layer
 import { LocationProvider } from "./context/LocationContext";
 import LocationPermissionModal from "./components/location/LocationPermissionModal";
@@ -45,7 +50,7 @@ import {
 
 import "./App.css";
 
-// Route helper for direct URLs (/explore, /plan, /profile, /routines, /health, /fitness, etc.)
+// Route helper for direct URLs (/explore, /plan, /profile, /login, /signup, etc.)
 const getTabFromPath = (path) => {
   try {
     const clean = (path || window.location.pathname || "").toLowerCase().replace(/^\/+|\/+$/g, "");
@@ -53,13 +58,16 @@ const getTabFromPath = (path) => {
     if (["explore", "routines", "recipe", "recipes", "health", "fitness"].includes(clean)) return "explore";
     if (["plan", "my-plan", "myplan"].includes(clean)) return "my-plan";
     if (["profile", "settings"].includes(clean)) return "profile";
+    if (["login", "signin", "signup"].includes(clean)) return "home";
     return "home";
   } catch (e) {
     return "home";
   }
 };
 
-export default function App() {
+function AppContent() {
+  const { isAuthenticated, requireAuth, openAuthModal } = useAuth();
+
   // Navigation State with SPA direct URL support
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(window.location.pathname));
   const [exploreQuery, setExploreQuery] = useState("");
@@ -97,6 +105,18 @@ export default function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  // Handle direct /login or /signup URL paths
+  useEffect(() => {
+    const clean = (window.location.pathname || "").toLowerCase().replace(/^\/+|\/+$/g, "");
+    if (["login", "signin", "signup"].includes(clean)) {
+      openAuthModal(
+        clean === "signup"
+          ? "Create your account to unlock personalized food routines, recipes and recommendations."
+          : "Login to continue your healthy food journey."
+      );
+    }
+  }, [openAuthModal]);
 
   // Local Storage Synchronized States
   const [userProfile, setUserProfile] = useState(() => getUserProfile());
@@ -166,14 +186,20 @@ export default function App() {
           handleTabChange("home");
           showToast("🏠 Switched to Home");
         } else if (e.key === "2") {
-          handleTabChange("explore");
-          showToast("🧭 Switched to Explore");
+          requireAuth(() => {
+            handleTabChange("explore");
+            showToast("🧭 Switched to Explore");
+          }, "Sign in to explore all food routines.");
         } else if (e.key === "3") {
-          handleTabChange("my-plan");
-          showToast("📅 Switched to My Plan");
+          requireAuth(() => {
+            handleTabChange("my-plan");
+            showToast("📅 Switched to My Plan");
+          }, "Sign in to view your live daily plan.");
         } else if (e.key === "4") {
-          handleTabChange("profile");
-          showToast("👤 Switched to Profile");
+          requireAuth(() => {
+            handleTabChange("profile");
+            showToast("👤 Switched to Profile");
+          }, "Sign in to view your health profile.");
         }
       }
 
@@ -191,24 +217,30 @@ export default function App() {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [isCommandPaletteOpen, isPlanWizardOpen, selectedRoutine, selectedRecipeMeal, selectedYouTubeMeal, selectedOrderMeal, selectedShareRoutine]);
+  }, [isCommandPaletteOpen, isPlanWizardOpen, selectedRoutine, selectedRecipeMeal, selectedYouTubeMeal, selectedOrderMeal, selectedShareRoutine, requireAuth]);
 
-  // Handlers for Routines & Favorites
+  // Handlers for Routines & Favorites (Protected)
   const handleToggleSaveRoutine = (routineId) => {
-    const res = toggleSaveRoutine(routineId);
-    setSavedRoutines([...res.updated]);
-    showToast(res.isSaved ? "⭐ Routine saved to your library!" : "Routine removed from saved list.");
+    requireAuth(() => {
+      const res = toggleSaveRoutine(routineId);
+      setSavedRoutines([...res.updated]);
+      showToast(res.isSaved ? "⭐ Routine saved to your library!" : "Routine removed from saved list.");
+    }, "Sign in to save routines to your personal collection.");
   };
 
   const handleToggleFavoriteMeal = (mealId) => {
-    const res = toggleFavoriteMeal(mealId);
-    setFavoriteMeals([...res.updated]);
-    showToast(res.isFavorite ? "❤️ Meal added to favorite recipes!" : "Meal removed from favorites.");
+    requireAuth(() => {
+      const res = toggleFavoriteMeal(mealId);
+      setFavoriteMeals([...res.updated]);
+      showToast(res.isFavorite ? "❤️ Meal added to favorite recipes!" : "Meal removed from favorites.");
+    }, "Sign in to save recipes to your favorites.");
   };
 
   const handleToggleMealCompleted = (mealId) => {
-    const res = toggleCompletedMeal(mealId);
-    setCompletedMealsData({ ...res });
+    requireAuth(() => {
+      const res = toggleCompletedMeal(mealId);
+      setCompletedMealsData({ ...res });
+    }, "Sign in to track and complete your daily meals.");
   };
 
   const handleUpdateWater = (glasses) => {
@@ -234,21 +266,25 @@ export default function App() {
   };
 
   const handleSelectRoutine = (routineId) => {
-    const rawRoutine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
-    if (rawRoutine) {
-      const adapted = getAdaptedRoutineForLocation(
-        rawRoutine,
-        userProfile?.country || "India",
-        userProfile?.state || "Karnataka",
-        "regional"
-      ) || rawRoutine;
-      setSelectedRoutine(adapted);
-    }
+    requireAuth(() => {
+      const rawRoutine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
+      if (rawRoutine) {
+        const adapted = getAdaptedRoutineForLocation(
+          rawRoutine,
+          userProfile?.country || "India",
+          userProfile?.state || "Karnataka",
+          "regional"
+        ) || rawRoutine;
+        setSelectedRoutine(adapted);
+      }
+    }, "Sign in to view complete daily routine timeline and recipes.");
   };
 
   const handleOpenRecipe = (meal, routine) => {
-    setSelectedRecipeMeal(meal);
-    setSelectedRecipeRoutine(routine || selectedRoutine || activePlan);
+    requireAuth(() => {
+      setSelectedRecipeMeal(meal);
+      setSelectedRecipeRoutine(routine || selectedRoutine || activePlan);
+    }, "Sign in to access detailed ingredients and preparation steps.");
   };
 
   const handleOpenYouTube = (meal) => {
@@ -256,7 +292,9 @@ export default function App() {
   };
 
   const handleOpenOrder = (meal) => {
-    setSelectedOrderMeal(meal);
+    requireAuth(() => {
+      setSelectedOrderMeal(meal);
+    }, "Sign in to order healthy dishes from nearby restaurants.");
   };
 
   const handleOpenShare = (routine) => {
@@ -300,54 +338,61 @@ export default function App() {
   };
 
   return (
-    <LocationProvider>
-      <div className="app-wrapper">
-        {/* Desktop Header */}
-        <Navbar
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          onOpenSearch={() => setIsCommandPaletteOpen(true)}
-          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-          waterGlasses={waterGlasses}
-          onUpdateWater={handleUpdateWater}
-          userProfile={userProfile}
-          onShowToast={showToast}
-        />
+    <div className="app-wrapper">
+      {/* Desktop Header */}
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        onOpenSearch={() => setIsCommandPaletteOpen(true)}
+        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        waterGlasses={waterGlasses}
+        onUpdateWater={handleUpdateWater}
+        userProfile={userProfile}
+        onShowToast={showToast}
+      />
 
-        {/* Main View Switcher */}
-        <main className="main-content">
-          {activeTab === "home" && (
-            <HomeView
-              userProfile={userProfile}
-              onSearchSubmit={handleHeroSearchSubmit}
-              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-              onExploreClick={() => handleTabChange("explore")}
-              onSelectCategory={handleCategorySelect}
-              onSelectRoutine={handleSelectRoutine}
-              onOpenRecipe={handleOpenRecipe}
-              onOpenYouTube={handleOpenYouTube}
-              onOpenOrder={handleOpenOrder}
-              onOpenShare={handleOpenShare}
-              savedRoutines={savedRoutines}
-              onToggleSaveRoutine={handleToggleSaveRoutine}
-              favoriteMeals={favoriteMeals}
-              onToggleFavoriteMeal={handleToggleFavoriteMeal}
-            />
-          )}
+      {/* Main View Switcher */}
+      <main className="main-content">
+        {activeTab === "home" && (
+          <HomeView
+            userProfile={userProfile}
+            activePlan={activePlan}
+            onSearchSubmit={handleHeroSearchSubmit}
+            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onExploreClick={() => handleTabChange("explore")}
+            onNavigateTab={handleTabChange}
+            onSelectCategory={handleCategorySelect}
+            onSelectRoutine={handleSelectRoutine}
+            onOpenRecipe={handleOpenRecipe}
+            onOpenYouTube={handleOpenYouTube}
+            onOpenOrder={handleOpenOrder}
+            onOpenShare={handleOpenShare}
+            savedRoutines={savedRoutines}
+            onToggleSaveRoutine={handleToggleSaveRoutine}
+            favoriteMeals={favoriteMeals}
+            onToggleFavoriteMeal={handleToggleFavoriteMeal}
+            completedMealsData={completedMealsData}
+            onToggleMealCompleted={handleToggleMealCompleted}
+          />
+        )}
 
-          {activeTab === "explore" && (
-            <ExploreView
-              userProfile={userProfile}
-              initialQuery={exploreQuery}
-              initialCategory={exploreCategory}
-              onSelectRoutine={handleSelectRoutine}
-              onOpenShare={handleOpenShare}
-              savedRoutines={savedRoutines}
-              onToggleSaveRoutine={handleToggleSaveRoutine}
-            />
-          )}
+        {activeTab === "explore" && (
+          <ExploreView
+            userProfile={userProfile}
+            initialQuery={exploreQuery}
+            initialCategory={exploreCategory}
+            onSelectRoutine={handleSelectRoutine}
+            onOpenShare={handleOpenShare}
+            savedRoutines={savedRoutines}
+            onToggleSaveRoutine={handleToggleSaveRoutine}
+          />
+        )}
 
-          {activeTab === "my-plan" && (
+        {activeTab === "my-plan" && (
+          <ProtectedRoute
+            title="My Plan & Daily Timetable"
+            subtitle="Sign in to view your live daily meal schedule, check off meals, and track macros."
+          >
             <MyPlanView
               activePlan={activePlan}
               userProfile={userProfile}
@@ -364,12 +409,17 @@ export default function App() {
               favoriteMeals={favoriteMeals}
               onToggleFavoriteMeal={handleToggleFavoriteMeal}
               onShowToast={showToast}
-              onExploreClick={() => handleTabChange("explore")}
               onSelectRoutine={handleSelectRoutine}
+              savedRoutines={savedRoutines}
             />
-          )}
+          </ProtectedRoute>
+        )}
 
-          {activeTab === "profile" && (
+        {activeTab === "profile" && (
+          <ProtectedRoute
+            title="Profile & Preferences"
+            subtitle="Sign in to manage your health goals, milestones, streaks, and dietary preferences."
+          >
             <ProfileView
               userProfile={userProfile}
               onProfileUpdate={handleProfileUpdate}
@@ -379,117 +429,131 @@ export default function App() {
               onSelectRoutine={handleSelectRoutine}
               onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
               onApplyPlan={handleApplyPlan}
+              onNavigateTab={handleTabChange}
             />
-          )}
-        </main>
+          </ProtectedRoute>
+        )}
+      </main>
 
-        {/* Universal Command Palette (Ctrl+K / ⌘K) */}
-        <CommandPalette
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          onNavigateTab={handleTabChange}
-          onSelectRoutine={handleSelectRoutine}
+      {/* Universal Command Palette (Ctrl+K / ⌘K) */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigateTab={handleTabChange}
+        onSelectRoutine={handleSelectRoutine}
+        onOpenRecipe={handleOpenRecipe}
+        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        onUpdateWater={handleUpdateWater}
+        waterGlasses={waterGlasses}
+        onShowToast={showToast}
+        onCategorySelect={handleCategorySelect}
+        onFilterSelect={handleFilterSelect}
+      />
+
+      {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
+      <FloatingQuickBar
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        waterGlasses={waterGlasses}
+        onUpdateWater={handleUpdateWater}
+        onShowToast={showToast}
+      />
+
+      {/* Location Permission Modal */}
+      <LocationPermissionModal />
+
+      {/* Manual Location Modal (Country / State / City selector) */}
+      <ManualLocationModal />
+
+      {/* Login / Sign Up Modal */}
+      <LoginModal onShowToast={showToast} />
+
+      {/* Routine Detail Modal */}
+      {selectedRoutine && (
+        <RoutineDetailModal
+          routine={selectedRoutine}
+          userProfile={userProfile}
+          onClose={() => setSelectedRoutine(null)}
           onOpenRecipe={handleOpenRecipe}
-          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-          onUpdateWater={handleUpdateWater}
-          waterGlasses={waterGlasses}
-          onShowToast={showToast}
-          onCategorySelect={handleCategorySelect}
-          onFilterSelect={handleFilterSelect}
-        />
-
-        {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
-        <FloatingQuickBar
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-          waterGlasses={waterGlasses}
-          onUpdateWater={handleUpdateWater}
+          onOpenYouTube={handleOpenYouTube}
+          onOpenOrder={handleOpenOrder}
+          onOpenShare={handleOpenShare}
+          favoriteMeals={favoriteMeals}
+          onToggleFavoriteMeal={handleToggleFavoriteMeal}
+          isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
+          onToggleSaveRoutine={handleToggleSaveRoutine}
           onShowToast={showToast}
         />
+      )}
 
-        {/* Location Permission Modal (First visit & prompt) */}
-        <LocationPermissionModal />
-
-        {/* Manual Location Modal (Country / State / City selector) */}
-        <ManualLocationModal />
-
-        {/* Routine Detail Modal */}
-        {selectedRoutine && (
-          <RoutineDetailModal
-            routine={selectedRoutine}
-            userProfile={userProfile}
-            onClose={() => setSelectedRoutine(null)}
-            onOpenRecipe={handleOpenRecipe}
-            onOpenYouTube={handleOpenYouTube}
-            onOpenOrder={handleOpenOrder}
-            onOpenShare={handleOpenShare}
-            favoriteMeals={favoriteMeals}
-            onToggleFavoriteMeal={handleToggleFavoriteMeal}
-            isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
-            onToggleSaveRoutine={handleToggleSaveRoutine}
-            onShowToast={showToast}
-          />
-        )}
-
-        {/* Recipe Detail Modal */}
-        {selectedRecipeMeal && (
-          <RecipeModal
-            meal={selectedRecipeMeal}
-            routine={selectedRecipeRoutine}
-            onClose={() => setSelectedRecipeMeal(null)}
-            isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
-            onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
-            onShowToast={showToast}
-          />
-        )}
-
-        {/* YouTube Video Modal */}
-        {selectedYouTubeMeal && (
-          <YouTubeModal
-            meal={selectedYouTubeMeal}
-            onClose={() => setSelectedYouTubeMeal(null)}
-          />
-        )}
-
-        {/* Swiggy / Zomato Order Modal */}
-        {selectedOrderMeal && (
-          <OrderModal
-            meal={selectedOrderMeal}
-            onClose={() => setSelectedOrderMeal(null)}
-          />
-        )}
-
-        {/* Share Routine Modal */}
-        {selectedShareRoutine && (
-          <ShareModal
-            isOpen={!!selectedShareRoutine}
-            routine={selectedShareRoutine}
-            onClose={() => setSelectedShareRoutine(null)}
-            onShowToast={showToast}
-          />
-        )}
-
-        {/* Plan Builder 5-Step Wizard / Custom Creator */}
-        {isPlanWizardOpen && (
-          <PlanBuilder
-            onPlanGenerated={handlePlanGenerated}
-            onClose={() => setIsPlanWizardOpen(false)}
-            onShowToast={showToast}
-          />
-        )}
-
-        {/* Toast Notification Manager */}
-        <Toast message={toastMessage} onClear={() => setToastMessage("")} />
-
-        {/* Mobile Bottom Navigation Bar */}
-        <MobileNav
-          activeTab={activeTab}
-          setActiveTab={handleTabChange}
-          onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+      {/* Recipe Detail Modal */}
+      {selectedRecipeMeal && (
+        <RecipeModal
+          meal={selectedRecipeMeal}
+          routine={selectedRecipeRoutine}
+          onClose={() => setSelectedRecipeMeal(null)}
+          isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
+          onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
+          onShowToast={showToast}
         />
+      )}
 
-        {/* Footer */}
-        <Footer onNavigateTab={handleTabChange} />
-      </div>
-    </LocationProvider>
+      {/* YouTube Video Modal */}
+      {selectedYouTubeMeal && (
+        <YouTubeModal
+          meal={selectedYouTubeMeal}
+          onClose={() => setSelectedYouTubeMeal(null)}
+        />
+      )}
+
+      {/* Swiggy / Zomato Order Modal */}
+      {selectedOrderMeal && (
+        <OrderModal
+          meal={selectedOrderMeal}
+          onClose={() => setSelectedOrderMeal(null)}
+        />
+      )}
+
+      {/* Share Routine Modal */}
+      {selectedShareRoutine && (
+        <ShareModal
+          isOpen={!!selectedShareRoutine}
+          routine={selectedShareRoutine}
+          onClose={() => setSelectedShareRoutine(null)}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* Plan Builder 5-Step Wizard / Custom Creator */}
+      {isPlanWizardOpen && (
+        <PlanBuilder
+          onPlanGenerated={handlePlanGenerated}
+          onClose={() => setIsPlanWizardOpen(false)}
+          onShowToast={showToast}
+        />
+      )}
+
+      {/* Toast Notification Manager */}
+      <Toast message={toastMessage} onClear={() => setToastMessage("")} />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNav
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+      />
+
+      {/* Footer */}
+      <Footer onNavigateTab={handleTabChange} />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <LocationProvider>
+        <AppContent />
+      </LocationProvider>
+    </AuthProvider>
   );
 }

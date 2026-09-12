@@ -1,12 +1,32 @@
 import React from "react";
+import { useAuth } from "../context/AuthContext";
 import { Home, Compass, Calendar, User, Sparkles } from "lucide-react";
 
 export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard }) {
+  const { requireAuth } = useAuth();
+
+  const handleTabClick = (tab, reason) => {
+    if (tab === "home") {
+      setActiveTab("home");
+      return;
+    }
+
+    requireAuth(() => {
+      setActiveTab(tab);
+    }, reason);
+  };
+
+  const handlePlanClick = () => {
+    requireAuth(() => {
+      if (onOpenPlanWizard) onOpenPlanWizard();
+    }, "Sign in to create your personalized food plan.");
+  };
+
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
       <button
         className={`mobile-nav-btn ${activeTab === "home" ? "active" : ""}`}
-        onClick={() => setActiveTab("home")}
+        onClick={() => handleTabClick("home")}
       >
         <Home size={20} />
         <span>Home</span>
@@ -14,7 +34,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard })
 
       <button
         className={`mobile-nav-btn ${activeTab === "explore" ? "active" : ""}`}
-        onClick={() => setActiveTab("explore")}
+        onClick={() => handleTabClick("explore", "Sign in to explore all food routines.")}
       >
         <Compass size={20} />
         <span>Explore</span>
@@ -23,7 +43,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard })
       {/* Center AI Plan Wizard Trigger */}
       <button
         className="mobile-nav-btn mobile-center-plan-btn"
-        onClick={onOpenPlanWizard}
+        onClick={handlePlanClick}
         title="Create your AI Nutrition Routine"
       >
         <div className="mobile-center-circle">
@@ -34,7 +54,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard })
 
       <button
         className={`mobile-nav-btn ${activeTab === "my-plan" ? "active" : ""}`}
-        onClick={() => setActiveTab("my-plan")}
+        onClick={() => handleTabClick("my-plan", "Sign in to view your live daily plan.")}
       >
         <div style={{ position: "relative", display: "inline-flex" }}>
           <Calendar size={20} />
@@ -45,7 +65,7 @@ export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard })
 
       <button
         className={`mobile-nav-btn ${activeTab === "profile" ? "active" : ""}`}
-        onClick={() => setActiveTab("profile")}
+        onClick={() => handleTabClick("profile", "Sign in to view your health profile.")}
       >
         <User size={20} />
         <span>Profile</span>

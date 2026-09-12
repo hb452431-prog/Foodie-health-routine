@@ -10,7 +10,8 @@ export default function ProfileView({
   onShowToast,
   onSelectRoutine,
   onOpenPlanWizard,
-  onApplyPlan
+  onApplyPlan,
+  onNavigateTab
 }) {
   const savedRoutinesList = ROUTINES_DATA.filter((r) => savedRoutines.includes(r.id));
 
@@ -36,6 +37,7 @@ export default function ProfileView({
           savedRoutinesList={savedRoutinesList}
           onOpenPlanWizard={onOpenPlanWizard}
           onApplyPlan={onApplyPlan}
+          onNavigateTab={onNavigateTab}
         />
       </div>
     </div>

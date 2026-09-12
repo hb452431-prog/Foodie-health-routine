@@ -1,10 +1,6 @@
 import React, { useState } from "react";
 import {
-  User,
   Mail,
-  Target,
-  Salad,
-  Activity,
   Flame,
   Heart,
   Sparkles,
@@ -13,19 +9,16 @@ import {
   Camera,
   UserCheck,
   MapPin,
-  Globe,
-  UtensilsCrossed,
   ArrowRight,
-  ShieldCheck,
   Award,
-  Crown,
-  Zap,
-  Diamond
+  LogOut,
+  Bookmark
 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import { saveUserProfile, setActivePlan, getUserBadges, getStreakDays } from "../utils/storage";
 import { AVATAR_COLLECTION } from "../data/avatarsData";
 import { REGIONAL_COUNTRIES, getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
-import { BADGES_DATA, STAGES_CONFIG, calculateStage } from "../data/badgesData";
+import { BADGES_DATA, calculateStage } from "../data/badgesData";
 import AvatarPickerModal from "./AvatarPickerModal";
 
 export default function ProfileCard({
@@ -37,8 +30,10 @@ export default function ProfileCard({
   onSelectRoutine,
   savedRoutinesList,
   onOpenPlanWizard,
-  onApplyPlan
+  onApplyPlan,
+  onNavigateTab
 }) {
+  const { logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,6 +41,14 @@ export default function ProfileCard({
     country: profile.country || "India",
     state: profile.state || "Karnataka"
   });
+
+  const handleLogout = () => {
+    logout();
+    if (onNavigateTab) onNavigateTab("home");
+    if (onShowToast) {
+      onShowToast("👋 You have been logged out successfully.");
+    }
+  };
 
   const selectedCountryObj = REGIONAL_COUNTRIES.find(
     (c) => c.name.toLowerCase() === (formData.country || "").toLowerCase()
@@ -226,13 +229,43 @@ export default function ProfileCard({
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.6rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => setIsEditing(!isEditing)}
+              title="Edit Profile & Preferences"
             >
               <Edit2 size={14} />
-              <span>{isEditing ? "Cancel" : "Edit Profile & Location"}</span>
+              <span>{isEditing ? "Close Editor" : "Edit Preferences"}</span>
+            </button>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                if (onNavigateTab) onNavigateTab("my-plan");
+                else {
+                  const el = document.getElementById("saved-routines-section");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+              title="View Saved Foods & Routines"
+            >
+              <Bookmark size={14} color="#059669" />
+              <span>Saved Foods ({savedRoutinesCount})</span>
+            </button>
+
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={handleLogout}
+              style={{
+                color: "#DC2626",
+                background: "#FEF2F2",
+                border: "1px solid #FECACA"
+              }}
+              title="Sign out of your account"
+            >
+              <LogOut size={14} />
+              <span>Logout</span>
             </button>
           </div>
         </div>
@@ -677,7 +710,7 @@ export default function ProfileCard({
       </div>
 
       {/* Saved Routines Collection */}
-      <div className="widget-card">
+      <div className="widget-card" id="saved-routines-section">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
             My Saved Routines

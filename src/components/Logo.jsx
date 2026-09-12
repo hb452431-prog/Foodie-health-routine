@@ -72,8 +72,8 @@ export default function Logo({ size = 38, showText = true, isDark = false }) {
             whiteSpace: "nowrap"
           }}
         >
-          Foodie<span style={{ color: "#10B981" }}>-Routine</span>
-          <span style={{ color: "#F59E0B" }}>-ADDA</span>
+          Foodie<span style={{ color: "#10B981" }}>-Health</span>
+          <span style={{ color: "#F59E0B" }}>-Routine</span>
         </span>
       )}
     </div>

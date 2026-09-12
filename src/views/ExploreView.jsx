@@ -4,6 +4,7 @@ import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
 import { useLocation } from "../context/LocationContext";
+import { useAuth } from "../context/AuthContext";
 import { Search, SlidersHorizontal, RotateCcw, Sparkles, Filter, Check, MapPin, ShieldAlert, HeartPulse, Dumbbell } from "lucide-react";
 
 export default function ExploreView({
@@ -15,6 +16,7 @@ export default function ExploreView({
   savedRoutines,
   onToggleSaveRoutine
 }) {
+  const { requireAuth } = useAuth();
   const { locationData, setIsManualModalOpen } = useLocation();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -52,6 +54,25 @@ export default function ExploreView({
     setFilterLowSugar(false);
     setMaxPrepTime(60);
     setCalorieRange(3200);
+  };
+
+  // Auth-Gated Action Handlers
+  const handleSelectRoutineWithAuth = (routineId) => {
+    requireAuth(() => {
+      if (onSelectRoutine) onSelectRoutine(routineId);
+    }, "Sign in to view detailed daily routine timelines, recipes and nutrition.");
+  };
+
+  const handleToggleSaveWithAuth = (routineId) => {
+    requireAuth(() => {
+      if (onToggleSaveRoutine) onToggleSaveRoutine(routineId);
+    }, "Sign in to save routines to your personal library.");
+  };
+
+  const handleShareWithAuth = (routine) => {
+    requireAuth(() => {
+      if (onOpenShare) onOpenShare(routine);
+    }, "Sign in to share routines with friends.");
   };
 
   // Filtered routines logic
@@ -102,7 +123,7 @@ export default function ExploreView({
 
       return true;
     });
-  }, [searchQuery, selectedCategory, filterVegOnly, filterHighProtein, filterLowSugar, calorieRange]);
+  }, [searchQuery, selectedCategory, filterVegOnly, filterHighProtein, filterLowSugar, calorieRange, adaptedRoutines]);
 
   const activeFiltersCount =
     (selectedCategory !== "all" ? 1 : 0) +
@@ -184,10 +205,10 @@ export default function ExploreView({
             <ShieldAlert size={22} style={{ color: "#D97706", flexShrink: 0, marginTop: "2px" }} />
             <div>
               <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#92400E", marginBottom: "0.2rem" }}>
-                🩺 Diabetes & Metabolic Health Food Routine (Adapted for {userCity}, {userState})
+                🩺 Metabolic Health Food Routine (Adapted for {userCity}, {userState})
               </div>
-              <p style={{ fontSize: "0.82rem", color: "#B45309", lineHeight: 1.45 }}>
-                For general educational information only. Food requirements may vary by individual. Consult a qualified healthcare professional or certified dietitian for personalized medical advice.
+              <p style={{ fontSize: "0.82rem", color: "#B45309", lineHeight: 1.45, margin: 0 }}>
+                For general educational information only. Consult a qualified healthcare professional for personalized dietary advice.
               </p>
             </div>
           </div>
@@ -367,10 +388,10 @@ export default function ExploreView({
               <RoutineCard
                 key={routine.id}
                 routine={routine}
-                onSelectRoutine={onSelectRoutine}
+                onSelectRoutine={handleSelectRoutineWithAuth}
                 isSaved={savedRoutines.includes(routine.id)}
-                onToggleSave={onToggleSaveRoutine}
-                onOpenShare={onOpenShare}
+                onToggleSave={handleToggleSaveWithAuth}
+                onOpenShare={handleShareWithAuth}
               />
             ))}
           </div>
