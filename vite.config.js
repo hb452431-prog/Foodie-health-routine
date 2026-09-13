@@ -1,9 +1,65 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+function devApiPlugin() {
+  return {
+    name: 'dev-api-middleware',
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url && req.url.startsWith('/api/ai/food-plan')) {
+          try {
+            // Dynamically import handler
+            const { default: handler } = await import('./api/ai/food-plan.js');
+            
+            // Read request body
+            let body = '';
+            req.on('data', chunk => {
+              body += chunk;
+            });
+            req.on('end', async () => {
+              try {
+                req.body = body ? JSON.parse(body) : {};
+              } catch (e) {
+                req.body = {};
+              }
+              
+              // Custom mock response object matching Vercel Serverless Function signature
+              const vercelRes = {
+                statusCode: 200,
+                setHeader: (name, value) => res.setHeader(name, value),
+                status: (code) => {
+                  res.statusCode = code;
+                  return vercelRes;
+                },
+                json: (data) => {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify(data));
+                  return vercelRes;
+                },
+                end: (data) => {
+                  res.end(data);
+                  return vercelRes;
+                }
+              };
+              
+              await handler(req, vercelRes);
+            });
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ success: false, error: err.message, code: 'DEV_SERVER_ERROR' }));
+          }
+          return;
+        }
+        next();
+      });
+    }
+  };
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), devApiPlugin()],
   build: {
     target: ['es2015', 'chrome64', 'edge79', 'firefox67', 'safari12'],
     cssCodeSplit: true,

@@ -3608,5 +3608,25 @@
   }
 }
 
+/* ============================================================
+   AI PLAN BUILDER & WIZARD STYLES
+============================================================ */
+.wizard-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
 
+.wizard-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #059669);
+  border-radius: var(--radius-full);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+.active-filter-card {
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
