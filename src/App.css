@@ -3630,3 +3630,35 @@
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
   transform: translateY(-1px);
 }
+
+/* Spinner and pulsing animations */
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(16, 185, 129, 0.2);
+  border-top-color: #10B981;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
+}
