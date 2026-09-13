@@ -391,6 +391,7 @@ function AppContent() {
               initialCategory={exploreCategory}
               onSelectRoutine={handleSelectRoutine}
               onOpenShare={handleOpenShare}
+              onApplyPlan={handleApplyPlan}
               savedRoutines={savedRoutines}
               onToggleSaveRoutine={handleToggleSaveRoutine}
               onShowToast={showToast}

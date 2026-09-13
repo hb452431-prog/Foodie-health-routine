@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import RoutineCard from "../components/RoutineCard";
 import CentralFoodExplorer from "../components/CentralFoodExplorer";
 import MealDbExplorer from "../components/MealDbExplorer";
+import DiseaseRoutineGenerator from "../components/DiseaseRoutineGenerator";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
 import { useLocation } from "../context/LocationContext";
 import { useAuth } from "../context/AuthContext";
-import { Search, RotateCcw, Sparkles, Check, MapPin, ShieldAlert, Dumbbell, ChefHat, Calendar, Database, Globe } from "lucide-react";
+import { Search, RotateCcw, Sparkles, Check, MapPin, ShieldAlert, Dumbbell, ChefHat, Calendar, Database, Globe, Activity } from "lucide-react";
 
 export default function ExploreView({
   userProfile,
@@ -15,6 +16,7 @@ export default function ExploreView({
   initialCategory = "all",
   onSelectRoutine,
   onOpenShare,
+  onApplyPlan,
   savedRoutines = [],
   onToggleSaveRoutine,
   onShowToast
@@ -22,8 +24,24 @@ export default function ExploreView({
   const { requireAuth } = useAuth();
   const { locationData, setIsManualModalOpen } = useLocation();
 
-  // Active Explorer Mode: "food-kb" (Central Food Master Knowledge Base), "routines" (Daily Schedules), or "mealdb" (TheMealDB)
-  const [exploreMode, setExploreMode] = useState("food-kb");
+  const isDiseaseKeyword = (q) => {
+    if (!q) return false;
+    const lower = q.toLowerCase();
+    return [
+      "diabetes", "sugar", "pcos", "pcod", "thyroid", "hypertension", "bp", "pressure",
+      "cholesterol", "liver", "fatty liver", "gerd", "acid", "reflux", "uric", "gout",
+      "kidney", "renal", "anemia", "iron", "ibs", "gut", "heart", "disease", "illness",
+      "condition", "health routine", "blood pressure"
+    ].some((k) => lower.includes(k));
+  };
+
+  // Active Explorer Mode: "food-kb", "disease-ai", "routines", or "mealdb"
+  const [exploreMode, setExploreMode] = useState(() => {
+    if (initialCategory === "health" || initialCategory === "disease" || isDiseaseKeyword(initialQuery)) {
+      return "disease-ai";
+    }
+    return "food-kb";
+  });
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -31,6 +49,21 @@ export default function ExploreView({
   const [filterHighProtein, setFilterHighProtein] = useState(false);
   const [filterLowSugar, setFilterLowSugar] = useState(false);
   const [calorieRange, setCalorieRange] = useState(3200); // max kcal
+
+  useEffect(() => {
+    if (initialQuery) {
+      setSearchQuery(initialQuery);
+      if (isDiseaseKeyword(initialQuery)) {
+        setExploreMode("disease-ai");
+      }
+    }
+  }, [initialQuery]);
+
+  useEffect(() => {
+    if (initialCategory === "disease" || initialCategory === "health") {
+      setExploreMode("disease-ai");
+    }
+  }, [initialCategory]);
 
   const userCountry = locationData?.country || userProfile?.country || "India";
   const userState = locationData?.state || userProfile?.state || "Karnataka";
@@ -154,6 +187,8 @@ export default function ExploreView({
             <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", maxWidth: "600px" }}>
               {exploreMode === "food-kb"
                 ? "Unified single source of truth database powering all dish searches, ingredients, recipes, and verified imagery."
+                : exploreMode === "disease-ai"
+                ? "AI-powered clinical food routines tailored for specific diseases, metabolic conditions, and health protocols."
                 : exploreMode === "routines"
                 ? "Find full day-by-day food routines calibrated for your metabolism, fitness targets, and lifestyle."
                 : "Search thousands of global dishes and recipes from TheMealDB open catalog."}
@@ -196,7 +231,7 @@ export default function ExploreView({
           </div>
         </div>
 
-        {/* 3-Way Sub-Mode Segmented Control */}
+        {/* 4-Way Sub-Mode Segmented Control */}
         <div
           style={{
             display: "inline-flex",
@@ -243,6 +278,41 @@ export default function ExploreView({
               }}
             >
               CORE
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setExploreMode("disease-ai")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              border: "none",
+              background: exploreMode === "disease-ai" ? "#FFFFFF" : "transparent",
+              color: exploreMode === "disease-ai" ? "#065F46" : "var(--text-secondary)",
+              fontWeight: 700,
+              fontSize: "0.88rem",
+              padding: "0.55rem 1.15rem",
+              borderRadius: "var(--radius-full)",
+              cursor: "pointer",
+              boxShadow: exploreMode === "disease-ai" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.2s ease"
+            }}
+          >
+            <Activity size={15} style={{ color: "#10B981" }} />
+            <span>AI Disease Routine Search</span>
+            <span
+              style={{
+                fontSize: "0.68rem",
+                background: "linear-gradient(135deg, #10B981, #059669)",
+                color: "#FFFFFF",
+                padding: "0.1rem 0.45rem",
+                borderRadius: "var(--radius-full)",
+                fontWeight: 800
+              }}
+            >
+              AI
             </span>
           </button>
 
@@ -301,14 +371,25 @@ export default function ExploreView({
         )}
 
         {/* ============================================================
-           VIEW 2: THEMEALDB LIVE RECIPE EXPLORER
+           VIEW 2: AI DISEASE & CLINICAL ROUTINE GENERATOR
+        ============================================================ */}
+        {exploreMode === "disease-ai" && (
+          <DiseaseRoutineGenerator
+            onApplyPlan={onApplyPlan}
+            onShowToast={onShowToast}
+            initialDiseaseQuery={searchQuery || initialQuery}
+          />
+        )}
+
+        {/* ============================================================
+           VIEW 3: THEMEALDB LIVE RECIPE EXPLORER
         ============================================================ */}
         {exploreMode === "mealdb" && (
           <MealDbExplorer onShowToast={onShowToast} />
         )}
 
         {/* ============================================================
-           VIEW 3: HEALTH & METABOLIC ROUTINES LIBRARY
+           VIEW 4: HEALTH & METABOLIC ROUTINES LIBRARY
         ============================================================ */}
         {exploreMode === "routines" && (
           <>

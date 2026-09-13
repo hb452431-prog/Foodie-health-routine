@@ -893,15 +893,61 @@ export default function PlanBuilder({
 
                       <div>
                         <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--primary-900)", marginBottom: "0.4rem" }}>
-                          2. Health Notes / Preferences (Optional)
+                          2. Health Conditions & Special Protocols (Optional)
                         </label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", marginBottom: "0.5rem" }}>
+                          {[
+                            "Type 2 Diabetes",
+                            "PCOS / PCOD",
+                            "Hypertension / High BP",
+                            "Hypothyroidism",
+                            "High Cholesterol",
+                            "Fatty Liver",
+                            "GERD / Acidity",
+                            "Uric Acid / Gout",
+                            "IBS / Gut Health"
+                          ].map((cond) => {
+                            const isIncluded = formData.healthNotes.includes(cond);
+                            return (
+                              <button
+                                key={cond}
+                                type="button"
+                                onClick={() => {
+                                  if (isIncluded) {
+                                    setFormData({
+                                      ...formData,
+                                      healthNotes: formData.healthNotes.replace(cond, "").replace(/,\s*,/g, ",").trim()
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      healthNotes: formData.healthNotes ? `${formData.healthNotes}, ${cond}` : cond
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  padding: "0.3rem 0.65rem",
+                                  borderRadius: "var(--radius-full)",
+                                  border: isIncluded ? "1.5px solid #10B981" : "1px solid var(--border-subtle)",
+                                  background: isIncluded ? "#ECFDF5" : "#FFFFFF",
+                                  color: isIncluded ? "#065F46" : "var(--text-secondary)",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 700,
+                                  cursor: "pointer"
+                                }}
+                              >
+                                {isIncluded ? "✓ " : "+ "}{cond}
+                              </button>
+                            );
+                          })}
+                        </div>
                         <textarea
                           rows={3}
                           value={formData.healthNotes}
                           onChange={(e) => setFormData({ ...formData, healthNotes: e.target.value })}
                           className="search-input"
                           style={{ width: "100%", padding: "0.6rem 0.9rem", resize: "vertical" }}
-                          placeholder="e.g. Mild spices, PCOS support, low sodium, focusing on natural whole foods..."
+                          placeholder="e.g. Mild spices, Type 2 Diabetes, low sodium, focusing on natural whole foods..."
                         />
                       </div>
 
