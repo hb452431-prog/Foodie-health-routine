@@ -40,7 +40,7 @@ async function discoverSupportedModels(apiKey) {
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => controller.abort(), 3500);
 
     const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
     const res = await fetch(listUrl, {
@@ -68,22 +68,35 @@ async function discoverSupportedModels(apiKey) {
       .map((m) => (m.name || "").replace(/^models\//, "").trim())
       .filter(Boolean);
 
-    cachedDiscoveredModels = available;
-    cacheTimestamp = now;
-    return available;
+    if (available.length > 0) {
+      cachedDiscoveredModels = available;
+      cacheTimestamp = now;
+      return available;
+    }
+    return [];
   } catch (_err) {
     return [];
   }
 }
 
+/**
+ * Builds prioritized candidate models list:
+ * 1. Explicit env override (process.env.GEMINI_MODEL) if set
+ * 2. Discovered key-accessible models (Flash models first, then Pro models)
+ * 3. All standard known models as robust fallbacks
+ */
 function getFastCandidateModels(envModel, discoveredModels = []) {
-  const fastPriority = [
-    "gemini-3.8-flash",
-    "gemini-2.5-flash",
+  const allKnownModels = [
+    "gemini-1.5-flash",
     "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-flash-8b",
+    "gemini-1.5-pro",
     "gemini-2.5-pro",
+    "gemini-pro",
+    "gemini-1.0-pro",
     "gemini-flash",
-    "gemini-pro"
+    "gemini-3.8-flash"
   ];
 
   const candidateSet = new Set();
@@ -93,21 +106,24 @@ function getFastCandidateModels(envModel, discoveredModels = []) {
     candidateSet.add(envModel.trim().replace(/^models\//, ""));
   }
 
-  // 2. Discovered flash models if available
-  if (discoveredModels.length > 0) {
-    for (const m of fastPriority) {
-      if (discoveredModels.includes(m)) candidateSet.add(m);
-    }
+  // 2. Discovered models from Google API for this key
+  if (Array.isArray(discoveredModels) && discoveredModels.length > 0) {
+    // Flash models first (fastest)
     for (const m of discoveredModels) {
-      if (m.includes("flash")) candidateSet.add(m);
+      if (m.toLowerCase().includes("flash")) candidateSet.add(m);
     }
+    // Pro models second
+    for (const m of discoveredModels) {
+      if (m.toLowerCase().includes("pro")) candidateSet.add(m);
+    }
+    // Other discovered models
     for (const m of discoveredModels) {
       candidateSet.add(m);
     }
   }
 
-  // 3. Fast priority fallback list
-  for (const m of fastPriority) {
+  // 3. Known models fallback
+  for (const m of allKnownModels) {
     candidateSet.add(m);
   }
 
@@ -320,8 +336,9 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
   "medicalDisclaimer": "General nutrition guidance only. Consult a physician for specific health conditions."
 }`;
 
-    // Fast-path candidate list
-    let candidateModels = getFastCandidateModels(process.env.GEMINI_MODEL, cachedDiscoveredModels || []);
+    // Auto-discover key-accessible models upfront (cached in memory)
+    const discovered = await discoverSupportedModels(apiKey);
+    let candidateModels = getFastCandidateModels(process.env.GEMINI_MODEL, discovered);
 
     let successfulPlan = null;
     let successfulModel = null;
@@ -330,7 +347,7 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
     // Fast iteration through candidate models
     for (let i = 0; i < candidateModels.length; i++) {
       const model = candidateModels[i];
-      const result = await generateWithModel(model, apiKey, prompt, 8000);
+      const result = await generateWithModel(model, apiKey, prompt, 7000);
 
       if (result.success) {
         successfulPlan = result.data;
@@ -344,14 +361,6 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
       // Stop immediately on API key auth rejection
       if (result.status === 401 || result.status === 403) {
         break;
-      }
-
-      // If model not found and we haven't discovered yet, run discovery once to refresh list
-      if ((result.status === 404 || result.status === 400) && !cachedDiscoveredModels && i === 0) {
-        const discovered = await discoverSupportedModels(apiKey);
-        if (discovered.length > 0) {
-          candidateModels = getFastCandidateModels(process.env.GEMINI_MODEL, discovered);
-        }
       }
     }
 
