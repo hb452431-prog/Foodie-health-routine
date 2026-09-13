@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Utensils, MapPin, Tag, ArrowRight, Sparkles, Flame } from "lucide-react";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 
 const FALLBACK_FOOD_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
 
@@ -170,25 +171,34 @@ export default function FoodCard({ food, onViewFood }) {
           )}
         </div>
 
-        {/* Action Button */}
-        <button
-          type="button"
-          onClick={() => onViewFood && onViewFood(food)}
-          className="btn btn-primary btn-sm"
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "0.5rem",
-            padding: "0.6rem 1rem",
-            fontWeight: 700,
-            borderRadius: "var(--radius-lg)"
-          }}
-        >
-          <span>View Dish Details</span>
-          <ArrowRight size={15} />
-        </button>
+        {/* Action Buttons: View Dish Details + Swiggy / Zomato Ordering */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <button
+            type="button"
+            onClick={() => onViewFood && onViewFood(food)}
+            className="btn btn-primary btn-sm"
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              padding: "0.55rem 1rem",
+              fontWeight: 700,
+              borderRadius: "var(--radius-lg)"
+            }}
+          >
+            <Utensils size={14} />
+            <span>View Dish Details</span>
+            <ArrowRight size={14} />
+          </button>
+
+          {/* Quick Online Order Links */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.35rem" }}>
+            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>Order:</span>
+            <OrderDeliveryLinks dishName={title} variant="pills" />
+          </div>
+        </div>
       </div>
     </div>
   );

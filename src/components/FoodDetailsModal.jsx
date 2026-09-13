@@ -16,6 +16,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 import { generateAndStoreFoodImage } from "../services/foodService";
 
 const FALLBACK_FOOD_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
@@ -476,36 +477,7 @@ export default function FoodDetailsModal({
           )}
 
           {/* Quick Ordering Online (Swiggy / Zomato) */}
-          <div className="order-online-banner" style={{ marginTop: "1rem" }}>
-            <h4 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#9A3412", marginBottom: "0.25rem" }}>
-              Craving this authentic dish right now?
-            </h4>
-            <p style={{ fontSize: "0.82rem", color: "#C2410C", maxWidth: "500px", margin: "0 auto 0.85rem" }}>
-              Order wholesome {title} from top health kitchens and restaurants in your area.
-            </p>
-
-            <div className="order-btn-group">
-              <a
-                href={swiggyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-swiggy btn-sm"
-              >
-                <span>🛵 Search on Swiggy</span>
-                <ExternalLink size={14} />
-              </a>
-
-              <a
-                href={zomatoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-zomato btn-sm"
-              >
-                <span>🍴 Search on Zomato</span>
-                <ExternalLink size={14} />
-              </a>
-            </div>
-          </div>
+          <OrderDeliveryLinks dishName={title} variant="banner" showCityBadge={true} />
 
           {/* Standard Medical & Educational Disclaimer */}
           <div

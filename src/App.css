@@ -1095,6 +1095,75 @@
   color: #FFFFFF;
 }
 
+/* Swiggy & Zomato Quick Action Order Pills */
+.delivery-pills-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.order-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.order-pill-swiggy {
+  background: rgba(252, 128, 25, 0.1);
+  color: #C2410C;
+  border: 1px solid rgba(252, 128, 25, 0.3);
+}
+
+.order-pill-swiggy:hover {
+  background: #FC8019;
+  color: #FFFFFF;
+  border-color: #FC8019;
+  box-shadow: 0 3px 10px rgba(252, 128, 25, 0.35);
+  transform: translateY(-1.5px);
+}
+
+.order-pill-zomato {
+  background: rgba(226, 55, 68, 0.1);
+  color: #B91C1C;
+  border: 1px solid rgba(226, 55, 68, 0.3);
+}
+
+.order-pill-zomato:hover {
+  background: #E23744;
+  color: #FFFFFF;
+  border-color: #E23744;
+  box-shadow: 0 3px 10px rgba(226, 55, 68, 0.35);
+  transform: translateY(-1.5px);
+}
+
+.order-pill-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.order-pill-text {
+  letter-spacing: 0.01em;
+}
+
+.order-pill-ext {
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.order-pill:hover .order-pill-ext {
+  opacity: 1;
+}
+
 /* ============================================================
    PLAN BUILDER 5-STEP WIZARD
 ============================================================ */

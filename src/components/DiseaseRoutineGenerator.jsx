@@ -18,6 +18,7 @@ import {
 import { generateAIFoodPlan, generateOfflineFallbackPlan } from "../services/geminiPlanService";
 import { findOrResolveFood } from "../services/foodService";
 import FoodDetailsModal from "./FoodDetailsModal";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 import confetti from "canvas-confetti";
 
 const POPULAR_DISEASES = [
@@ -422,34 +423,42 @@ export default function DiseaseRoutineGenerator({ onApplyPlan, onShowToast, init
                         </div>
                       )}
 
-                      {/* Action buttons */}
-                      <div style={{ marginTop: "0.65rem", display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => setSelectedFoodDetail(foodRecord || { dishName: meal.title, category: meal.slotName, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, description: meal.description, imageUrl: displayImage })}
-                          style={{
-                            fontSize: "0.75rem",
-                            padding: "0.25rem 0.65rem",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "0.3rem"
-                          }}
-                        >
-                          <Utensils size={13} />
-                          <span>View Dish Details</span>
-                        </button>
-
-                        {foodRecord?.youtubeUrl && (
-                          <a
-                            href={foodRecord.youtubeUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ fontSize: "0.75rem", color: "#DC2626", fontWeight: 700, textDecoration: "none" }}
+                      {/* Action buttons: View Details, Video Recipe, and Swiggy / Zomato Ordering */}
+                      <div style={{ marginTop: "0.65rem", display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "0.45rem", alignItems: "center", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setSelectedFoodDetail(foodRecord || { dishName: meal.title, category: meal.slotName, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, description: meal.description, imageUrl: displayImage })}
+                            style={{
+                              fontSize: "0.75rem",
+                              padding: "0.25rem 0.65rem",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "0.3rem"
+                            }}
                           >
-                            ▶ Video Recipe
-                          </a>
-                        )}
+                            <Utensils size={13} />
+                            <span>View Dish Details</span>
+                          </button>
+
+                          {foodRecord?.youtubeUrl && (
+                            <a
+                              href={foodRecord.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: "0.75rem", color: "#DC2626", fontWeight: 700, textDecoration: "none", background: "#FEF2F2", border: "1px solid #FECACA", padding: "0.25rem 0.55rem", borderRadius: "var(--radius-sm)" }}
+                            >
+                              ▶ Video Recipe
+                            </a>
+                          )}
+                        </div>
+
+                        {/* Swiggy & Zomato Ordering Quick Pills */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>Order:</span>
+                          <OrderDeliveryLinks dishName={meal.title} variant="pills" />
+                        </div>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Globe, Tag, Utensils, ExternalLink, Play, BookOpen } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 import { getMealById } from "../services/mealDbService";
 
 const FALLBACK_DISH_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
@@ -344,36 +345,7 @@ export default function MealDbRecipeModal({ meal, onClose, onShowToast }) {
               )}
 
               {/* Quick Online Food Delivery Ordering Links */}
-              <div className="order-online-banner" style={{ marginTop: "1rem" }}>
-                <h4 style={{ fontSize: "1.05rem", fontWeight: 800, color: "#9A3412", marginBottom: "0.25rem" }}>
-                  Craving this dish right now?
-                </h4>
-                <p style={{ fontSize: "0.82rem", color: "#C2410C", maxWidth: "500px", margin: "0 auto 0.85rem" }}>
-                  Order authentic {title} from top-rated restaurants near you.
-                </p>
-
-                <div className="order-btn-group">
-                  <a
-                    href={swiggyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-swiggy btn-sm"
-                  >
-                    <span>🛵 Search on Swiggy</span>
-                    <ExternalLink size={14} />
-                  </a>
-
-                  <a
-                    href={zomatoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-zomato btn-sm"
-                  >
-                    <span>🍴 Search on Zomato</span>
-                    <ExternalLink size={14} />
-                  </a>
-                </div>
-              </div>
+              <OrderDeliveryLinks dishName={title} variant="banner" showCityBadge={true} />
 
               {/* Source attribution */}
               <div style={{ textAlign: "center", marginTop: "1.25rem", fontSize: "0.75rem", color: "var(--text-light)" }}>

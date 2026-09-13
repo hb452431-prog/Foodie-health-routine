@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import YouTubeIcon from "../components/YouTubeIcon";
+import OrderDeliveryLinks from "../components/OrderDeliveryLinks";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
 import { getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
 import { useLocation } from "../context/LocationContext";
@@ -976,17 +977,20 @@ export default function MyPlanView({
                         <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.4rem" }}>
                           🔥 {meal.calories} kcal • ⏱️ {meal.prepTime || "15 min"}
                         </div>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ padding: "0.25rem 0.6rem", fontSize: "0.72rem" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenRecipe && onOpenRecipe(meal, meal.parentRoutine || displayedRoutine);
-                          }}
-                        >
-                          <Utensils size={11} />
-                          <span>View Recipe</span>
-                        </button>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: "0.25rem 0.6rem", fontSize: "0.72rem" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenRecipe && onOpenRecipe(meal, meal.parentRoutine || displayedRoutine);
+                            }}
+                          >
+                            <Utensils size={11} />
+                            <span>View Recipe</span>
+                          </button>
+                          <OrderDeliveryLinks dishName={meal.orderQuery || meal.title} variant="pills" />
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Clock, Flame, Utensils, Heart, CheckCircle, ExternalLink, ShieldAlert, Sparkles } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 
 export default function RecipeModal({
   meal,
@@ -267,36 +268,7 @@ export default function RecipeModal({
           </div>
 
           {/* External Food Ordering Section (Swiggy / Zomato) */}
-          <div className="order-online-banner">
-            <h4 style={{ fontSize: "1.1rem", fontWeight: 800, color: "#9A3412", marginBottom: "0.3rem" }}>
-              Short on time? Want to order this meal instead?
-            </h4>
-            <p style={{ fontSize: "0.85rem", color: "#C2410C", maxWidth: "500px", margin: "0 auto" }}>
-              Order comparable healthy options directly from top health kitchens in your area via our delivery partners.
-            </p>
-
-            <div className="order-btn-group">
-              <a
-                href={swiggyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-swiggy btn-sm"
-              >
-                <span>🛵 Order on Swiggy</span>
-                <ExternalLink size={14} />
-              </a>
-
-              <a
-                href={zomatoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-zomato btn-sm"
-              >
-                <span>🍴 Order on Zomato</span>
-                <ExternalLink size={14} />
-              </a>
-            </div>
-          </div>
+          <OrderDeliveryLinks dishName={meal.orderQuery || meal.title} variant="banner" showCityBadge={true} />
 
           {/* Health Disclaimer */}
           <div

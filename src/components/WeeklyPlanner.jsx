@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Calendar, CheckCircle, Clock, Utensils, ChevronRight, ShoppingBag, Sparkles } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
+import OrderDeliveryLinks from "./OrderDeliveryLinks";
 import { ROUTINES_DATA } from "../data/routinesData";
 
 // Helper function to calculate current week's 7 days based on today
@@ -223,9 +224,9 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: Recipe, YouTube, Order & Direct Swiggy/Zomato */}
               <div
-                style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <button
@@ -248,16 +249,7 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
                   </button>
                 )}
 
-                {onOpenOrder && (
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => onOpenOrder(meal)}
-                    style={{ color: "#D97706", padding: "0.35rem 0.55rem" }}
-                    title="Order on Swiggy / Zomato"
-                  >
-                    <ShoppingBag size={14} />
-                  </button>
-                )}
+                <OrderDeliveryLinks dishName={mealTitle} variant="pills" />
               </div>
             </div>
           );
