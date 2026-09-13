@@ -66,6 +66,7 @@ export default async function handler(req, res) {
 
     // Sanitize and normalize input values
     const age = Number(body.age) || 26;
+    const gender = String(body.gender || "").trim();
     const goal = String(body.goal || "Healthy Eating").trim();
     const diet = String(body.diet || "Vegetarian").trim();
     const activity = String(body.activity || "Moderate").trim();
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
 Create a highly personalized, practical, scientifically balanced daily food routine for the following user:
 
 USER PROFILE:
-- Age: ${age} years old
+- Age: ${age} years old${gender ? `\n- Gender: ${gender}` : ""}
 - Primary Health Goal: ${goal}
 - Dietary Lifestyle: ${diet}
 - Daily Physical Activity Level: ${activity}
@@ -236,11 +237,10 @@ Return ONLY a valid JSON object with EXACTLY this structure:
   "medicalDisclaimer": "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes."
 }`;
 
-    // Supported Gemini model candidates in priority order
-    // 'gemini-1.5-flash' is the standard production model available on all Gemini API keys
+    // Candidate Gemini models in priority order
     const configuredModel = process.env.GEMINI_MODEL;
     const modelsToTry = Array.from(
-      new Set([configuredModel, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"])
+      new Set([configuredModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"])
     ).filter(Boolean);
 
     let lastError = null;
@@ -357,7 +357,7 @@ Return ONLY a valid JSON object with EXACTLY this structure:
       error: userFriendlyError,
       status: statusCode,
       code: lastError?.code || "AI_GENERATION_FAILED",
-      model: lastError?.model || "gemini-1.5-flash",
+      model: lastError?.model || "gemini-2.5-flash",
       details: lastError?.message || "Unknown error"
     });
   } catch (error) {
