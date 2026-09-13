@@ -53,7 +53,7 @@ export default function NearbyFoodSection({
             <div className="nearby-location-badge">
               <span className="pulse-pin-dot" />
               <MapPin size={14} style={{ color: "#059669" }} />
-              <span>{city}, {state}</span>
+              <span>{locationData?.label || `${city}, ${state}`}</span>
             </div>
 
             <h2 className="section-title" style={{ marginTop: "0.4rem", marginBottom: "0.3rem" }}>

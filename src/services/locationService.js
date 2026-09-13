@@ -15,6 +15,8 @@ export const DEFAULT_LOCATION = {
   city: "Bengaluru",
   state: "Karnataka",
   country: "India",
+  area: "",
+  pincode: "",
   regionName: "Bengaluru, Karnataka",
   label: "Bengaluru, Karnataka",
   isGps: false,
@@ -31,13 +33,24 @@ export function getSavedLocationPreference() {
     if (!raw) return DEFAULT_LOCATION;
     const parsed = JSON.parse(raw);
     if (parsed && parsed.city) {
+      const city = parsed.city;
+      const state = parsed.state || "Karnataka";
+      const country = parsed.country || "India";
+      const area = parsed.area || "";
+      const pincode = parsed.pincode || "";
+      const displayLabel = area ? `${area}, ${city}` : `${city}, ${state}`;
+
       return {
         ...DEFAULT_LOCATION,
-        city: parsed.city,
-        state: parsed.state || "Karnataka",
-        country: parsed.country || "India",
-        regionName: `${parsed.city}, ${parsed.state || "Karnataka"}`,
-        label: `${parsed.city}, ${parsed.state || "Karnataka"}`,
+        city,
+        state,
+        country,
+        area,
+        pincode,
+        latitude: parsed.latitude || null,
+        longitude: parsed.longitude || null,
+        regionName: `${city}, ${state}`,
+        label: displayLabel,
         isGps: !!parsed.isGps
       };
     }
@@ -48,7 +61,7 @@ export function getSavedLocationPreference() {
 }
 
 /**
- * Safely save location preference (city/state only, no raw coordinates)
+ * Safely save location preference to localStorage (non-sensitive city/state/area/coords)
  */
 export function saveLocationPreference(loc) {
   if (typeof window === "undefined" || !loc) return;
@@ -59,6 +72,10 @@ export function saveLocationPreference(loc) {
         city: loc.city || "Bengaluru",
         state: loc.state || "Karnataka",
         country: loc.country || "India",
+        area: loc.area || "",
+        pincode: loc.pincode || "",
+        latitude: loc.latitude || null,
+        longitude: loc.longitude || null,
         isGps: !!loc.isGps
       })
     );
@@ -109,7 +126,7 @@ export async function reverseGeocodeCoordinates(lat, lon) {
     const timeoutId = setTimeout(() => controller.abort(), 3000);
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=12&addressdetails=1`,
       {
         headers: {
           "Accept-Language": "en",
@@ -126,6 +143,8 @@ export async function reverseGeocodeCoordinates(lat, lon) {
       const rawCity = address.city || address.town || address.village || address.suburb || address.state_district || address.county;
       const rawState = address.state || address.region || "Karnataka";
       const rawCountry = address.country || "India";
+      const rawSuburb = address.suburb || address.neighbourhood || address.residential || "";
+      const rawPostcode = address.postcode || "";
 
       if (rawCity) {
         const matched = getLocationFoodData(rawCity, rawState, rawCountry);
@@ -135,8 +154,10 @@ export async function reverseGeocodeCoordinates(lat, lon) {
           city: matched.city,
           state: matched.state,
           country: matched.country,
+          area: rawSuburb,
+          pincode: rawPostcode,
           regionName: `${matched.city}, ${matched.state}`,
-          label: `${matched.city}, ${matched.state}`,
+          label: rawSuburb ? `${rawSuburb}, ${matched.city}` : `${matched.city}, ${matched.state}`,
           isGps: true
         };
       }
@@ -153,6 +174,8 @@ export async function reverseGeocodeCoordinates(lat, lon) {
     city: nearest.city,
     state: nearest.state,
     country: nearest.country,
+    area: "",
+    pincode: "",
     regionName: `${nearest.city}, ${nearest.state}`,
     label: `${nearest.city}, ${nearest.state}`,
     isGps: true
@@ -165,7 +188,7 @@ export async function reverseGeocodeCoordinates(lat, lon) {
 export function getCurrentPositionPromise(options = {}) {
   const defaultOptions = {
     enableHighAccuracy: true,
-    timeout: 15000,
+    timeout: 12000,
     maximumAge: 300000,
     ...options
   };
@@ -184,27 +207,37 @@ export function getCurrentPositionPromise(options = {}) {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve(position),
       (geoError) => {
-        let type = "unknown";
-        let title = "Unable to determine your location";
+        let type = "unavailable";
+        let title = "Unable to detect your location";
         let message = "We couldn't determine your location. Please choose your location manually or try again.";
+        let instructions = "";
 
         switch (geoError.code) {
-          case geoError.PERMISSION_DENIED:
+          case geoError.PERMISSION_DENIED: // Code 1
             type = "denied";
-            title = "Location access is blocked";
-            message = "Please allow location access for Foodie-Health-Routine in your browser/device settings.";
+            title = "Location Permission Denied";
+            message = "Location permission is currently blocked for this website in your browser settings. To discover nearby recommendations, please allow location access in your browser settings or choose your city manually.";
+            instructions = "Tap the padlock or site settings icon 🔒 in your browser address bar → Permissions → Allow Location, then tap Try Again.";
             break;
-          case geoError.POSITION_UNAVAILABLE:
-            type = "unavailable";
-            title = "We couldn't determine your location";
-            message = "Check that Location/GPS is enabled on your device and try again.";
+
+          case geoError.POSITION_UNAVAILABLE: // Code 2: Device GPS is OFF or cell tower signal unavailable
+            type = "gps_off";
+            title = "Turn On Location";
+            message = "Location is currently turned off on your device. Turn on Location services to discover nearby restaurants, food recommendations and location-based features.";
+            instructions = "Please turn on Location services in your device/browser settings, then return to this website and tap Retry.";
             break;
-          case geoError.TIMEOUT:
+
+          case geoError.TIMEOUT: // Code 3
             type = "timeout";
             title = "Location request timed out";
-            message = "The request to detect your location took too long. Please try again or choose your city manually.";
+            message = "The request to detect your location took too long. Please ensure your GPS has a signal and try again, or enter your location manually.";
+            instructions = "Check that you have a stable connection and tap Retry.";
             break;
+
           default:
+            type = "unavailable";
+            title = "Unable to detect your location";
+            message = "We couldn't determine your location. Please check your network or GPS connection and try again.";
             break;
         }
 
@@ -212,10 +245,12 @@ export function getCurrentPositionPromise(options = {}) {
           code: geoError.code,
           type,
           title,
-          message
+          message,
+          instructions
         });
       },
       defaultOptions
     );
   });
 }
+

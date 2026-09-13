@@ -60,17 +60,17 @@ export default function LocationIndicator() {
         type="button"
         className={`location-nav-pill ${isGpsActive ? "gps-active" : ""}`}
         onClick={() => setIsLocationPanelOpen(!isLocationPanelOpen)}
-        title={`Current Location: ${locationData?.label || "Bengaluru"}. Click to refresh or change.`}
+        title={`Current Location: ${locationData?.label || locationData?.city || "Bengaluru"}. Click to refresh or change.`}
         aria-label="Current Location Menu"
       >
         <span className="location-nav-pin-dot">
           <MapPin size={13} className={isLoading ? "location-icon-spin" : ""} />
         </span>
         <span className="location-nav-city-text">
-          {locationData?.city || "Bengaluru"}
+          {locationData?.area || locationData?.city || "Bengaluru"}
         </span>
         <span className="location-nav-state-desktop">
-          , {locationData?.state?.split(" ")[0] || "Karnataka"}
+          {locationData?.area ? `, ${locationData?.city}` : `, ${locationData?.state?.split(" ")[0] || "Karnataka"}`}
         </span>
         <ChevronDown size={12} className={`location-chevron ${isLocationPanelOpen ? "rotated" : ""}`} />
       </button>
@@ -133,11 +133,11 @@ export default function LocationIndicator() {
                 <MapPin size={16} />
               </div>
               <div>
-                <div style={{ fontSize: "1rem", fontWeight: 800, color: "var(--primary-900)" }}>
-                  {locationData?.city}, {locationData?.state}
+                <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--primary-900)" }}>
+                  {locationData?.label || `${locationData?.city}, ${locationData?.state}`}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                  {locationData?.country || "India"}
+                  {locationData?.country || "India"} {locationData?.pincode ? `• ${locationData.pincode}` : ""}
                 </div>
               </div>
             </div>
@@ -147,7 +147,7 @@ export default function LocationIndicator() {
           <div style={{ padding: "0.75rem 1rem", background: "var(--bg-card-subtle)", borderTop: "1px solid var(--border-subtle)", borderBottom: "1px solid var(--border-subtle)", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
             {isGpsActive ? (
               <span style={{ color: "#059669", fontWeight: 600 }}>
-                ✓ Location access enabled — food routines customized for {locationData?.city}.
+                ✓ GPS active — recommendations customized for {locationData?.city}.
               </span>
             ) : isBlocked ? (
               <span style={{ color: "#DC2626" }}>

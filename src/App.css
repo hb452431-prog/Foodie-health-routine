@@ -2637,23 +2637,33 @@
 /* 3. Location Permission Modal Hero Graphic */
 .location-permission-card {
   border-radius: var(--radius-xl);
+  box-shadow: 0 25px 60px -15px rgba(15, 56, 42, 0.28), 0 0 0 1px rgba(15, 56, 42, 0.05);
 }
 
 .location-modal-hero {
   position: relative;
-  height: 140px;
+  height: 130px;
   background: linear-gradient(135deg, #09261c 0%, #0F382A 50%, #14532D 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  transition: background 0.3s ease;
+}
+
+.location-modal-hero.hero-denied {
+  background: linear-gradient(135deg, #450A0A 0%, #7F1D1D 50%, #991B1B 100%);
+}
+
+.location-modal-hero.hero-warning {
+  background: linear-gradient(135deg, #451A03 0%, #78350F 50%, #92400E 100%);
 }
 
 .location-modal-hero::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(52, 211, 153, 0.15) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1.5px, transparent 1.5px);
   background-size: 20px 20px;
   opacity: 0.6;
 }
@@ -2674,6 +2684,14 @@
   animation: pulsePinWave 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
+.location-pin-wave.wave-red {
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.location-pin-wave.wave-amber {
+  background: rgba(245, 158, 11, 0.25);
+}
+
 @keyframes pulsePinWave {
   0% { transform: scale(0.6); opacity: 0.9; }
   100% { transform: scale(1.6); opacity: 0; }
@@ -2682,8 +2700,8 @@
 .location-pin-badge {
   position: relative;
   z-index: 2;
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   background: linear-gradient(135deg, #10B981, #059669);
   color: #FFFFFF;
@@ -2691,6 +2709,17 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+  transition: all 0.3s ease;
+}
+
+.location-pin-badge.badge-red {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.45);
+}
+
+.location-pin-badge.badge-amber {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.45);
 }
 
 .location-detecting-spinner {
@@ -2702,6 +2731,21 @@
   margin: 0 auto;
   animation: spinLocation 0.8s linear infinite;
 }
+
+@media (max-width: 480px) {
+  .location-modal-hero {
+    height: 110px;
+  }
+  .location-pin-badge {
+    width: 52px;
+    height: 52px;
+  }
+  .location-pin-wave {
+    width: 76px;
+    height: 76px;
+  }
+}
+
 
 /* 4. Nearby Food Section ("Food Around You") */
 .nearby-food-section {
