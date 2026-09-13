@@ -30,23 +30,59 @@ export const DEFAULT_USER_PROFILE = {
   joinDate: "September 2026"
 };
 
+// Memory fallback storage when localStorage is disabled, restricted, or throws SecurityError
+const memoryStore = new Map();
+
+const isStorageAvailable = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    const testKey = "__fhr_storage_test__";
+    window.localStorage.setItem(testKey, "1");
+    window.localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+const hasLocalStorage = isStorageAvailable();
+
 export const getStoredItem = (key, fallback) => {
   try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
+    if (hasLocalStorage) {
+      const item = window.localStorage.getItem(key);
+      if (item === null || item === undefined) {
+        return fallback;
+      }
+      return JSON.parse(item);
+    }
   } catch (e) {
-    console.warn("Error reading localStorage key:", key, e);
-    return fallback;
+    console.warn("SafeStorage read fallback for key:", key);
   }
+
+  // Fallback to in-memory store
+  if (memoryStore.has(key)) {
+    return memoryStore.get(key);
+  }
+  return fallback;
 };
 
 export const setStoredItem = (key, value) => {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (hasLocalStorage) {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      return;
+    }
   } catch (e) {
-    console.warn("Error setting localStorage key:", key, e);
+    console.warn("SafeStorage write fallback for key:", key);
   }
+
+  // Fallback to in-memory store
+  try {
+    memoryStore.set(key, value);
+  } catch (e) {}
 };
+
 
 export const getUserProfile = () => {
   const profile = getStoredItem(KEYS.USER_PROFILE, DEFAULT_USER_PROFILE);

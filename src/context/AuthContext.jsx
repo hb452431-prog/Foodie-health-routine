@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { getStoredItem, setStoredItem } from "../utils/storage";
 
 /**
  * Single Source of Truth for Authentication across Foodie-Health-Routine.
- * Currently uses Demo Frontend Authentication with localStorage persistence.
- * Structured cleanly to easily connect Google OAuth / Firebase Authentication later.
+ * Uses safe storage with in-memory fallback for mobile/private browsing compatibility.
  */
 const AuthContext = createContext(null);
 
@@ -11,15 +11,7 @@ const AUTH_STORAGE_KEY = "foodie_auth_user";
 
 export function AuthProvider({ children }) {
   // Authentication State
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      console.error("Failed to parse stored auth user:", e);
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => getStoredItem(AUTH_STORAGE_KEY, null));
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -34,35 +26,22 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
-  // Persist user state to localStorage
+  // Persist user state safely
   useEffect(() => {
     try {
-      if (user) {
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-      } else {
-        localStorage.removeItem(AUTH_STORAGE_KEY);
-      }
+      setStoredItem(AUTH_STORAGE_KEY, user);
     } catch (e) {
-      console.error("Failed to update auth storage:", e);
+      console.warn("Failed to update auth storage:", e);
     }
   }, [user]);
 
   /**
    * Google Authentication Flow
-   * =========================================================================
-   * TODO: Connect real Google OAuth / Firebase Authentication API here later.
-   * Example:
-   *   import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-   *   const provider = new GoogleAuthProvider();
-   *   const result = await signInWithPopup(getAuth(), provider);
-   *   const user = result.user;
-   * =========================================================================
    */
   const loginWithGoogle = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Simulate fast network response for realistic UX
-      await new Promise((resolve) => setTimeout(resolve, 350));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const loggedInUser = {
         name: "Foodie User",
@@ -78,7 +57,6 @@ export function AuthProvider({ children }) {
       setUser(loggedInUser);
       setIsAuthModalOpen(false);
 
-      // Execute pending action if one was requested prior to login
       if (typeof pendingAction === "function") {
         setTimeout(() => {
           pendingAction();
@@ -88,7 +66,7 @@ export function AuthProvider({ children }) {
 
       return { success: true, user: loggedInUser };
     } catch (error) {
-      console.error("Google authentication error:", error);
+      console.warn("Google authentication error:", error);
       return { success: false, error: "Unable to sign in. Please try again." };
     } finally {
       setIsLoading(false);
@@ -97,13 +75,12 @@ export function AuthProvider({ children }) {
 
   /**
    * Email Login Flow (Demo)
-   * TODO: Connect backend / Firebase signInWithEmailAndPassword later
    */
   const loginWithEmail = useCallback(
     async (email, _password) => {
       setIsLoading(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         const derivedName = email ? email.split("@")[0] : "Foodie User";
         const formattedName = derivedName.charAt(0).toUpperCase() + derivedName.slice(1);
@@ -131,7 +108,7 @@ export function AuthProvider({ children }) {
 
         return { success: true, user: loggedInUser };
       } catch (error) {
-        console.error("Email login error:", error);
+        console.warn("Email login error:", error);
         return { success: false, error: "Unable to sign in with email. Please try again." };
       } finally {
         setIsLoading(false);
@@ -142,13 +119,12 @@ export function AuthProvider({ children }) {
 
   /**
    * Email Sign Up Flow (Demo)
-   * TODO: Connect backend / Firebase createUserWithEmailAndPassword later
    */
   const signupWithEmail = useCallback(
     async (name, email, _password) => {
       setIsLoading(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 350));
+        await new Promise((resolve) => setTimeout(resolve, 300));
 
         const newUser = {
           name: name || (email ? email.split("@")[0] : "New Foodie"),
@@ -173,7 +149,7 @@ export function AuthProvider({ children }) {
 
         return { success: true, user: newUser };
       } catch (error) {
-        console.error("Signup error:", error);
+        console.warn("Signup error:", error);
         return { success: false, error: "Unable to create account. Please try again." };
       } finally {
         setIsLoading(false);
@@ -190,7 +166,7 @@ export function AuthProvider({ children }) {
     setPendingAction(null);
     setIsAuthModalOpen(false);
     try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+      setStoredItem(AUTH_STORAGE_KEY, null);
     } catch (_e) {}
   }, []);
 
@@ -210,8 +186,6 @@ export function AuthProvider({ children }) {
 
   /**
    * Core Helper: requireAuth(actionCallback, reason)
-   * If logged in -> immediately executes actionCallback()
-   * If logged out -> saves callback in pendingAction, opens LoginModal, and executes callback after login!
    */
   const requireAuth = useCallback(
     (actionCallback, reason = "Create your account to unlock personalized food routines, recipes and recommendations.") => {
@@ -255,7 +229,23 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    // Safe fallback if used outside AuthProvider
+    return {
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      isAuthModalOpen: false,
+      authModalReason: "",
+      loginWithGoogle: async () => ({ success: false }),
+      loginWithEmail: async () => ({ success: false }),
+      signupWithEmail: async () => ({ success: false }),
+      logout: () => {},
+      openAuthModal: () => {},
+      closeAuthModal: () => {},
+      requireAuth: () => false,
+      setUser: () => {}
+    };
   }
   return context;
 }
+

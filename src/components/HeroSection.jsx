@@ -143,6 +143,11 @@ export default function HeroSection({
                   alt="Healthy balanced power bowl"
                   className="hero-food-img"
                   loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80";
+                  }}
                 />
                 <div className="hero-floating-badge">
                   <Flame size={14} style={{ color: "#FBBF24" }} />

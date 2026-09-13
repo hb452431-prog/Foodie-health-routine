@@ -2,6 +2,7 @@ import {
   getLocationFoodData,
   getNearestCityFromCoords
 } from "../data/locationFoodData";
+import { getStoredItem, setStoredItem } from "../utils/storage";
 
 export const STORAGE_KEYS = {
   PROMPT_DISMISSED: "fhr_location_prompt_dismissed",
@@ -24,14 +25,11 @@ export const DEFAULT_LOCATION = {
 };
 
 /**
- * Safely get stored location preference from localStorage
+ * Safely get stored location preference from safe storage
  */
 export function getSavedLocationPreference() {
-  if (typeof window === "undefined") return DEFAULT_LOCATION;
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.SAVED_LOCATION);
-    if (!raw) return DEFAULT_LOCATION;
-    const parsed = JSON.parse(raw);
+    const parsed = getStoredItem(STORAGE_KEYS.SAVED_LOCATION, null);
     if (parsed && parsed.city) {
       const city = parsed.city;
       const state = parsed.state || "Karnataka";
@@ -61,28 +59,26 @@ export function getSavedLocationPreference() {
 }
 
 /**
- * Safely save location preference to localStorage (non-sensitive city/state/area/coords)
+ * Safely save location preference to safe storage (non-sensitive city/state/area/coords)
  */
 export function saveLocationPreference(loc) {
-  if (typeof window === "undefined" || !loc) return;
+  if (!loc) return;
   try {
-    localStorage.setItem(
-      STORAGE_KEYS.SAVED_LOCATION,
-      JSON.stringify({
-        city: loc.city || "Bengaluru",
-        state: loc.state || "Karnataka",
-        country: loc.country || "India",
-        area: loc.area || "",
-        pincode: loc.pincode || "",
-        latitude: loc.latitude || null,
-        longitude: loc.longitude || null,
-        isGps: !!loc.isGps
-      })
-    );
+    setStoredItem(STORAGE_KEYS.SAVED_LOCATION, {
+      city: loc.city || "Bengaluru",
+      state: loc.state || "Karnataka",
+      country: loc.country || "India",
+      area: loc.area || "",
+      pincode: loc.pincode || "",
+      latitude: loc.latitude || null,
+      longitude: loc.longitude || null,
+      isGps: !!loc.isGps
+    });
   } catch (e) {
     console.warn("Could not save location preference:", e);
   }
 }
+
 
 /**
  * Check if geolocation is supported in the current environment

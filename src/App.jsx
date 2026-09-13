@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import Navbar from "./components/Navbar";
 import MobileNav from "./components/MobileNav";
 import Footer from "./components/Footer";
 import Toast from "./components/Toast";
-import CommandPalette from "./components/CommandPalette";
 import FloatingQuickBar from "./components/FloatingQuickBar";
+import ViewLoadingSkeleton from "./components/ViewLoadingSkeleton";
 
 // Auth Layer
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -16,19 +16,23 @@ import { LocationProvider } from "./context/LocationContext";
 import LocationPermissionModal from "./components/location/LocationPermissionModal";
 import ManualLocationModal from "./components/location/ManualLocationModal";
 
-// Modals
-import RoutineDetailModal from "./components/RoutineDetailModal";
-import RecipeModal from "./components/RecipeModal";
-import YouTubeModal from "./components/YouTubeModal";
-import OrderModal from "./components/OrderModal";
-import PlanBuilder from "./components/PlanBuilder";
-import ShareModal from "./components/ShareModal";
-
-// Views
+// Eager View (Critical First Contentful Paint)
 import HomeView from "./views/HomeView";
-import ExploreView from "./views/ExploreView";
-import MyPlanView from "./views/MyPlanView";
-import ProfileView from "./views/ProfileView";
+
+// Lazy-Loaded Views (Code-Split for 4G & Mobile Speed)
+const ExploreView = lazy(() => import("./views/ExploreView"));
+const MyPlanView = lazy(() => import("./views/MyPlanView"));
+const ProfileView = lazy(() => import("./views/ProfileView"));
+
+// Lazy-Loaded On-Demand Modals & Palette
+const CommandPalette = lazy(() => import("./components/CommandPalette"));
+const RoutineDetailModal = lazy(() => import("./components/RoutineDetailModal"));
+const RecipeModal = lazy(() => import("./components/RecipeModal"));
+const YouTubeModal = lazy(() => import("./components/YouTubeModal"));
+const OrderModal = lazy(() => import("./components/OrderModal"));
+const PlanBuilder = lazy(() => import("./components/PlanBuilder"));
+const ShareModal = lazy(() => import("./components/ShareModal"));
+
 
 // Data & Storage
 import { ROUTINES_DATA, getRoutineById } from "./data/routinesData";
@@ -377,15 +381,17 @@ function AppContent() {
         )}
 
         {activeTab === "explore" && (
-          <ExploreView
-            userProfile={userProfile}
-            initialQuery={exploreQuery}
-            initialCategory={exploreCategory}
-            onSelectRoutine={handleSelectRoutine}
-            onOpenShare={handleOpenShare}
-            savedRoutines={savedRoutines}
-            onToggleSaveRoutine={handleToggleSaveRoutine}
-          />
+          <Suspense fallback={<ViewLoadingSkeleton message="Loading Food Routines..." />}>
+            <ExploreView
+              userProfile={userProfile}
+              initialQuery={exploreQuery}
+              initialCategory={exploreCategory}
+              onSelectRoutine={handleSelectRoutine}
+              onOpenShare={handleOpenShare}
+              savedRoutines={savedRoutines}
+              onToggleSaveRoutine={handleToggleSaveRoutine}
+            />
+          </Suspense>
         )}
 
         {activeTab === "my-plan" && (
@@ -393,25 +399,27 @@ function AppContent() {
             title="My Plan & Daily Timetable"
             subtitle="Sign in to view your live daily meal schedule, check off meals, and track macros."
           >
-            <MyPlanView
-              activePlan={activePlan}
-              userProfile={userProfile}
-              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-              onOpenRecipe={handleOpenRecipe}
-              onOpenYouTube={handleOpenYouTube}
-              onOpenOrder={handleOpenOrder}
-              onShareRoutine={handleOpenShare}
-              onApplyPlan={handleApplyPlan}
-              waterGlasses={waterGlasses}
-              onUpdateWater={handleUpdateWater}
-              completedMealsData={completedMealsData}
-              onToggleMealCompleted={handleToggleMealCompleted}
-              favoriteMeals={favoriteMeals}
-              onToggleFavoriteMeal={handleToggleFavoriteMeal}
-              onShowToast={showToast}
-              onSelectRoutine={handleSelectRoutine}
-              savedRoutines={savedRoutines}
-            />
+            <Suspense fallback={<ViewLoadingSkeleton message="Loading Your Plan..." />}>
+              <MyPlanView
+                activePlan={activePlan}
+                userProfile={userProfile}
+                onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+                onOpenRecipe={handleOpenRecipe}
+                onOpenYouTube={handleOpenYouTube}
+                onOpenOrder={handleOpenOrder}
+                onShareRoutine={handleOpenShare}
+                onApplyPlan={handleApplyPlan}
+                waterGlasses={waterGlasses}
+                onUpdateWater={handleUpdateWater}
+                completedMealsData={completedMealsData}
+                onToggleMealCompleted={handleToggleMealCompleted}
+                favoriteMeals={favoriteMeals}
+                onToggleFavoriteMeal={handleToggleFavoriteMeal}
+                onShowToast={showToast}
+                onSelectRoutine={handleSelectRoutine}
+                savedRoutines={savedRoutines}
+              />
+            </Suspense>
           </ProtectedRoute>
         )}
 
@@ -420,35 +428,41 @@ function AppContent() {
             title="Profile & Preferences"
             subtitle="Sign in to manage your health goals, milestones, streaks, and dietary preferences."
           >
-            <ProfileView
-              userProfile={userProfile}
-              onProfileUpdate={handleProfileUpdate}
-              savedRoutines={savedRoutines}
-              favoriteMeals={favoriteMeals}
-              onShowToast={showToast}
-              onSelectRoutine={handleSelectRoutine}
-              onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-              onApplyPlan={handleApplyPlan}
-              onNavigateTab={handleTabChange}
-            />
+            <Suspense fallback={<ViewLoadingSkeleton message="Loading Profile..." />}>
+              <ProfileView
+                userProfile={userProfile}
+                onProfileUpdate={handleProfileUpdate}
+                savedRoutines={savedRoutines}
+                favoriteMeals={favoriteMeals}
+                onShowToast={showToast}
+                onSelectRoutine={handleSelectRoutine}
+                onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+                onApplyPlan={handleApplyPlan}
+                onNavigateTab={handleTabChange}
+              />
+            </Suspense>
           </ProtectedRoute>
         )}
       </main>
 
       {/* Universal Command Palette (Ctrl+K / ⌘K) */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        onNavigateTab={handleTabChange}
-        onSelectRoutine={handleSelectRoutine}
-        onOpenRecipe={handleOpenRecipe}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
-        onUpdateWater={handleUpdateWater}
-        waterGlasses={waterGlasses}
-        onShowToast={showToast}
-        onCategorySelect={handleCategorySelect}
-        onFilterSelect={handleFilterSelect}
-      />
+      <Suspense fallback={null}>
+        {isCommandPaletteOpen && (
+          <CommandPalette
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            onNavigateTab={handleTabChange}
+            onSelectRoutine={handleSelectRoutine}
+            onOpenRecipe={handleOpenRecipe}
+            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onUpdateWater={handleUpdateWater}
+            waterGlasses={waterGlasses}
+            onShowToast={showToast}
+            onCategorySelect={handleCategorySelect}
+            onFilterSelect={handleFilterSelect}
+          />
+        )}
+      </Suspense>
 
       {/* Floating Quick Utility Bar (⌘K, Hydration, Back-to-Top) */}
       <FloatingQuickBar
@@ -468,69 +482,81 @@ function AppContent() {
       <LoginModal onShowToast={showToast} />
 
       {/* Routine Detail Modal */}
-      {selectedRoutine && (
-        <RoutineDetailModal
-          routine={selectedRoutine}
-          userProfile={userProfile}
-          onClose={() => setSelectedRoutine(null)}
-          onOpenRecipe={handleOpenRecipe}
-          onOpenYouTube={handleOpenYouTube}
-          onOpenOrder={handleOpenOrder}
-          onOpenShare={handleOpenShare}
-          favoriteMeals={favoriteMeals}
-          onToggleFavoriteMeal={handleToggleFavoriteMeal}
-          isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
-          onToggleSaveRoutine={handleToggleSaveRoutine}
-          onShowToast={showToast}
-        />
-      )}
+      <Suspense fallback={null}>
+        {selectedRoutine && (
+          <RoutineDetailModal
+            routine={selectedRoutine}
+            userProfile={userProfile}
+            onClose={() => setSelectedRoutine(null)}
+            onOpenRecipe={handleOpenRecipe}
+            onOpenYouTube={handleOpenYouTube}
+            onOpenOrder={handleOpenOrder}
+            onOpenShare={handleOpenShare}
+            favoriteMeals={favoriteMeals}
+            onToggleFavoriteMeal={handleToggleFavoriteMeal}
+            isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
+            onToggleSaveRoutine={handleToggleSaveRoutine}
+            onShowToast={showToast}
+          />
+        )}
+      </Suspense>
 
       {/* Recipe Detail Modal */}
-      {selectedRecipeMeal && (
-        <RecipeModal
-          meal={selectedRecipeMeal}
-          routine={selectedRecipeRoutine}
-          onClose={() => setSelectedRecipeMeal(null)}
-          isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
-          onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
-          onShowToast={showToast}
-        />
-      )}
+      <Suspense fallback={null}>
+        {selectedRecipeMeal && (
+          <RecipeModal
+            meal={selectedRecipeMeal}
+            routine={selectedRecipeRoutine}
+            onClose={() => setSelectedRecipeMeal(null)}
+            isFavorite={favoriteMeals.includes(selectedRecipeMeal.id)}
+            onToggleFavorite={() => handleToggleFavoriteMeal(selectedRecipeMeal.id)}
+            onShowToast={showToast}
+          />
+        )}
+      </Suspense>
 
       {/* YouTube Video Modal */}
-      {selectedYouTubeMeal && (
-        <YouTubeModal
-          meal={selectedYouTubeMeal}
-          onClose={() => setSelectedYouTubeMeal(null)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {selectedYouTubeMeal && (
+          <YouTubeModal
+            meal={selectedYouTubeMeal}
+            onClose={() => setSelectedYouTubeMeal(null)}
+          />
+        )}
+      </Suspense>
 
       {/* Swiggy / Zomato Order Modal */}
-      {selectedOrderMeal && (
-        <OrderModal
-          meal={selectedOrderMeal}
-          onClose={() => setSelectedOrderMeal(null)}
-        />
-      )}
+      <Suspense fallback={null}>
+        {selectedOrderMeal && (
+          <OrderModal
+            meal={selectedOrderMeal}
+            onClose={() => setSelectedOrderMeal(null)}
+          />
+        )}
+      </Suspense>
 
       {/* Share Routine Modal */}
-      {selectedShareRoutine && (
-        <ShareModal
-          isOpen={!!selectedShareRoutine}
-          routine={selectedShareRoutine}
-          onClose={() => setSelectedShareRoutine(null)}
-          onShowToast={showToast}
-        />
-      )}
+      <Suspense fallback={null}>
+        {selectedShareRoutine && (
+          <ShareModal
+            isOpen={!!selectedShareRoutine}
+            routine={selectedShareRoutine}
+            onClose={() => setSelectedShareRoutine(null)}
+            onShowToast={showToast}
+          />
+        )}
+      </Suspense>
 
       {/* Plan Builder 5-Step Wizard / Custom Creator */}
-      {isPlanWizardOpen && (
-        <PlanBuilder
-          onPlanGenerated={handlePlanGenerated}
-          onClose={() => setIsPlanWizardOpen(false)}
-          onShowToast={showToast}
-        />
-      )}
+      <Suspense fallback={null}>
+        {isPlanWizardOpen && (
+          <PlanBuilder
+            onPlanGenerated={handlePlanGenerated}
+            onClose={() => setIsPlanWizardOpen(false)}
+            onShowToast={showToast}
+          />
+        )}
+      </Suspense>
 
       {/* Toast Notification Manager */}
       <Toast message={toastMessage} onClear={() => setToastMessage("")} />

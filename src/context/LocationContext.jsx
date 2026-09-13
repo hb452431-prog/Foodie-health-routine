@@ -9,6 +9,7 @@ import {
   STORAGE_KEYS
 } from "../services/locationService";
 import { getLocationFoodData } from "../data/locationFoodData";
+import { getStoredItem, setStoredItem } from "../utils/storage";
 
 export const LocationContext = createContext(null);
 
@@ -52,7 +53,7 @@ export function LocationProvider({ children }) {
 
       setPermissionState("granted");
       try {
-        localStorage.setItem(STORAGE_KEYS.PERMISSION_PREF, "granted");
+        setStoredItem(STORAGE_KEYS.PERMISSION_PREF, "granted");
       } catch (e) {}
 
       const resolved = await reverseGeocodeCoordinates(latitude, longitude);
@@ -73,7 +74,7 @@ export function LocationProvider({ children }) {
       if (err.type === "denied") {
         setPermissionState("denied");
         try {
-          localStorage.setItem(STORAGE_KEYS.PERMISSION_PREF, "denied");
+          setStoredItem(STORAGE_KEYS.PERMISSION_PREF, "denied");
         } catch (e) {}
       }
       setError(err);
@@ -121,11 +122,12 @@ export function LocationProvider({ children }) {
   const dismissPermissionPrompt = useCallback(() => {
     setIsPermissionModalOpen(false);
     try {
-      localStorage.setItem(STORAGE_KEYS.PROMPT_DISMISSED, "true");
+      setStoredItem(STORAGE_KEYS.PROMPT_DISMISSED, "true");
     } catch (e) {
       console.warn("Could not set prompt dismissed flag:", e);
     }
   }, []);
+
 
   // Safe, non-blocking initialization on initial app load
   useEffect(() => {

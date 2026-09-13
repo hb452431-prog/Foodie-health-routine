@@ -34,6 +34,11 @@ export default function LocationFoodCard({
           alt={dish.title}
           className="location-dish-img"
           loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80";
+          }}
         />
 
         {/* Slot / Category Tag */}

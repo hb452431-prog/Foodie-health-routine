@@ -13,13 +13,18 @@ export default function RoutineCard({
       {/* Image & Badges */}
       <div className="routine-card-img-wrap">
         <img
-          src={routine.image}
-          alt={routine.title}
+          src={routine.image || "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=75"}
+          alt={routine.title || "Food Routine"}
           className="routine-card-img"
           loading="lazy"
+          decoding="async"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=75";
+          }}
         />
         <div className="routine-badge-category">
-          {routine.category}
+          {routine.category || "Health Routine"}
         </div>
 
         {/* Share Button */}
