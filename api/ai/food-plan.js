@@ -237,71 +237,54 @@ Return ONLY a valid JSON object with EXACTLY this structure:
   "medicalDisclaimer": "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes."
 }`;
 
-    // Candidate Gemini models in priority order
-    const configuredModel = process.env.GEMINI_MODEL;
-    const modelsToTry = Array.from(
-      new Set([configuredModel, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"])
-    ).filter(Boolean);
+    // Active Gemini production model
+    const activeModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
     let lastError = null;
     let successfulPlan = null;
-    let successfulModel = null;
 
-    for (const model of modelsToTry) {
-      try {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-        const geminiPayload = {
-          contents: [
-            {
-              parts: [{ text: prompt }]
-            }
-          ],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.4
+    try {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const geminiPayload = {
+        contents: [
+          {
+            parts: [{ text: prompt }]
           }
-        };
-
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(geminiPayload)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const status = response.status;
-          const rawMsg = errorData?.error?.message || `HTTP ${status}`;
-          const safeMsg = sanitizeErrorMessage(rawMsg, apiKey);
-
-          console.error(`[API /api/ai/food-plan] Model ${model} returned error: ${status} - ${safeMsg}`);
-
-          lastError = {
-            status,
-            message: safeMsg,
-            model,
-            code: errorData?.error?.status || (status === 401 || status === 403 ? "AUTH_ERROR" : status === 429 ? "RATE_LIMIT" : "API_ERROR")
-          };
-
-          // If model not found (404), try next model in the list
-          if (status === 404) {
-            continue;
-          }
-
-          // If auth error (401/403) or rate limit (429), break and report exact error
-          if (status === 401 || status === 403 || status === 429) {
-            break;
-          }
-          continue;
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.4
         }
+      };
 
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(geminiPayload)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const status = response.status;
+        const rawMsg = errorData?.error?.message || `HTTP ${status}`;
+        const safeMsg = sanitizeErrorMessage(rawMsg, apiKey);
+
+        console.error(`[API /api/ai/food-plan] Model ${activeModel} returned error: ${status} - ${safeMsg}`);
+
+        lastError = {
+          status,
+          message: safeMsg,
+          model: activeModel,
+          code: errorData?.error?.status || (status === 401 || status === 403 ? "AUTH_ERROR" : status === 429 ? "RATE_LIMIT" : "API_ERROR")
+        };
+      } else {
         const geminiResult = await response.json();
         const candidateText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!candidateText) {
-          throw new Error(`Empty response content returned by model ${model}`);
+          throw new Error(`Empty response content returned by model ${activeModel}`);
         }
 
         let cleanedText = candidateText.trim();
@@ -317,28 +300,26 @@ Return ONLY a valid JSON object with EXACTLY this structure:
         }
 
         successfulPlan = parsedData;
-        successfulModel = model;
-        break; // Successfully generated!
-      } catch (err) {
-        lastError = {
-          status: 500,
-          message: sanitizeErrorMessage(err?.message, apiKey),
-          model,
-          code: "PARSING_ERROR"
-        };
       }
+    } catch (err) {
+      lastError = {
+        status: 500,
+        message: sanitizeErrorMessage(err?.message, apiKey),
+        model: activeModel,
+        code: "PARSING_ERROR"
+      };
     }
 
     if (successfulPlan) {
       return res.status(200).json({
         success: true,
         data: successfulPlan,
-        model: successfulModel,
+        model: activeModel,
         timestamp: new Date().toISOString()
       });
     }
 
-    // If all models failed, return specific diagnostic error
+    // Return specific diagnostic error
     const statusCode = lastError?.status && lastError.status >= 400 && lastError.status < 600 ? lastError.status : 500;
     
     let userFriendlyError = "Unable to generate your food routine right now.";
@@ -347,7 +328,7 @@ Return ONLY a valid JSON object with EXACTLY this structure:
     } else if (statusCode === 429) {
       userFriendlyError = "Gemini AI rate limit reached. Please wait a few seconds and try again.";
     } else if (statusCode === 404) {
-      userFriendlyError = `Requested Gemini model (${lastError?.model || "model"}) was not found for this API key.`;
+      userFriendlyError = `Requested Gemini model (${lastError?.model || activeModel}) was not found for this API key.`;
     } else if (lastError?.message) {
       userFriendlyError = `Gemini AI error (${lastError.code || statusCode}): ${lastError.message}`;
     }
@@ -357,7 +338,7 @@ Return ONLY a valid JSON object with EXACTLY this structure:
       error: userFriendlyError,
       status: statusCode,
       code: lastError?.code || "AI_GENERATION_FAILED",
-      model: lastError?.model || "gemini-2.5-flash",
+      model: activeModel,
       details: lastError?.message || "Unknown error"
     });
   } catch (error) {
