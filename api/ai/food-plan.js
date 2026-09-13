@@ -1,15 +1,14 @@
-import { GoogleGenAI } from "@google/genai";
-
 /**
  * Serverless API handler for Gemini AI Personalized Food Routine Generation.
  * Endpoint: POST /api/ai/food-plan
  *
  * Security:
- * - Accesses GEMINI_API_KEY only via process.env.
- * - Never returns the API key or raw stack traces to the client.
+ * - Reads GEMINI_API_KEY strictly from server-side environment (process.env).
+ * - Never returns the API key or raw server stack traces to the client.
  */
+
 export default async function handler(req, res) {
-  // Set CORS headers for safe local/cross-origin requests
+  // Set CORS headers for safe local / cross-origin requests
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
@@ -31,11 +30,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    // Check server environment variables safely
+    const rawKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.GOOGLE_GENAI_API_KEY ||
+      process.env.GEMINI_KEY ||
+      process.env.VITE_GEMINI_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+
+    // Safe debugging log (Logs only boolean true/false, NEVER the actual key)
+    console.log(`[API /api/ai/food-plan] GEMINI_API_KEY configured: ${Boolean(apiKey && apiKey.length > 0)}`);
+
+    if (!apiKey) {
       return res.status(503).json({
         success: false,
-        error: "GEMINI_API_KEY is not configured on the server. Please set GEMINI_API_KEY in your environment variables.",
+        error: "GEMINI_API_KEY is not detected in server environment. If you recently configured it in Vercel, please ensure you trigger a new deployment so Vercel injects the variable into the serverless runtime.",
         code: "MISSING_API_KEY"
       });
     }
@@ -60,7 +72,7 @@ export default async function handler(req, res) {
     const location = String(body.location || "").trim();
     const healthNotes = String(body.healthNotes || "").trim();
 
-    // Construct detailed nutritionist prompt
+    // Construct structured nutritionist prompt
     const prompt = `You are a world-class clinical dietitian, sports nutritionist, and culinary master chef.
 Create a highly personalized, practical, scientifically balanced daily food routine for the following user:
 
@@ -70,7 +82,7 @@ USER PROFILE:
 - Dietary Lifestyle: ${diet}
 - Daily Physical Activity Level: ${activity}
 - Target Meals per Day: ${mealsPerDay}
-- Regional / Cuisine Preferences: ${foodPreferences || "Balanced wholesome cuisine"}
+- Regional / Cuisine Preferences: ${foodPreferences || "Wholesome balanced cuisine"}
 - Disliked Foods (STRICTLY AVOID): ${dislikedFoods || "None specified"}
 - Allergies / Intolerances (CRITICAL - ZERO TOLERANCE): ${allergies || "None"}
 - Budget Preference: ${budget}
@@ -216,26 +228,70 @@ Return ONLY a valid JSON object with EXACTLY this structure:
 
     const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-    // Initialize the official Google GenAI SDK instance
-    const ai = new GoogleGenAI({ apiKey });
+    // Direct Google Gemini Generative Language REST API call
+    // Highly resilient, zero SDK bundle mismatch in Vercel serverless runtime
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-    // Call Gemini with JSON response schema
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents: prompt,
-      config: {
+    const geminiPayload = {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.4
       }
+    };
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(geminiPayload)
     });
 
-    const responseText = response.text;
-    if (!responseText) {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const status = response.status;
+      const errorMsg = errorData?.error?.message || "Google Gemini API error.";
+
+      console.error(`[API /api/ai/food-plan] Gemini API error: ${status} - ${errorMsg}`);
+
+      if (status === 400 || status === 401 || status === 403) {
+        return res.status(401).json({
+          success: false,
+          error: "Gemini API key verification failed. Please check the API key configured in Vercel settings.",
+          code: "AUTH_ERROR"
+        });
+      }
+
+      if (status === 429) {
+        return res.status(429).json({
+          success: false,
+          error: "Gemini AI is currently handling high request volume. Please wait a moment and try again.",
+          code: "RATE_LIMIT"
+        });
+      }
+
+      return res.status(502).json({
+        success: false,
+        error: "Google Gemini AI service is temporarily unavailable. Please try again shortly.",
+        code: "GEMINI_SERVICE_ERROR"
+      });
+    }
+
+    const geminiResult = await response.json();
+    const candidateText =
+      geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!candidateText) {
       throw new Error("Empty response received from Gemini AI model.");
     }
 
     // Safely extract and parse JSON (stripping code fences if any)
-    let cleanedText = responseText.trim();
+    let cleanedText = candidateText.trim();
     if (cleanedText.startsWith("```json")) {
       cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
     } else if (cleanedText.startsWith("```")) {
@@ -244,7 +300,6 @@ Return ONLY a valid JSON object with EXACTLY this structure:
 
     const planData = JSON.parse(cleanedText);
 
-    // Basic structure validation
     if (!planData.meals || typeof planData.meals !== "object") {
       throw new Error("Invalid response format: 'meals' object missing.");
     }
@@ -256,17 +311,11 @@ Return ONLY a valid JSON object with EXACTLY this structure:
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    const isQuota =
-      error?.message?.includes("429") ||
-      error?.message?.includes("RESOURCE_EXHAUSTED") ||
-      error?.message?.includes("quota");
-
-    return res.status(isQuota ? 429 : 500).json({
+    console.error("[API /api/ai/food-plan] Internal handler error:", error?.message);
+    return res.status(500).json({
       success: false,
-      error: isQuota
-        ? "Gemini AI is currently handling heavy traffic. Please try again in a moment."
-        : "Unable to generate your food routine right now. Please try again or create a manual plan.",
-      code: isQuota ? "RATE_LIMIT" : "AI_GENERATION_FAILED"
+      error: "Unable to generate your food routine right now. Please try again or load the suggested plan.",
+      code: "AI_GENERATION_FAILED"
     });
   }
 }
