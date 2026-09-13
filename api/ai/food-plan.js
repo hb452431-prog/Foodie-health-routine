@@ -238,7 +238,7 @@ Return ONLY a valid JSON object with EXACTLY this structure:
 }`;
 
     // Active Gemini production model
-    const activeModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const activeModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
     let lastError = null;
     let successfulPlan = null;
