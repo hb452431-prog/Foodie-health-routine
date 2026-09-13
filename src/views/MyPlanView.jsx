@@ -198,12 +198,25 @@ export default function MyPlanView({
               <span
                 className="badge"
                 style={{
-                  background: "rgba(16, 185, 129, 0.2)",
-                  color: "#6EE7B7",
-                  border: "1px solid rgba(16, 185, 129, 0.4)"
+                  background: (displayedRoutine.isCustom || displayedRoutine.isAIGenerated || String(displayedRoutine.id || "").startsWith("ai-routine-") || String(displayedRoutine.id || "").startsWith("custom-"))
+                    ? "rgba(16, 185, 129, 0.25)"
+                    : isCurrentlyRegional
+                    ? "rgba(16, 185, 129, 0.2)"
+                    : "rgba(255, 255, 255, 0.15)",
+                  color: (displayedRoutine.isCustom || displayedRoutine.isAIGenerated || String(displayedRoutine.id || "").startsWith("ai-routine-") || String(displayedRoutine.id || "").startsWith("custom-"))
+                    ? "#86EFAC"
+                    : isCurrentlyRegional
+                    ? "#6EE7B7"
+                    : "#FFFFFF",
+                  border: "1px solid rgba(16, 185, 129, 0.4)",
+                  fontWeight: 800
                 }}
               >
-                {displayedRoutine.isCustom ? "✨ Custom Active Routine" : isCurrentlyRegional ? `📍 ${userState} Heritage Routine` : "⭐ Standard Active Routine"}
+                {(displayedRoutine.isCustom || displayedRoutine.isAIGenerated || String(displayedRoutine.id || "").startsWith("ai-routine-") || String(displayedRoutine.id || "").startsWith("custom-"))
+                  ? "✨ AI Personalized Active Routine"
+                  : isCurrentlyRegional
+                  ? `📍 ${userState} Heritage Routine`
+                  : "⭐ Standard Active Routine"}
               </span>
               <span className="badge" style={{ background: "rgba(255, 255, 255, 0.15)", color: "#FFFFFF" }}>
                 {displayedRoutine.category || "Health & Wellness"}
@@ -219,6 +232,22 @@ export default function MyPlanView({
             <p style={{ color: "#E2E8F0", fontSize: "0.9rem", maxWidth: "600px", marginBottom: "0.75rem" }}>
               {displayedRoutine.subtitle || displayedRoutine.description || "Personalized daily food routine for health and vitality."}
             </p>
+
+            {/* Quick Macro Target Chips */}
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.85rem" }}>
+              <span style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "0.25rem 0.65rem", borderRadius: "var(--radius-full)", fontSize: "0.78rem", fontWeight: 700, color: "#FED7AA" }}>
+                🔥 {displayedRoutine.calories || 2000} kcal
+              </span>
+              <span style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "0.25rem 0.65rem", borderRadius: "var(--radius-full)", fontSize: "0.78rem", fontWeight: 700, color: "#93C5FD" }}>
+                🥩 {displayedRoutine.protein || 85}g Protein
+              </span>
+              <span style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "0.25rem 0.65rem", borderRadius: "var(--radius-full)", fontSize: "0.78rem", fontWeight: 700, color: "#BBF7D0" }}>
+                🌾 {displayedRoutine.carbs || 220}g Carbs
+              </span>
+              <span style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", padding: "0.25rem 0.65rem", borderRadius: "var(--radius-full)", fontSize: "0.78rem", fontWeight: 700, color: "#FDE68A" }}>
+                🥑 {displayedRoutine.fat || 50}g Fats
+              </span>
+            </div>
 
             {/* Live Real-Time Date & Clock Bar */}
             <div
@@ -378,109 +407,155 @@ export default function MyPlanView({
         {/* TAB 1: TODAY'S SCHEDULE & MEAL CHECKLIST */}
         {activePlanTab === "today" && (
           <div>
-            {/* Location-Aware Cuisine Dishes Switcher Bar */}
-            <div
-              style={{
-                background: planCuisineMode === "regional" 
-                  ? "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)" 
-                  : "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
-                border: planCuisineMode === "regional" ? "1.5px solid #6EE7B7" : "1.5px solid #93C5FD",
-                borderRadius: "var(--radius-xl)",
-                padding: "0.9rem 1.25rem",
-                marginBottom: "1.5rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "1rem",
-                boxShadow: "var(--shadow-xs)"
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontSize: "1.5rem" }}>{planCuisineMode === "regional" ? "📍" : "🌎"}</span>
-                <div>
-                  <div style={{ fontSize: "0.92rem", fontWeight: 800, color: planCuisineMode === "regional" ? "#065F46" : "#1E40AF" }}>
-                    {planCuisineMode === "regional"
-                      ? `Showing Authentic Healthy ${userCity}, ${userState} Dishes for ${routine.badge || "this Health Plan"}`
-                      : `Showing Western & Global Dishes for ${routine.badge || "this Health Plan"}`}
-                  </div>
-                  <div style={{ fontSize: "0.8rem", color: planCuisineMode === "regional" ? "#047857" : "#3B82F6" }}>
-                    {planCuisineMode === "regional"
-                      ? `Featuring authentic ${userCity} & ${userState} low-GI / nutrient-dense dishes tailored for ${routine.title}`
-                      : `Featuring standard international whole-food recipes tailored for ${routine.title}`}
+            {/* Location-Aware Cuisine Dishes Switcher Bar OR AI Routine Confirmation */}
+            {(displayedRoutine.isCustom || displayedRoutine.isAIGenerated || String(displayedRoutine.id || "").startsWith("ai-routine-") || String(displayedRoutine.id || "").startsWith("custom-")) ? (
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
+                  border: "1.5px solid #6EE7B7",
+                  borderRadius: "var(--radius-xl)",
+                  padding: "0.9rem 1.25rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "1rem",
+                  boxShadow: "var(--shadow-xs)"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={{ fontSize: "1.5rem" }}>✨</span>
+                  <div>
+                    <div style={{ fontSize: "0.92rem", fontWeight: 800, color: "#065F46" }}>
+                      Active AI Custom Nutrition Routine
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "#047857" }}>
+                      Customized with verified authentic dishes from your Central Food Knowledge Base.
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setIsManualModalOpen(true)}
-                  style={{
-                    background: "#FFFFFF",
-                    border: "1px solid rgba(0,0,0,0.1)",
-                    color: "var(--text-secondary)",
-                    padding: "0.35rem 0.75rem",
-                    fontSize: "0.78rem"
-                  }}
-                  title="Change your location"
-                >
-                  <SlidersHorizontal size={13} />
-                  <span>Change City ({userCity})</span>
-                </button>
-
-                <div
-                  style={{
-                    display: "inline-flex",
-                    background: "#FFFFFF",
-                    padding: "0.25rem",
-                    borderRadius: "var(--radius-full)",
-                    border: "1px solid rgba(0,0,0,0.08)",
-                    boxShadow: "var(--shadow-xs)"
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      setPlanCuisineMode("regional");
-                      if (onShowToast) onShowToast(`📍 Switched to authentic ${userCity}, ${userState} healthy dishes!`);
-                    }}
+                    className="btn btn-primary btn-sm"
+                    onClick={onOpenPlanWizard}
                     style={{
-                      padding: "0.35rem 0.85rem",
-                      borderRadius: "var(--radius-full)",
+                      background: "linear-gradient(135deg, #10B981, #059669)",
                       fontSize: "0.78rem",
-                      fontWeight: 700,
-                      border: "none",
-                      cursor: "pointer",
-                      background: planCuisineMode === "regional" ? "#059669" : "transparent",
-                      color: planCuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)"
+                      padding: "0.35rem 0.75rem"
                     }}
                   >
-                    📍 {userCity} Dishes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlanCuisineMode("global");
-                      if (onShowToast) onShowToast("🌎 Switched to Western / Global healthy dishes!");
-                    }}
-                    style={{
-                      padding: "0.35rem 0.85rem",
-                      borderRadius: "var(--radius-full)",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                      border: "none",
-                      cursor: "pointer",
-                      background: planCuisineMode === "global" ? "#2563EB" : "transparent",
-                      color: planCuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)"
-                    }}
-                  >
-                    🌎 Western / Global
+                    <RotateCw size={13} style={{ marginRight: "0.3rem" }} />
+                    Modify Routine
                   </button>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div
+                style={{
+                  background: planCuisineMode === "regional" 
+                    ? "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)" 
+                    : "linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)",
+                  border: planCuisineMode === "regional" ? "1.5px solid #6EE7B7" : "1.5px solid #93C5FD",
+                  borderRadius: "var(--radius-xl)",
+                  padding: "0.9rem 1.25rem",
+                  marginBottom: "1.5rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "1rem",
+                  boxShadow: "var(--shadow-xs)"
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={{ fontSize: "1.5rem" }}>{planCuisineMode === "regional" ? "📍" : "🌎"}</span>
+                  <div>
+                    <div style={{ fontSize: "0.92rem", fontWeight: 800, color: planCuisineMode === "regional" ? "#065F46" : "#1E40AF" }}>
+                      {planCuisineMode === "regional"
+                        ? `Showing Authentic Healthy ${userCity}, ${userState} Dishes for ${routine.badge || "this Health Plan"}`
+                        : `Showing Western & Global Dishes for ${routine.badge || "this Health Plan"}`}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: planCuisineMode === "regional" ? "#047857" : "#3B82F6" }}>
+                      {planCuisineMode === "regional"
+                        ? `Featuring authentic ${userCity} & ${userState} low-GI / nutrient-dense dishes tailored for ${routine.title}`
+                        : `Featuring standard international whole-food recipes tailored for ${routine.title}`}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsManualModalOpen(true)}
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(0,0,0,0.1)",
+                      color: "var(--text-secondary)",
+                      padding: "0.35rem 0.75rem",
+                      fontSize: "0.78rem"
+                    }}
+                    title="Change your location"
+                  >
+                    <SlidersHorizontal size={13} />
+                    <span>Change City ({userCity})</span>
+                  </button>
+
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      background: "#FFFFFF",
+                      padding: "0.25rem",
+                      borderRadius: "var(--radius-full)",
+                      border: "1px solid rgba(0,0,0,0.08)",
+                      boxShadow: "var(--shadow-xs)"
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlanCuisineMode("regional");
+                        if (onShowToast) onShowToast(`📍 Switched to authentic ${userCity}, ${userState} healthy dishes!`);
+                      }}
+                      style={{
+                        padding: "0.35rem 0.85rem",
+                        borderRadius: "var(--radius-full)",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        border: "none",
+                        cursor: "pointer",
+                        background: planCuisineMode === "regional" ? "#059669" : "transparent",
+                        color: planCuisineMode === "regional" ? "#FFFFFF" : "var(--text-secondary)"
+                      }}
+                    >
+                      📍 {userCity} Dishes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlanCuisineMode("global");
+                        if (onShowToast) onShowToast("🌎 Switched to Western / Global healthy dishes!");
+                      }}
+                      style={{
+                        padding: "0.35rem 0.85rem",
+                        borderRadius: "var(--radius-full)",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        border: "none",
+                        cursor: "pointer",
+                        background: planCuisineMode === "global" ? "#2563EB" : "transparent",
+                        color: planCuisineMode === "global" ? "#FFFFFF" : "var(--text-secondary)"
+                      }}
+                    >
+                      🌎 Western / Global
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 2-Column Dashboard Grid */}
             <div className="dashboard-grid">

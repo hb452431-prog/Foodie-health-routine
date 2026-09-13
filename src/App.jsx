@@ -332,13 +332,16 @@ function AppContent() {
     setActivePlanState(customPlan);
     setIsPlanWizardOpen(false);
     handleTabChange("my-plan");
-    showToast("✨ Your custom nutrition routine is now active!");
+    showToast(`🎉 "${customPlan.title || "Personalized Routine"}" is now active in My Plan!`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleApplyPlan = (newPlan) => {
     setActivePlan(newPlan);
     setActivePlanState(newPlan);
+    handleTabChange("my-plan");
     showToast(`✨ Active routine updated to "${newPlan.title || "Custom Plan"}"!`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -497,6 +500,7 @@ function AppContent() {
             onToggleFavoriteMeal={handleToggleFavoriteMeal}
             isSavedRoutine={savedRoutines.includes(selectedRoutine.id)}
             onToggleSaveRoutine={handleToggleSaveRoutine}
+            onApplyPlan={handleApplyPlan}
             onShowToast={showToast}
           />
         )}

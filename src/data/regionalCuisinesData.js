@@ -627,6 +627,20 @@ export function getWeeklyScheduleForRoutine(routine, country = "India", state = 
 export function getAdaptedRoutineForLocation(baseRoutine, country = "India", state = "Karnataka", mode = "regional", targetDayId = null) {
   if (!baseRoutine) return null;
 
+  // Preserve custom and AI-generated personalized routines without overriding with templates
+  if (
+    baseRoutine.isCustom ||
+    baseRoutine.isAIGenerated ||
+    String(baseRoutine.id || "").startsWith("ai-routine-") ||
+    String(baseRoutine.id || "").startsWith("custom-")
+  ) {
+    return {
+      ...baseRoutine,
+      isRegionalAdapted: false,
+      cuisineMode: mode
+    };
+  }
+
   if (mode === "global" || mode === "western") {
     return {
       ...baseRoutine,

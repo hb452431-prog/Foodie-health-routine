@@ -28,6 +28,7 @@ export default function RoutineDetailModal({
   onToggleFavoriteMeal,
   isSavedRoutine,
   onToggleSaveRoutine,
+  onApplyPlan,
   onShowToast
 }) {
   const [cuisineMode, setCuisineMode] = useState("regional"); // "regional" | "global"
@@ -61,6 +62,13 @@ export default function RoutineDetailModal({
       onShowToast("Routine link copied to clipboard!");
     } else {
       onShowToast("Routine link ready to share!");
+    }
+  };
+
+  const handleActivate = () => {
+    if (onApplyPlan) {
+      onApplyPlan(displayedRoutine);
+      if (onClose) onClose();
     }
   };
 
@@ -102,7 +110,7 @@ export default function RoutineDetailModal({
 
         {/* Modal Body */}
         <div className="detail-modal-body">
-          {/* Action Bar (Save, Share, Macros summary) */}
+          {/* Action Bar (Save, Share, Apply, Macros summary) */}
           <div
             style={{
               display: "flex",
@@ -130,13 +138,27 @@ export default function RoutineDetailModal({
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {onApplyPlan && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleActivate}
+                  style={{
+                    background: "linear-gradient(135deg, #10B981, #059669)",
+                    boxShadow: "0 2px 8px rgba(16, 185, 129, 0.3)"
+                  }}
+                >
+                  <CheckCircle size={15} />
+                  <span>Activate in My Plan</span>
+                </button>
+              )}
+
               <button
                 className={`btn btn-sm ${isSavedRoutine ? "btn-accent" : "btn-secondary"}`}
                 onClick={() => onToggleSaveRoutine(routine.id)}
               >
                 <Heart size={15} fill={isSavedRoutine ? "#FFFFFF" : "none"} />
-                <span>{isSavedRoutine ? "Saved in My Library" : "Save Routine"}</span>
+                <span>{isSavedRoutine ? "Saved" : "Save"}</span>
               </button>
 
               <button

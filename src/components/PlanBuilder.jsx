@@ -215,9 +215,14 @@ export default function PlanBuilder({
 
   const handleSaveAndApply = () => {
     if (generatedRoutine) {
-      onPlanGenerated(generatedRoutine);
+      if (onPlanGenerated) {
+        onPlanGenerated(generatedRoutine);
+      }
+      if (onClose) {
+        onClose();
+      }
       if (onShowToast) {
-        onShowToast("🎉 Your Gemini AI routine has been activated in My Plan!");
+        onShowToast("🎉 Your Gemini AI routine is now active in My Plan!");
       }
     }
   };
@@ -289,9 +294,14 @@ export default function PlanBuilder({
       dailyTimeline: customForm.meals
     };
 
-    onPlanGenerated(completedCustomPlan);
+    if (onPlanGenerated) {
+      onPlanGenerated(completedCustomPlan);
+    }
+    if (onClose) {
+      onClose();
+    }
     if (onShowToast) {
-      onShowToast("🎉 Your custom created routine has been activated in My Plan!");
+      onShowToast("🎉 Your custom created routine is now active in My Plan!");
     }
 
     try {
