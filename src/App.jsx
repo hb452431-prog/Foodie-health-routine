@@ -390,6 +390,7 @@ function AppContent() {
               onOpenShare={handleOpenShare}
               savedRoutines={savedRoutines}
               onToggleSaveRoutine={handleToggleSaveRoutine}
+              onShowToast={showToast}
             />
           </Suspense>
         )}
