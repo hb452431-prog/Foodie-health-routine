@@ -7,6 +7,16 @@
  * - Never returns the API key or raw server stack traces to the client.
  */
 
+// Helper to sanitize error messages so no API key or token is ever leaked
+function sanitizeErrorMessage(msg, key) {
+  if (!msg || typeof msg !== "string") return "Unknown Gemini API error.";
+  let clean = msg;
+  if (key && typeof key === "string" && key.length > 5) {
+    clean = clean.split(key).join("[REDACTED_API_KEY]");
+  }
+  return clean.replace(/key=[a-zA-Z0-9_\-]+/gi, "key=[REDACTED]");
+}
+
 export default async function handler(req, res) {
   // Set CORS headers for safe local / cross-origin requests
   res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -30,7 +40,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check server environment variables safely
+    // Read server environment variable with multi-alias support
     const rawKey =
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
@@ -41,13 +51,13 @@ export default async function handler(req, res) {
 
     const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
 
-    // Safe debugging log (Logs only boolean true/false, NEVER the actual key)
+    // Safe boolean debug logging (Never logs the key)
     console.log(`[API /api/ai/food-plan] GEMINI_API_KEY configured: ${Boolean(apiKey && apiKey.length > 0)}`);
 
     if (!apiKey) {
       return res.status(503).json({
         success: false,
-        error: "GEMINI_API_KEY is not detected in server environment. If you recently configured it in Vercel, please ensure you trigger a new deployment so Vercel injects the variable into the serverless runtime.",
+        error: "GEMINI_API_KEY is not detected in server environment. Please ensure GEMINI_API_KEY is configured in your Vercel Project Settings > Environment Variables.",
         code: "MISSING_API_KEY"
       });
     }
@@ -226,96 +236,137 @@ Return ONLY a valid JSON object with EXACTLY this structure:
   "medicalDisclaimer": "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes."
 }`;
 
-    const modelName = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    // Supported Gemini model candidates in priority order
+    // 'gemini-1.5-flash' is the standard production model available on all Gemini API keys
+    const configuredModel = process.env.GEMINI_MODEL;
+    const modelsToTry = Array.from(
+      new Set([configuredModel, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"])
+    ).filter(Boolean);
 
-    // Direct Google Gemini Generative Language REST API call
-    // Highly resilient, zero SDK bundle mismatch in Vercel serverless runtime
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    let lastError = null;
+    let successfulPlan = null;
+    let successfulModel = null;
 
-    const geminiPayload = {
-      contents: [
-        {
-          parts: [{ text: prompt }]
+    for (const model of modelsToTry) {
+      try {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const geminiPayload = {
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.4
+          }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(geminiPayload)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const status = response.status;
+          const rawMsg = errorData?.error?.message || `HTTP ${status}`;
+          const safeMsg = sanitizeErrorMessage(rawMsg, apiKey);
+
+          console.error(`[API /api/ai/food-plan] Model ${model} returned error: ${status} - ${safeMsg}`);
+
+          lastError = {
+            status,
+            message: safeMsg,
+            model,
+            code: errorData?.error?.status || (status === 401 || status === 403 ? "AUTH_ERROR" : status === 429 ? "RATE_LIMIT" : "API_ERROR")
+          };
+
+          // If model not found (404), try next model in the list
+          if (status === 404) {
+            continue;
+          }
+
+          // If auth error (401/403) or rate limit (429), break and report exact error
+          if (status === 401 || status === 403 || status === 429) {
+            break;
+          }
+          continue;
         }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.4
+
+        const geminiResult = await response.json();
+        const candidateText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!candidateText) {
+          throw new Error(`Empty response content returned by model ${model}`);
+        }
+
+        let cleanedText = candidateText.trim();
+        if (cleanedText.startsWith("```json")) {
+          cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+        } else if (cleanedText.startsWith("```")) {
+          cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+        }
+
+        const parsedData = JSON.parse(cleanedText);
+        if (!parsedData.meals || typeof parsedData.meals !== "object") {
+          throw new Error("Invalid structure: 'meals' object missing in AI response.");
+        }
+
+        successfulPlan = parsedData;
+        successfulModel = model;
+        break; // Successfully generated!
+      } catch (err) {
+        lastError = {
+          status: 500,
+          message: sanitizeErrorMessage(err?.message, apiKey),
+          model,
+          code: "PARSING_ERROR"
+        };
       }
-    };
+    }
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(geminiPayload)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const status = response.status;
-      const errorMsg = errorData?.error?.message || "Google Gemini API error.";
-
-      console.error(`[API /api/ai/food-plan] Gemini API error: ${status} - ${errorMsg}`);
-
-      if (status === 400 || status === 401 || status === 403) {
-        return res.status(401).json({
-          success: false,
-          error: "Gemini API key verification failed. Please check the API key configured in Vercel settings.",
-          code: "AUTH_ERROR"
-        });
-      }
-
-      if (status === 429) {
-        return res.status(429).json({
-          success: false,
-          error: "Gemini AI is currently handling high request volume. Please wait a moment and try again.",
-          code: "RATE_LIMIT"
-        });
-      }
-
-      return res.status(502).json({
-        success: false,
-        error: "Google Gemini AI service is temporarily unavailable. Please try again shortly.",
-        code: "GEMINI_SERVICE_ERROR"
+    if (successfulPlan) {
+      return res.status(200).json({
+        success: true,
+        data: successfulPlan,
+        model: successfulModel,
+        timestamp: new Date().toISOString()
       });
     }
 
-    const geminiResult = await response.json();
-    const candidateText =
-      geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!candidateText) {
-      throw new Error("Empty response received from Gemini AI model.");
+    // If all models failed, return specific diagnostic error
+    const statusCode = lastError?.status && lastError.status >= 400 && lastError.status < 600 ? lastError.status : 500;
+    
+    let userFriendlyError = "Unable to generate your food routine right now.";
+    if (statusCode === 401 || statusCode === 403) {
+      userFriendlyError = "Gemini API key verification failed. Please check the GEMINI_API_KEY in your Vercel settings.";
+    } else if (statusCode === 429) {
+      userFriendlyError = "Gemini AI rate limit reached. Please wait a few seconds and try again.";
+    } else if (statusCode === 404) {
+      userFriendlyError = `Requested Gemini model (${lastError?.model || "model"}) was not found for this API key.`;
+    } else if (lastError?.message) {
+      userFriendlyError = `Gemini AI error (${lastError.code || statusCode}): ${lastError.message}`;
     }
 
-    // Safely extract and parse JSON (stripping code fences if any)
-    let cleanedText = candidateText.trim();
-    if (cleanedText.startsWith("```json")) {
-      cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-    } else if (cleanedText.startsWith("```")) {
-      cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
-    }
-
-    const planData = JSON.parse(cleanedText);
-
-    if (!planData.meals || typeof planData.meals !== "object") {
-      throw new Error("Invalid response format: 'meals' object missing.");
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: planData,
-      model: modelName,
-      timestamp: new Date().toISOString()
+    return res.status(statusCode).json({
+      success: false,
+      error: userFriendlyError,
+      status: statusCode,
+      code: lastError?.code || "AI_GENERATION_FAILED",
+      model: lastError?.model || "gemini-1.5-flash",
+      details: lastError?.message || "Unknown error"
     });
   } catch (error) {
-    console.error("[API /api/ai/food-plan] Internal handler error:", error?.message);
+    console.error("[API /api/ai/food-plan] Uncaught exception:", error?.message);
     return res.status(500).json({
       success: false,
-      error: "Unable to generate your food routine right now. Please try again or load the suggested plan.",
-      code: "AI_GENERATION_FAILED"
+      error: "An unexpected error occurred while generating your food routine. Please try again or create a manual plan.",
+      status: 500,
+      code: "INTERNAL_SERVER_ERROR"
     });
   }
 }
