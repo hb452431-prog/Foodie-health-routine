@@ -2,9 +2,13 @@
  * Serverless API handler for Gemini AI Personalized Food Routine Generation.
  * Endpoint: POST /api/ai/food-plan
  *
- * Security:
- * - Reads GEMINI_API_KEY strictly from server-side environment (process.env).
- * - Never returns the API key or raw server stack traces to the client.
+ * Capabilities:
+ * - Dynamic model auto-discovery: Queries Google's model catalog to discover which
+ *   Gemini models the user's specific GEMINI_API_KEY supports.
+ * - Multi-model fallback: Seamlessly falls back through candidate models if a model
+ *   is not found or restricted.
+ * - Security: Reads GEMINI_API_KEY strictly from server environment (process.env).
+ *   Never exposes keys in client responses or server logs.
  */
 
 // Helper to sanitize error messages so no API key or token is ever leaked
@@ -15,6 +19,200 @@ function sanitizeErrorMessage(msg, key) {
     clean = clean.split(key).join("[REDACTED_API_KEY]");
   }
   return clean.replace(/key=[a-zA-Z0-9_\-]+/gi, "key=[REDACTED]");
+}
+
+/**
+ * Dynamically queries Google Generative Language API to discover which models
+ * are supported and enabled for this specific API key.
+ */
+async function discoverSupportedModels(apiKey) {
+  try {
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(listUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" }
+    });
+
+    if (!res.ok) {
+      console.warn(`[API /api/ai/food-plan] Model list API returned status ${res.status}`);
+      return [];
+    }
+
+    const data = await res.json();
+    if (!Array.isArray(data?.models)) {
+      return [];
+    }
+
+    // Filter models that support content generation
+    const available = data.models
+      .filter((m) => {
+        const methods = m.supportedGenerationMethods || [];
+        return Array.isArray(methods) && methods.includes("generateContent");
+      })
+      .map((m) => (m.name || "").replace(/^models\//, "").trim())
+      .filter(Boolean);
+
+    console.log(`[API /api/ai/food-plan] Discovered ${available.length} models supporting generateContent for this key:`, available.join(", "));
+    return available;
+  } catch (err) {
+    console.warn("[API /api/ai/food-plan] Model discovery query failed:", err?.message);
+    return [];
+  }
+}
+
+/**
+ * Rates and sorts candidate models in order of priority (latest & fastest first).
+ */
+function rankModels(discoveredModels, envModel) {
+  const preferredPriority = [
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-pro",
+    "gemini-1.5-pro",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash-8b",
+    "gemini-pro"
+  ];
+
+  const candidateSet = new Set();
+
+  // 1. User-configured environment override has highest priority
+  if (envModel && typeof envModel === "string" && envModel.trim()) {
+    candidateSet.add(envModel.trim().replace(/^models\//, ""));
+  }
+
+  // 2. Discovered models that match our priority list
+  for (const model of preferredPriority) {
+    if (discoveredModels.includes(model)) {
+      candidateSet.add(model);
+    }
+  }
+
+  // 3. Any other discovered models (Flash first, then others)
+  for (const model of discoveredModels) {
+    if (model.includes("flash") && !candidateSet.has(model)) {
+      candidateSet.add(model);
+    }
+  }
+  for (const model of discoveredModels) {
+    if (!candidateSet.has(model)) {
+      candidateSet.add(model);
+    }
+  }
+
+  // 4. Fallback priority models in case model discovery was blocked or empty
+  for (const model of preferredPriority) {
+    candidateSet.add(model);
+  }
+
+  return Array.from(candidateSet);
+}
+
+/**
+ * Attempt to generate content using a specific Gemini model
+ */
+async function generateWithModel(model, apiKey, prompt) {
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  
+  // Try with structured JSON mode first
+  const payload = {
+    contents: [
+      {
+        parts: [{ text: prompt }]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.4
+    }
+  };
+
+  let response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  // If 400 (some models don't support responseMimeType: application/json), retry without responseMimeType
+  if (response.status === 400) {
+    const fallbackPayload = {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.4
+      }
+    };
+    const retryRes = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fallbackPayload)
+    });
+    if (retryRes.ok) {
+      response = retryRes;
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const status = response.status;
+    const rawMsg = errorData?.error?.message || `HTTP ${status}`;
+    const safeMsg = sanitizeErrorMessage(rawMsg, apiKey);
+
+    return {
+      success: false,
+      status,
+      message: safeMsg,
+      code: errorData?.error?.status || (status === 401 || status === 403 ? "AUTH_ERROR" : status === 429 ? "RATE_LIMIT" : status === 404 ? "MODEL_NOT_FOUND" : "API_ERROR")
+    };
+  }
+
+  const geminiResult = await response.json();
+  const candidateText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!candidateText) {
+    return {
+      success: false,
+      status: 500,
+      message: `Empty response content returned by model ${model}`,
+      code: "EMPTY_RESPONSE"
+    };
+  }
+
+  let cleanedText = candidateText.trim();
+  if (cleanedText.startsWith("```json")) {
+    cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+  } else if (cleanedText.startsWith("```")) {
+    cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  // Handle cases where response has leading/trailing non-json text
+  const firstBrace = cleanedText.indexOf("{");
+  const lastBrace = cleanedText.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+  }
+
+  const parsedData = JSON.parse(cleanedText);
+  if (!parsedData.meals || typeof parsedData.meals !== "object") {
+    return {
+      success: false,
+      status: 500,
+      message: "Invalid structure: 'meals' object missing in AI response.",
+      code: "INVALID_STRUCTURE"
+    };
+  }
+
+  return {
+    success: true,
+    data: parsedData
+  };
 }
 
 export default async function handler(req, res) {
@@ -237,89 +435,48 @@ Return ONLY a valid JSON object with EXACTLY this structure:
   "medicalDisclaimer": "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes."
 }`;
 
-    // Active Gemini production model
-    const activeModel = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+    // Step 1: Discover which models are supported by the user's API key
+    const discovered = await discoverSupportedModels(apiKey);
 
-    let lastError = null;
+    // Step 2: Build prioritized candidate models list
+    const candidateModels = rankModels(discovered, process.env.GEMINI_MODEL);
+    console.log(`[API /api/ai/food-plan] Model candidate priority list:`, candidateModels.slice(0, 5).join(", "));
+
     let successfulPlan = null;
+    let successfulModel = null;
+    let lastError = null;
 
-    try {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
-      const geminiPayload = {
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.4
-        }
-      };
+    // Step 3: Iterate through candidate models until success
+    for (const model of candidateModels) {
+      console.log(`[API /api/ai/food-plan] Attempting routine generation with model: ${model}...`);
+      const result = await generateWithModel(model, apiKey, prompt);
 
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(geminiPayload)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const status = response.status;
-        const rawMsg = errorData?.error?.message || `HTTP ${status}`;
-        const safeMsg = sanitizeErrorMessage(rawMsg, apiKey);
-
-        console.error(`[API /api/ai/food-plan] Model ${activeModel} returned error: ${status} - ${safeMsg}`);
-
-        lastError = {
-          status,
-          message: safeMsg,
-          model: activeModel,
-          code: errorData?.error?.status || (status === 401 || status === 403 ? "AUTH_ERROR" : status === 429 ? "RATE_LIMIT" : "API_ERROR")
-        };
-      } else {
-        const geminiResult = await response.json();
-        const candidateText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!candidateText) {
-          throw new Error(`Empty response content returned by model ${activeModel}`);
-        }
-
-        let cleanedText = candidateText.trim();
-        if (cleanedText.startsWith("```json")) {
-          cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-        } else if (cleanedText.startsWith("```")) {
-          cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
-        }
-
-        const parsedData = JSON.parse(cleanedText);
-        if (!parsedData.meals || typeof parsedData.meals !== "object") {
-          throw new Error("Invalid structure: 'meals' object missing in AI response.");
-        }
-
-        successfulPlan = parsedData;
+      if (result.success) {
+        successfulPlan = result.data;
+        successfulModel = model;
+        console.log(`[API /api/ai/food-plan] Successfully generated routine with model: ${model}`);
+        break;
       }
-    } catch (err) {
-      lastError = {
-        status: 500,
-        message: sanitizeErrorMessage(err?.message, apiKey),
-        model: activeModel,
-        code: "PARSING_ERROR"
-      };
+
+      lastError = { ...result, model };
+      console.warn(`[API /api/ai/food-plan] Model ${model} failed (${result.status || result.code}): ${result.message}`);
+
+      // Stop immediately on critical Auth error (wrong API key)
+      if (result.status === 401 || result.status === 403) {
+        break;
+      }
     }
 
     if (successfulPlan) {
       return res.status(200).json({
         success: true,
         data: successfulPlan,
-        model: activeModel,
+        model: successfulModel,
         timestamp: new Date().toISOString()
       });
     }
 
-    // Return specific diagnostic error
+    // Return detailed diagnostic error if all models fail
     const statusCode = lastError?.status && lastError.status >= 400 && lastError.status < 600 ? lastError.status : 500;
     
     let userFriendlyError = "Unable to generate your food routine right now.";
@@ -328,7 +485,7 @@ Return ONLY a valid JSON object with EXACTLY this structure:
     } else if (statusCode === 429) {
       userFriendlyError = "Gemini AI rate limit reached. Please wait a few seconds and try again.";
     } else if (statusCode === 404) {
-      userFriendlyError = `Requested Gemini model (${lastError?.model || activeModel}) was not found for this API key.`;
+      userFriendlyError = `None of the available Gemini models were accessible with this API key. Attempted: ${candidateModels.slice(0, 3).join(", ")}.`;
     } else if (lastError?.message) {
       userFriendlyError = `Gemini AI error (${lastError.code || statusCode}): ${lastError.message}`;
     }
@@ -338,8 +495,8 @@ Return ONLY a valid JSON object with EXACTLY this structure:
       error: userFriendlyError,
       status: statusCode,
       code: lastError?.code || "AI_GENERATION_FAILED",
-      model: activeModel,
-      details: lastError?.message || "Unknown error"
+      attemptedModels: candidateModels.slice(0, 5),
+      lastError: lastError?.message || "Unknown error"
     });
   } catch (error) {
     console.error("[API /api/ai/food-plan] Uncaught exception:", error?.message);
