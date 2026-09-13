@@ -13,10 +13,13 @@ import {
   Info,
   MapPin,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Utensils
 } from "lucide-react";
 import { generateAIFoodPlan, generateOfflineFallbackPlan } from "../services/geminiPlanService";
 import { useLocation } from "../context/LocationContext";
+import FoodDetailsModal from "./FoodDetailsModal";
+import { findOrResolveFood } from "../services/foodService";
 
 export default function PlanBuilder({
   onPlanGenerated,
@@ -32,6 +35,7 @@ export default function PlanBuilder({
   const [generatedRoutine, setGeneratedRoutine] = useState(null);
   const [activeTabSection, setActiveTabSection] = useState("routine"); // 'routine' | 'shopping' | 'tips'
   const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
+  const [selectedFoodDetail, setSelectedFoodDetail] = useState(null);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1075,90 +1079,174 @@ export default function PlanBuilder({
                   {/* SECTION A: ROUTINE TIMELINE */}
                   {activeTabSection === "routine" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                      {generatedRoutine.dailyTimeline?.map((meal, idx) => (
-                        <div
-                          key={meal.id || idx}
-                          className="glass-card"
-                          style={{
-                            padding: "1rem 1.25rem",
-                            borderRadius: "var(--radius-md)",
-                            border: "1px solid var(--border-subtle)"
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                              <span style={{ fontSize: "1.4rem" }}>{meal.emoji || "🥗"}</span>
-                              <div>
-                                <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--primary-700)" }}>
-                                  {meal.time} • {meal.slotName}
+                      {generatedRoutine.dailyTimeline?.map((meal, idx) => {
+                        const foodRecord = findOrResolveFood(meal.foodId || meal.title);
+                        const displayImage = meal.image || foodRecord?.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
+
+                        return (
+                          <div
+                            key={meal.id || idx}
+                            className="glass-card"
+                            style={{
+                              padding: "1.1rem 1.25rem",
+                              borderRadius: "var(--radius-lg)",
+                              border: "1px solid var(--border-subtle)",
+                              background: "#FFFFFF",
+                              boxShadow: "var(--shadow-xs)"
+                            }}
+                          >
+                            <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
+                              {/* Meal Image Thumbnail */}
+                              {displayImage && (
+                                <div style={{ position: "relative", flexShrink: 0 }}>
+                                  <img
+                                    src={displayImage}
+                                    alt={meal.title}
+                                    loading="lazy"
+                                    style={{
+                                      width: "76px",
+                                      height: "76px",
+                                      borderRadius: "var(--radius-md)",
+                                      objectFit: "cover",
+                                      border: "1px solid var(--border-subtle)",
+                                      boxShadow: "0 2px 6px rgba(0,0,0,0.06)"
+                                    }}
+                                  />
+                                  {foodRecord?.imageGenerated && (
+                                    <span
+                                      style={{
+                                        position: "absolute",
+                                        bottom: "3px",
+                                        left: "3px",
+                                        background: "rgba(0,0,0,0.75)",
+                                        color: "#86EFAC",
+                                        fontSize: "0.55rem",
+                                        fontWeight: 800,
+                                        padding: "1px 3px",
+                                        borderRadius: "3px"
+                                      }}
+                                    >
+                                      AI
+                                    </span>
+                                  )}
                                 </div>
-                                <h5 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--primary-900)", margin: "0.1rem 0 0" }}>
-                                  {meal.title}
-                                </h5>
+                              )}
+
+                              {/* Title & Slot Info */}
+                              <div style={{ flex: 1, minWidth: "180px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.4rem" }}>
+                                  <div>
+                                    <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--primary-700)", textTransform: "uppercase" }}>
+                                      {meal.emoji || "🥗"} {meal.time} • {meal.slotName}
+                                    </div>
+                                    <h5 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--primary-900)", margin: "0.1rem 0 0.25rem" }}>
+                                      {meal.title}
+                                    </h5>
+                                    {foodRecord?.stateOrRegion && (
+                                      <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginRight: "0.5rem" }}>
+                                        📍 {foodRecord.stateOrRegion}, {foodRecord.country || "India"}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: "0.72rem", fontWeight: 700, background: "#FFF7ED", color: "#C2410C", padding: "0.2rem 0.45rem", borderRadius: "var(--radius-sm)" }}>
+                                      🔥 {meal.calories} kcal
+                                    </span>
+                                    <span style={{ fontSize: "0.72rem", fontWeight: 700, background: "#EFF6FF", color: "#1D4ED8", padding: "0.2rem 0.45rem", borderRadius: "var(--radius-sm)" }}>
+                                      🥩 {meal.protein}g P
+                                    </span>
+                                    <span style={{ fontSize: "0.72rem", fontWeight: 700, background: "#F0FDF4", color: "#15803D", padding: "0.2rem 0.45rem", borderRadius: "var(--radius-sm)" }}>
+                                      ⏱️ {meal.prepTime}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, background: "#FFF7ED", color: "#C2410C", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-sm)" }}>
-                                🔥 {meal.calories} kcal
-                              </span>
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, background: "#EFF6FF", color: "#1D4ED8", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-sm)" }}>
-                                🥩 {meal.protein}g P
-                              </span>
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, background: "#F0FDF4", color: "#15803D", padding: "0.2rem 0.5rem", borderRadius: "var(--radius-sm)" }}>
-                                ⏱️ {meal.prepTime}
-                              </span>
+                            {/* Ingredients List */}
+                            {meal.ingredients && meal.ingredients.length > 0 && (
+                              <div style={{ marginTop: "0.75rem", background: "var(--bg-card-subtle)", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-sm)" }}>
+                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>
+                                  🥕 Key Ingredients:
+                                </span>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                                  {meal.ingredients.map((ing, iIdx) => (
+                                    <span
+                                      key={iIdx}
+                                      style={{
+                                        fontSize: "0.73rem",
+                                        background: "#FFFFFF",
+                                        border: "1px solid var(--border-subtle)",
+                                        padding: "0.15rem 0.45rem",
+                                        borderRadius: "var(--radius-sm)",
+                                        color: "var(--text-main)"
+                                      }}
+                                    >
+                                      {typeof ing === "string" ? ing : `${ing.name} ${ing.amount ? `(${ing.amount})` : ""}`}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Preparation Directions */}
+                            {meal.steps && meal.steps.length > 0 && (
+                              <div style={{ marginTop: "0.6rem" }}>
+                                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>
+                                  👨‍🍳 Preparation Steps:
+                                </span>
+                                <ol style={{ margin: 0, paddingLeft: "1.2rem", fontSize: "0.8rem", color: "var(--text-main)", lineHeight: 1.4 }}>
+                                  {meal.steps.map((st, sIdx) => (
+                                    <li key={sIdx} style={{ marginBottom: "0.2rem" }}>{st}</li>
+                                  ))}
+                                </ol>
+                              </div>
+                            )}
+
+                            {/* Actions: View Dish Details button */}
+                            <div style={{ marginTop: "0.85rem", paddingTop: "0.6rem", borderTop: "1px solid var(--border-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setSelectedFoodDetail(foodRecord || { dishName: meal.title, category: meal.slotName, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, description: meal.description, imageUrl: displayImage })}
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "0.4rem",
+                                  fontSize: "0.78rem",
+                                  padding: "0.35rem 0.75rem",
+                                  color: "var(--primary-800)",
+                                  background: "var(--primary-50)",
+                                  border: "1px solid var(--primary-200)"
+                                }}
+                              >
+                                <Utensils size={13} />
+                                <span>View Dish Details</span>
+                              </button>
+
+                              {foodRecord?.youtubeUrl && (
+                                <a
+                                  href={foodRecord.youtubeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: "0.75rem",
+                                    color: "#DC2626",
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.3rem"
+                                  }}
+                                >
+                                  ▶ Watch Recipe Video
+                                </a>
+                              )}
                             </div>
                           </div>
-
-                          {/* Ingredients List */}
-                          {meal.ingredients && meal.ingredients.length > 0 && (
-                            <div style={{ marginTop: "0.75rem", background: "var(--bg-card-subtle)", padding: "0.6rem 0.8rem", borderRadius: "var(--radius-sm)" }}>
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "0.3rem" }}>
-                                🥕 Ingredients:
-                              </span>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                                {meal.ingredients.map((ing, iIdx) => (
-                                  <span
-                                    key={iIdx}
-                                    style={{
-                                      fontSize: "0.75rem",
-                                      background: "#FFFFFF",
-                                      border: "1px solid var(--border-subtle)",
-                                      padding: "0.15rem 0.45rem",
-                                      borderRadius: "var(--radius-sm)",
-                                      color: "var(--text-main)"
-                                    }}
-                                  >
-                                    {ing.name} {ing.amount ? `(${ing.amount})` : ""}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Preparation Directions */}
-                          {meal.steps && meal.steps.length > 0 && (
-                            <div style={{ marginTop: "0.6rem" }}>
-                              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "0.25rem" }}>
-                                👨‍🍳 Preparation Steps:
-                              </span>
-                              <ol style={{ margin: 0, paddingLeft: "1.2rem", fontSize: "0.8rem", color: "var(--text-main)", lineHeight: 1.4 }}>
-                                {meal.steps.map((st, sIdx) => (
-                                  <li key={sIdx} style={{ marginBottom: "0.2rem" }}>{st}</li>
-                                ))}
-                              </ol>
-                            </div>
-                          )}
-
-                          {/* Alternative Dish */}
-                          {meal.alternative && (
-                            <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                              <strong>🔄 Quick Alternative:</strong> {meal.alternative}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -1444,6 +1532,15 @@ export default function PlanBuilder({
           )}
         </div>
       </div>
+
+      {/* Central Food Knowledge Base Food Details Modal */}
+      {selectedFoodDetail && (
+        <FoodDetailsModal
+          food={selectedFoodDetail}
+          onClose={() => setSelectedFoodDetail(null)}
+          onShowToast={onShowToast}
+        />
+      )}
     </div>
   );
 }

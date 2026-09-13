@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from "react";
 import RoutineCard from "../components/RoutineCard";
+import CentralFoodExplorer from "../components/CentralFoodExplorer";
 import MealDbExplorer from "../components/MealDbExplorer";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
 import { useLocation } from "../context/LocationContext";
 import { useAuth } from "../context/AuthContext";
-import { Search, RotateCcw, Sparkles, Check, MapPin, ShieldAlert, Dumbbell, ChefHat, Calendar } from "lucide-react";
+import { Search, RotateCcw, Sparkles, Check, MapPin, ShieldAlert, Dumbbell, ChefHat, Calendar, Database, Globe } from "lucide-react";
 
 export default function ExploreView({
   userProfile,
@@ -21,8 +22,8 @@ export default function ExploreView({
   const { requireAuth } = useAuth();
   const { locationData, setIsManualModalOpen } = useLocation();
 
-  // Active Explorer Mode: "routines" (Health Schedules) or "mealdb" (TheMealDB live recipes)
-  const [exploreMode, setExploreMode] = useState("routines");
+  // Active Explorer Mode: "food-kb" (Central Food Master Knowledge Base), "routines" (Daily Schedules), or "mealdb" (TheMealDB)
+  const [exploreMode, setExploreMode] = useState("food-kb");
 
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
@@ -57,7 +58,6 @@ export default function ExploreView({
     setFilterVegOnly(false);
     setFilterHighProtein(false);
     setFilterLowSugar(false);
-    setMaxPrepTime(60);
     setCalorieRange(3200);
   };
 
@@ -149,12 +149,14 @@ export default function ExploreView({
               <span>Discover & Explore</span>
             </div>
             <h1 style={{ fontSize: "2.2rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.5rem" }}>
-              Food & Recipe Explorer
+              Central Food & Recipe Explorer
             </h1>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", maxWidth: "600px" }}>
-              {exploreMode === "routines"
+              {exploreMode === "food-kb"
+                ? "Unified single source of truth database powering all dish searches, ingredients, recipes, and verified imagery."
+                : exploreMode === "routines"
                 ? "Find full day-by-day food routines calibrated for your metabolism, fitness targets, and lifestyle."
-                : "Search thousands of authentic global dishes, ingredients, and video recipes from TheMealDB open catalog."}
+                : "Search thousands of global dishes and recipes from TheMealDB open catalog."}
             </p>
           </div>
 
@@ -194,7 +196,7 @@ export default function ExploreView({
           </div>
         </div>
 
-        {/* Sub-Mode Segmented Control (Routines vs TheMealDB Live Recipes) */}
+        {/* 3-Way Sub-Mode Segmented Control */}
         <div
           style={{
             display: "inline-flex",
@@ -204,9 +206,46 @@ export default function ExploreView({
             borderRadius: "var(--radius-full)",
             border: "1px solid var(--border-subtle)",
             marginBottom: "2rem",
-            boxShadow: "var(--shadow-xs)"
+            boxShadow: "var(--shadow-xs)",
+            flexWrap: "wrap",
+            gap: "0.25rem"
           }}
         >
+          <button
+            type="button"
+            onClick={() => setExploreMode("food-kb")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              border: "none",
+              background: exploreMode === "food-kb" ? "#FFFFFF" : "transparent",
+              color: exploreMode === "food-kb" ? "var(--primary-900)" : "var(--text-secondary)",
+              fontWeight: 700,
+              fontSize: "0.88rem",
+              padding: "0.55rem 1.15rem",
+              borderRadius: "var(--radius-full)",
+              cursor: "pointer",
+              boxShadow: exploreMode === "food-kb" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.2s ease"
+            }}
+          >
+            <Database size={15} style={{ color: exploreMode === "food-kb" ? "var(--primary-600)" : undefined }} />
+            <span>Food Knowledge Base</span>
+            <span
+              style={{
+                fontSize: "0.68rem",
+                background: "#10B981",
+                color: "#FFFFFF",
+                padding: "0.1rem 0.45rem",
+                borderRadius: "var(--radius-full)",
+                fontWeight: 800
+              }}
+            >
+              CORE
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => setExploreMode("routines")}
@@ -218,15 +257,15 @@ export default function ExploreView({
               background: exploreMode === "routines" ? "#FFFFFF" : "transparent",
               color: exploreMode === "routines" ? "var(--primary-900)" : "var(--text-secondary)",
               fontWeight: 700,
-              fontSize: "0.9rem",
-              padding: "0.6rem 1.25rem",
+              fontSize: "0.88rem",
+              padding: "0.55rem 1.15rem",
               borderRadius: "var(--radius-full)",
               cursor: "pointer",
               boxShadow: exploreMode === "routines" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
               transition: "all 0.2s ease"
             }}
           >
-            <Calendar size={16} style={{ color: exploreMode === "routines" ? "var(--primary-600)" : undefined }} />
+            <Calendar size={15} style={{ color: exploreMode === "routines" ? "var(--primary-600)" : undefined }} />
             <span>Health Routines ({ROUTINES_DATA.length})</span>
           </button>
 
@@ -241,40 +280,35 @@ export default function ExploreView({
               background: exploreMode === "mealdb" ? "#FFFFFF" : "transparent",
               color: exploreMode === "mealdb" ? "var(--primary-900)" : "var(--text-secondary)",
               fontWeight: 700,
-              fontSize: "0.9rem",
-              padding: "0.6rem 1.25rem",
+              fontSize: "0.88rem",
+              padding: "0.55rem 1.15rem",
               borderRadius: "var(--radius-full)",
               cursor: "pointer",
               boxShadow: exploreMode === "mealdb" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
               transition: "all 0.2s ease"
             }}
           >
-            <ChefHat size={16} style={{ color: exploreMode === "mealdb" ? "#0284C7" : undefined }} />
-            <span>TheMealDB Recipe Discovery</span>
-            <span
-              style={{
-                fontSize: "0.7rem",
-                background: "#0284C7",
-                color: "#FFFFFF",
-                padding: "0.1rem 0.45rem",
-                borderRadius: "var(--radius-full)",
-                fontWeight: 800
-              }}
-            >
-              LIVE
-            </span>
+            <Globe size={15} style={{ color: exploreMode === "mealdb" ? "#0284C7" : undefined }} />
+            <span>TheMealDB API</span>
           </button>
         </div>
 
         {/* ============================================================
-           VIEW 1: THEMEALDB LIVE RECIPE EXPLORER
+           VIEW 1: CENTRAL FOOD MASTER KNOWLEDGE BASE
+        ============================================================ */}
+        {exploreMode === "food-kb" && (
+          <CentralFoodExplorer onShowToast={onShowToast} />
+        )}
+
+        {/* ============================================================
+           VIEW 2: THEMEALDB LIVE RECIPE EXPLORER
         ============================================================ */}
         {exploreMode === "mealdb" && (
           <MealDbExplorer onShowToast={onShowToast} />
         )}
 
         {/* ============================================================
-           VIEW 2: HEALTH & METABOLIC ROUTINES LIBRARY
+           VIEW 3: HEALTH & METABOLIC ROUTINES LIBRARY
         ============================================================ */}
         {exploreMode === "routines" && (
           <>
@@ -299,7 +333,7 @@ export default function ExploreView({
                     🩺 Metabolic Health Food Routine (Adapted for {userCity}, {userState})
                   </div>
                   <p style={{ fontSize: "0.82rem", color: "#B45309", lineHeight: 1.45, margin: 0 }}>
-                    For general educational information only. Consult a qualified healthcare professional for personalized dietary advice.
+                    For general educational information only. May be suitable as part of a balanced diet; consult a qualified healthcare professional.
                   </p>
                 </div>
               </div>

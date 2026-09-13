@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";
+import { searchFoods } from "../services/foodService";
 
 export default function CommandPalette({
   isOpen,
@@ -271,16 +272,16 @@ export default function CommandPalette({
       }
     }));
 
-    // 3. Matched Meals / Recipes
+    // 3. Matched Meals / Recipes + Central Food Knowledge Base Dishes
     let matchedMeals = [];
     if (q.length >= 2) {
-      matchedMeals = allMeals.filter((m) => {
+      const routineMealMatches = allMeals.filter((m) => {
         return (
           m.title.toLowerCase().includes(q) ||
           m.description?.toLowerCase().includes(q) ||
-          m.ingredients?.some((ing) => ing.name.toLowerCase().includes(q))
+          m.ingredients?.some((ing) => (typeof ing === "string" ? ing : ing.name)?.toLowerCase().includes(q))
         );
-      }).slice(0, 8).map((m) => ({
+      }).slice(0, 5).map((m) => ({
         id: `meal-${m.id}`,
         type: "meal",
         category: "Recipes & Dishes",
@@ -295,6 +296,39 @@ export default function CommandPalette({
           if (onOpenRecipe) onOpenRecipe(m, m.parentRoutine);
         }
       }));
+
+      const kbMatches = searchFoods(q).slice(0, 6).map((f) => ({
+        id: `kb-${f.id}`,
+        type: "food",
+        category: "Food Knowledge Base",
+        title: f.dishName,
+        subtitle: `${f.stateOrRegion ? f.stateOrRegion + ", " : ""}${f.cuisine || f.country} • ${f.category} • ${f.dietaryTags?.join(", ")}`,
+        emoji: "🍲",
+        image: f.imageUrl,
+        badge: f.vegetarian ? "100% Veg" : "Non-Veg",
+        foodObj: f,
+        action: () => {
+          onClose();
+          if (onOpenRecipe) onOpenRecipe({
+            id: f.id,
+            title: f.dishName,
+            description: f.description,
+            image: f.imageUrl,
+            isVeg: f.vegetarian,
+            dietType: f.vegetarian ? "Vegetarian" : "Non-Vegetarian",
+            calories: f.healthTags?.includes("high-protein") ? 460 : 360,
+            protein: f.healthTags?.includes("high-protein") ? 26 : 14,
+            carbs: 45,
+            fat: 10,
+            prepTime: "15 min",
+            ingredients: f.ingredients?.map(name => ({ name, amount: "1 portion" })),
+            steps: f.preparation ? [f.preparation] : ["Prepare fresh according to healthy recipe standards."],
+            benefits: f.healthTags || ["Balanced whole-food nutrition"]
+          });
+        }
+      }));
+
+      matchedMeals = [...routineMealMatches, ...kbMatches];
     }
 
     // 4. Matched Categories

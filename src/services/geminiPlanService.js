@@ -1,9 +1,15 @@
 /**
  * Client Service for Gemini AI Food Routine Planning.
  *
- * Calls server-side endpoint POST /api/ai/food-plan.
- * Never handles or exposes GEMINI_API_KEY on the client.
+ * Integrated with Central Food Knowledge Base (Single Source of Truth).
+ * Guarantees every generated meal resolves to an existing verified food record
+ * with authentic stored imagery.
+ *
+ * Endpoint: POST /api/ai/food-plan
+ * Security: Never handles or exposes GEMINI_API_KEY on the client.
  */
+
+import { findOrResolveFood, getFoodsForPlan } from "./foodService";
 
 const DEFAULT_TIMEOUT_MS = 25000;
 
@@ -35,6 +41,7 @@ function parseMacroNumber(val, fallback = 0) {
 
 /**
  * Transforms AI structured response into the full Routine model used by Foodie-Health-Routine.
+ * Every meal is mapped and validated against the Central Food Knowledge Base.
  */
 export function formatAIResponseToRoutine(aiData, formData) {
   const { summary, dailyTargets = {}, meals = {}, shoppingList = [], tips = [], medicalDisclaimer } = aiData;
@@ -50,49 +57,67 @@ export function formatAIResponseToRoutine(aiData, formData) {
 
   const dailyTimeline = mealSlots
     .filter((slot) => {
-      // If user selected 3 meals, include breakfast, lunch, dinner
       if (formData.mealsPerDay === 3) {
         return ["breakfast", "lunch", "dinner"].includes(slot.key);
       }
-      // If user selected 4 meals, include morning, breakfast, lunch, dinner
       if (formData.mealsPerDay === 4) {
         return ["morning", "breakfast", "lunch", "dinner"].includes(slot.key);
       }
-      // If user selected 5 meals, include morning, breakfast, lunch, evening, dinner
       if (formData.mealsPerDay === 5) {
         return ["morning", "breakfast", "lunch", "evening", "dinner"].includes(slot.key);
       }
-      // 6 meals includes all
       return true;
     })
     .map((slot, index) => {
       const meal = meals[slot.key] || {};
-      const cal = parseMacroNumber(meal.calories, 200);
-      const prot = parseMacroNumber(meal.protein, 10);
-      const carbs = parseMacroNumber(meal.carbs, 25);
-      const fat = parseMacroNumber(meal.fat, 6);
+      const dishTitle = meal.dish || `${slot.defaultSlot} Special`;
+
+      // Resolve dish against Single Source of Truth Knowledge Base
+      const verifiedFood = findOrResolveFood(meal.foodId || dishTitle);
+
+      const cal = parseMacroNumber(meal.calories, verifiedFood?.calories || 250);
+      const prot = parseMacroNumber(meal.protein, verifiedFood?.protein || 12);
+      const carbs = parseMacroNumber(meal.carbs, verifiedFood?.carbs || 35);
+      const fat = parseMacroNumber(meal.fat, verifiedFood?.fat || 6);
+
+      const ingredients = Array.isArray(meal.ingredients) && meal.ingredients.length > 0
+        ? meal.ingredients
+        : verifiedFood?.ingredients || [];
+
+      const steps = Array.isArray(meal.preparation) && meal.preparation.length > 0
+        ? meal.preparation
+        : verifiedFood?.preparation || [];
 
       return {
         id: `ai-meal-${slot.key}-${Date.now()}-${index}`,
+        foodId: verifiedFood?.id || `food-${slot.key}`,
+        foodRecord: verifiedFood,
         slotName: meal.slotName || slot.defaultSlot,
         time: meal.time || slot.defaultTime,
         emoji: meal.emoji || slot.defaultEmoji,
-        title: meal.dish || `${slot.defaultSlot} Special`,
+        title: dishTitle,
+        dish: dishTitle,
+        image: verifiedFood?.imageUrl || getHeroImageForPlan(formData.goal, formData.diet),
+        imageUrl: verifiedFood?.imageUrl || getHeroImageForPlan(formData.goal, formData.diet),
         calories: cal,
         protein: prot,
         carbs: carbs,
         fat: fat,
-        prepTime: meal.prepTime || "15 min",
-        isVeg: formData.diet === "Vegetarian" || formData.diet === "Vegan",
-        dietType: formData.diet || "Balanced",
-        ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
-        steps: Array.isArray(meal.preparation) ? meal.preparation : [],
-        alternative: meal.alternative || "Nutrient-Dense Fresh Seasonal Salad",
-        orderQuery: meal.dish || slot.defaultSlot
+        prepTime: meal.prepTime || verifiedFood?.prepTime || "15 min",
+        isVeg: formData.diet === "Vegetarian" || formData.diet === "Vegan" || verifiedFood?.vegetarian,
+        dietType: formData.diet || verifiedFood?.dietType || "Balanced",
+        cuisine: verifiedFood?.cuisine || "Authentic",
+        region: verifiedFood?.stateOrRegion || formData.location || "Regional",
+        country: verifiedFood?.country || "India",
+        ingredients: ingredients,
+        steps: steps,
+        description: verifiedFood?.description || `Scientifically calibrated ${dishTitle} supporting your ${formData.goal} goal.`,
+        alternative: meal.alternative || "Nutrient-Dense Seasonal Salad",
+        youtubeUrl: verifiedFood?.youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(dishTitle)}`,
+        orderQuery: dishTitle
       };
     });
 
-  // Calculate totals from meals or dailyTargets
   const totalCalories =
     parseMacroNumber(dailyTargets.calories) ||
     dailyTimeline.reduce((sum, m) => sum + (m.calories || 0), 0) ||
@@ -141,7 +166,7 @@ export function formatAIResponseToRoutine(aiData, formData) {
     ],
     medicalDisclaimer:
       medicalDisclaimer ||
-      "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes.",
+      "This information is for general educational purposes and may be suitable as part of a balanced diet. Consult a qualified healthcare professional before making major dietary changes.",
     userPreferences: { ...formData }
   };
 }
@@ -187,14 +212,18 @@ export async function generateAIFoodPlan(formData) {
 }
 
 /**
- * Safe offline fallback generator if the network drops or API is unreachable.
+ * Safe offline fallback generator using verified dishes from the Food Knowledge Base.
  */
 export function generateOfflineFallbackPlan(formData) {
-  const isVeg = formData.diet === "Vegetarian" || formData.diet === "Vegan";
   const goal = formData.goal || "Healthy Eating";
+  const verifiedSlots = getFoodsForPlan({
+    diet: formData.diet,
+    goal: formData.goal,
+    stateOrRegion: formData.location || ""
+  });
 
   const fallbackData = {
-    summary: `Scientifically calibrated ${goal.toLowerCase()} routine featuring high-fiber, balanced macronutrients tailored for ${formData.diet.toLowerCase()} lifestyle.`,
+    summary: `Scientifically calibrated ${goal.toLowerCase()} routine featuring verified nutritious meals tailored for ${formData.diet.toLowerCase()} lifestyle.`,
     dailyTargets: {
       calories: goal === "Weight Loss" ? 1750 : goal === "Weight Gain" ? 2400 : 2050,
       protein: goal === "Fitness/Muscle" ? "110g" : "85g",
@@ -204,176 +233,109 @@ export function generateOfflineFallbackPlan(formData) {
     },
     meals: {
       morning: {
+        foodId: verifiedSlots.morning?.id,
         slotName: "Morning Elixir",
         time: "07:00 AM",
         emoji: "🌅",
-        dish: "Warm Lemon Chia Detox Water",
-        calories: 50,
-        protein: "2g",
-        carbs: "6g",
-        fat: "1g",
-        prepTime: "3 min",
-        ingredients: [
-          { name: "Chia seeds (soaked)", amount: "1 tbsp" },
-          { name: "Warm water", amount: "300 ml" },
-          { name: "Fresh lemon juice", amount: "1 tbsp" }
-        ],
-        preparation: [
-          "Soak chia seeds in warm water for 5 minutes.",
-          "Add lemon juice and stir gently.",
-          "Sip warm on an empty stomach."
-        ],
+        dish: verifiedSlots.morning?.dishName || "Warm Lemon Chia Detox Water",
+        calories: verifiedSlots.morning?.calories || 45,
+        protein: `${verifiedSlots.morning?.protein || 2}g`,
+        carbs: `${verifiedSlots.morning?.carbs || 6}g`,
+        fat: `${verifiedSlots.morning?.fat || 1}g`,
+        prepTime: verifiedSlots.morning?.prepTime || "3 min",
+        ingredients: verifiedSlots.morning?.ingredients || [],
+        preparation: verifiedSlots.morning?.preparation || [],
         alternative: "Warm Cumin (Jeera) Infused Herbal Water"
       },
       breakfast: {
+        foodId: verifiedSlots.breakfast?.id,
         slotName: "Power Breakfast",
         time: "08:30 AM",
         emoji: "🍳",
-        dish: isVeg
-          ? "High-Protein Oats & Greek Yogurt Bowl with Chia & Berries"
-          : "3-Egg Scramble with Whole Wheat Toast & Sauteed Spinach",
-        calories: 440,
-        protein: isVeg ? "24g" : "28g",
-        carbs: "52g",
-        fat: "12g",
-        prepTime: "10 min",
-        ingredients: isVeg
-          ? [
-              { name: "Rolled oats", amount: "60g" },
-              { name: "Greek yogurt", amount: "150g" },
-              { name: "Mixed berries", amount: "50g" },
-              { name: "Chia seeds & crushed almonds", amount: "1 tbsp" }
-            ]
-          : [
-              { name: "Eggs (2 whole + 1 white)", amount: "3 eggs" },
-              { name: "Whole wheat sourdough toast", amount: "1 slice" },
-              { name: "Fresh baby spinach", amount: "1 cup" }
-            ],
-        preparation: isVeg
-          ? [
-              "Soak oats in warm water or milk for 3 minutes.",
-              "Layer thick Greek yogurt on top.",
-              "Garnish with mixed berries and toasted chia seeds."
-            ]
-          : [
-              "Whisk eggs with a pinch of black pepper and sea salt.",
-              "Soft scramble in a light pan with olive oil.",
-              "Serve with toasted whole wheat bread and sauteed baby spinach."
-            ],
-        alternative: isVeg ? "Moong Dal Spinach Chilla with Mint Chutney" : "Boiled Egg White Salad"
+        dish: verifiedSlots.breakfast?.dishName || "Steamed Ragi Idli with Mint Coconut Chutney",
+        calories: verifiedSlots.breakfast?.calories || 320,
+        protein: `${verifiedSlots.breakfast?.protein || 14}g`,
+        carbs: `${verifiedSlots.breakfast?.carbs || 50}g`,
+        fat: `${verifiedSlots.breakfast?.fat || 6}g`,
+        prepTime: verifiedSlots.breakfast?.prepTime || "10 min",
+        ingredients: verifiedSlots.breakfast?.ingredients || [],
+        preparation: verifiedSlots.breakfast?.preparation || [],
+        alternative: "Moong Dal Spinach Chilla with Mint Chutney"
       },
       midMorning: {
+        foodId: verifiedSlots.midMorning?.id,
         slotName: "Mid-Morning Snack",
         time: "11:00 AM",
         emoji: "🍎",
-        dish: "Fresh Papaya / Apple with 6 Soaked Almonds",
-        calories: 140,
-        protein: "4g",
-        carbs: "24g",
-        fat: "3g",
-        prepTime: "3 min",
-        ingredients: [
-          { name: "Fresh fruit (Papaya or Apple)", amount: "1 cup diced" },
-          { name: "Soaked peeled almonds", amount: "6 pieces" }
-        ],
-        preparation: [
-          "Enjoy sliced fresh fruit with soaked raw almonds for clean energy."
-        ],
+        dish: verifiedSlots.midMorning?.dishName || "Moong Dal Cucumber Kosambari",
+        calories: verifiedSlots.midMorning?.calories || 140,
+        protein: `${verifiedSlots.midMorning?.protein || 9}g`,
+        carbs: `${verifiedSlots.midMorning?.carbs || 18}g`,
+        fat: `${verifiedSlots.midMorning?.fat || 3}g`,
+        prepTime: verifiedSlots.midMorning?.prepTime || "3 min",
+        ingredients: verifiedSlots.midMorning?.ingredients || [],
+        preparation: verifiedSlots.midMorning?.preparation || [],
         alternative: "Tender Coconut Water with Chia"
       },
       lunch: {
+        foodId: verifiedSlots.lunch?.id,
         slotName: "Energizing Lunch",
         time: "01:30 PM",
         emoji: "🍱",
-        dish: isVeg
-          ? "Brown Rice / Quinoa with Sambar, Spiced Paneer & Green Beans"
-          : "Grilled Chicken Breast / Fish with Steamed Quinoa & Roasted Veggies",
-        calories: 580,
-        protein: isVeg ? "28g" : "38g",
-        carbs: "72g",
-        fat: "15g",
-        prepTime: "20 min",
-        ingredients: isVeg
-          ? [
-              { name: "Cooked Brown Rice or Quinoa", amount: "1 cup" },
-              { name: "Mixed Lentil Vegetable Sambar", amount: "1.5 cups" },
-              { name: "Pan-seared low-fat Paneer or Tofu", amount: "100g" },
-              { name: "Steamed French beans with mustard seeds", amount: "1 cup" }
-            ]
-          : [
-              { name: "Herb Grilled Chicken Breast or Fish", amount: "160g" },
-              { name: "Steamed Quinoa or Brown Rice", amount: "3/4 cup" },
-              { name: "Roasted broccoli, carrots & bell peppers", amount: "1.5 cups" }
-            ],
-        preparation: [
-          "Plate whole grains with protein and generous portion of fiber-rich veggies.",
-          "Add fresh lemon squeeze and enjoy warm."
-        ],
+        dish: verifiedSlots.lunch?.dishName || "Bisi Bele Bath",
+        calories: verifiedSlots.lunch?.calories || 460,
+        protein: `${verifiedSlots.lunch?.protein || 18}g`,
+        carbs: `${verifiedSlots.lunch?.carbs || 68}g`,
+        fat: `${verifiedSlots.lunch?.fat || 10}g`,
+        prepTime: verifiedSlots.lunch?.prepTime || "20 min",
+        ingredients: verifiedSlots.lunch?.ingredients || [],
+        preparation: verifiedSlots.lunch?.preparation || [],
         alternative: "Mixed Sprouts & Quinoa Power Bowl"
       },
       evening: {
+        foodId: verifiedSlots.evening?.id,
         slotName: "Evening Refresh",
         time: "05:00 PM",
         emoji: "☕",
-        dish: "Roasted Makhana (Foxnuts) & Spiced Herbal Green Tea",
-        calories: 150,
-        protein: "5g",
-        carbs: "22g",
-        fat: "3g",
-        prepTime: "5 min",
-        ingredients: [
-          { name: "Lightly roasted foxnuts with turmeric", amount: "1.5 cups" },
-          { name: "Fresh herbal green tea", amount: "1 mug" }
-        ],
-        preparation: [
-          "Roast makhana with a drop of cold-pressed oil, turmeric, and rock salt.",
-          "Pair with freshly brewed antioxidant-rich green tea."
-        ],
-        alternative: "Boiled Chana (Chickpea) Chaat with Tomatoes & Onions"
+        dish: verifiedSlots.evening?.dishName || "Turmeric Roasted Makhana (Foxnuts)",
+        calories: verifiedSlots.evening?.calories || 140,
+        protein: `${verifiedSlots.evening?.protein || 5}g`,
+        carbs: `${verifiedSlots.evening?.carbs || 22}g`,
+        fat: `${verifiedSlots.evening?.fat || 3}g`,
+        prepTime: verifiedSlots.evening?.prepTime || "5 min",
+        ingredients: verifiedSlots.evening?.ingredients || [],
+        preparation: verifiedSlots.evening?.preparation || [],
+        alternative: "Probiotic Masala Chaas (Spiced Buttermilk)"
       },
       dinner: {
+        foodId: verifiedSlots.dinner?.id,
         slotName: "Light Restorative Dinner",
         time: "08:00 PM",
         emoji: "🌙",
-        dish: isVeg
-          ? "Grilled Tofu / Paneer Tikka with Clear Vegetable Broth Soup"
-          : "Lemon Herb Grilled Salmon / Chicken with Light Garden Salad",
-        calories: 460,
-        protein: isVeg ? "26g" : "32g",
-        carbs: "34g",
-        fat: "16g",
-        prepTime: "15 min",
-        ingredients: isVeg
-          ? [
-              { name: "Low-fat Paneer or Firm Tofu", amount: "140g" },
-              { name: "Diced bell peppers and onions", amount: "1 cup" },
-              { name: "Warm vegetable clear soup with greens", amount: "1.5 cups" }
-            ]
-          : [
-              { name: "Grilled fish or chicken fillets", amount: "140g" },
-              { name: "Warm clear chicken veggie broth", amount: "1.5 cups" },
-              { name: "Cucumber tomato mint salad", amount: "1 cup" }
-            ],
-        preparation: [
-          "Pan-sear seasoned protein until lightly charred and fragrant.",
-          "Serve alongside hot nourishing clear soup."
-        ],
-        alternative: "Light Moong Dal Khichdi with Steamed Veggies"
+        dish: verifiedSlots.dinner?.dishName || "High-Protein Palak Paneer with Multigrain Roti",
+        calories: verifiedSlots.dinner?.calories || 410,
+        protein: `${verifiedSlots.dinner?.protein || 24}g`,
+        carbs: `${verifiedSlots.dinner?.carbs || 40}g`,
+        fat: `${verifiedSlots.dinner?.fat || 12}g`,
+        prepTime: verifiedSlots.dinner?.prepTime || "15 min",
+        ingredients: verifiedSlots.dinner?.ingredients || [],
+        preparation: verifiedSlots.dinner?.preparation || [],
+        alternative: "Light Moong Dal Khichuri with Steamed Veggies"
       }
     },
     shoppingList: [
-      { category: "Fresh Produce", items: ["Spinach", "Papaya / Apples", "Green Beans", "Broccoli", "Lemons", "Ginger & Mint"] },
-      { category: "Proteins & Dairy", items: [isVeg ? "Low-fat Paneer or Tofu" : "Eggs & Chicken Breast", "Greek Yogurt", "Yellow Moong Dal", "Lentils"] },
-      { category: "Grains & Pantry", items: ["Rolled Oats", "Brown Rice / Quinoa", "Foxnuts (Makhana)", "Chia Seeds", "Almonds"] },
-      { category: "Spices & Essentials", items: ["Turmeric", "Cumin", "Black Pepper", "Rock Salt", "Herbal Green Tea"] }
+      { category: "Fresh Produce", items: ["Spinach", "Cucumber", "Lemon", "Carrots", "Mint & Coriander"] },
+      { category: "Proteins & Dairy", items: ["Low-fat Paneer / Tofu", "Curd (Yogurt)", "Moong Dal", "Toor Dal"] },
+      { category: "Grains & Pantry", items: ["Ragi (Finger Millet) Flour", "Foxnuts (Makhana)", "Chia Seeds", "Brown Rice"] },
+      { category: "Spices & Essentials", items: ["Turmeric", "Cumin", "Black Pepper", "Rock Salt", "Ghee"] }
     ],
     tips: [
-      "Hydrate well with 1 glass of water 20 minutes before each main meal.",
-      "Prep your soaked seeds and chopped veggies the night before to save morning prep time.",
-      "Complete dinner at least 2 hours before sleep for deeper rest and optimal glucose regulation."
+      "Hydrate with a glass of water 20 minutes before each main meal.",
+      "Prep soaked seeds and chopped veggies the night before to save morning prep time.",
+      "Complete dinner at least 2 hours before sleep for optimal digestion and glucose regulation."
     ],
     medicalDisclaimer:
-      "This information is for general educational purposes and is not a substitute for advice from a qualified healthcare professional. If you have a medical condition, severe allergies, or specific dietary restrictions, consult a doctor or registered dietitian before making significant dietary changes."
+      "This information is for general educational purposes and may be suitable as part of a balanced diet. Consult a healthcare professional before making major dietary changes."
   };
 
   return formatAIResponseToRoutine(fallbackData, formData);

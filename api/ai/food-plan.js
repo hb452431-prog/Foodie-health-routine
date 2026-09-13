@@ -76,18 +76,13 @@ async function discoverSupportedModels(apiKey) {
   }
 }
 
-/**
- * Fast-ranked candidates: latest ultra-fast Flash models first
- */
 function getFastCandidateModels(envModel, discoveredModels = []) {
   const fastPriority = [
+    "gemini-3.8-flash",
     "gemini-2.5-flash",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-3.8-flash",
-    "gemini-2.0-flash-lite",
     "gemini-2.5-pro",
-    "gemini-1.5-pro",
+    "gemini-flash",
     "gemini-pro"
   ];
 
@@ -258,14 +253,12 @@ export default async function handler(req, res) {
   const startTime = Date.now();
 
   try {
-    // Read server environment variable with multi-alias support
+    // Read server environment variable with secure server-side keys
     const rawKey =
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
       process.env.GOOGLE_GENAI_API_KEY ||
-      process.env.GEMINI_KEY ||
-      process.env.VITE_GEMINI_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+      process.env.GEMINI_KEY;
 
     const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
 
