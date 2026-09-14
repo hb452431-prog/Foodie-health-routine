@@ -1,9 +1,21 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { getStoredItem, setStoredItem } from "../utils/storage";
+import {
+  auth,
+  googleProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  formatFirebaseAuthError
+} from "../services/firebase";
 
 /**
  * Single Source of Truth for Authentication across Foodie-Health-Routine.
- * Uses safe storage with in-memory fallback for mobile/private browsing compatibility.
+ * Powered by Firebase Auth (Google OAuth & Email/Password).
  */
 const AuthContext = createContext(null);
 
@@ -12,8 +24,8 @@ const AUTH_STORAGE_KEY = "foodie_auth_user";
 export function AuthProvider({ children }) {
   // Authentication State
   const [user, setUser] = useState(() => getStoredItem(AUTH_STORAGE_KEY, null));
-
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Auth Modal State
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -26,14 +38,52 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated = !!user;
 
-  // Persist user state safely
+  // Listen to Firebase Auth state changes
   useEffect(() => {
-    try {
-      setStoredItem(AUTH_STORAGE_KEY, user);
-    } catch (e) {
-      console.warn("Failed to update auth storage:", e);
-    }
-  }, [user]);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const stored = getStoredItem(AUTH_STORAGE_KEY, null);
+        const formattedName =
+          firebaseUser.displayName ||
+          stored?.name ||
+          (firebaseUser.email ? firebaseUser.email.split("@")[0].replace(/[._-]/g, " ") : "Foodie User");
+        const capitalizedName =
+          formattedName.charAt(0).toUpperCase() + formattedName.slice(1);
+
+        const activeUser = {
+          uid: firebaseUser.uid,
+          name: capitalizedName,
+          email: firebaseUser.email || stored?.email || "",
+          avatar:
+            firebaseUser.photoURL ||
+            stored?.avatar ||
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          provider: firebaseUser.providerData?.[0]?.providerId || stored?.provider || "firebase",
+          goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
+          dietPreference: stored?.dietPreference || "Vegetarian",
+          streakDays: stored?.streakDays || 7,
+          loggedInAt: stored?.loggedInAt || new Date().toISOString()
+        };
+
+        setUser(activeUser);
+        try {
+          setStoredItem(AUTH_STORAGE_KEY, activeUser);
+        } catch (e) {
+          console.warn("Storage write error:", e);
+        }
+      } else {
+        setUser(null);
+        try {
+          setStoredItem(AUTH_STORAGE_KEY, null);
+        } catch (e) {
+          console.warn("Storage clear error:", e);
+        }
+      }
+      setIsInitializing(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   /**
    * Google Authentication Flow
@@ -41,20 +91,26 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = useCallback(async () => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      const res = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = res.user;
+      const stored = getStoredItem(AUTH_STORAGE_KEY, null);
 
       const loggedInUser = {
-        name: "Foodie User",
-        email: "user@example.com",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-        provider: "google",
-        goal: "Healthy Lifestyle & Metabolic Energy",
-        dietPreference: "Vegetarian",
-        streakDays: 7,
+        uid: firebaseUser.uid,
+        name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split("@")[0] : "Foodie User"),
+        email: firebaseUser.email || "",
+        avatar:
+          firebaseUser.photoURL ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        provider: "google.com",
+        goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
+        dietPreference: stored?.dietPreference || "Vegetarian",
+        streakDays: stored?.streakDays || 7,
         loggedInAt: new Date().toISOString()
       };
 
       setUser(loggedInUser);
+      setStoredItem(AUTH_STORAGE_KEY, loggedInUser);
       setIsAuthModalOpen(false);
 
       if (typeof pendingAction === "function") {
@@ -67,36 +123,47 @@ export function AuthProvider({ children }) {
       return { success: true, user: loggedInUser };
     } catch (error) {
       console.warn("Google authentication error:", error);
-      return { success: false, error: "Unable to sign in. Please try again." };
+      const friendlyError = formatFirebaseAuthError(error);
+      return { success: false, error: friendlyError };
     } finally {
       setIsLoading(false);
     }
   }, [pendingAction]);
 
   /**
-   * Email Login Flow (Demo)
+   * Email Login Flow
    */
   const loginWithEmail = useCallback(
-    async (email, _password) => {
+    async (email, password) => {
       setIsLoading(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        const res = await signInWithEmailAndPassword(auth, email.trim(), password);
+        const firebaseUser = res.user;
+        const stored = getStoredItem(AUTH_STORAGE_KEY, null);
 
-        const derivedName = email ? email.split("@")[0] : "Foodie User";
+        const derivedName =
+          firebaseUser.displayName ||
+          stored?.name ||
+          (firebaseUser.email ? firebaseUser.email.split("@")[0] : "Foodie User");
         const formattedName = derivedName.charAt(0).toUpperCase() + derivedName.slice(1);
 
         const loggedInUser = {
-          name: formattedName || "Foodie User",
-          email: email || "user@example.com",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-          provider: "email",
-          goal: "Healthy Lifestyle & Metabolic Energy",
-          dietPreference: "Vegetarian",
-          streakDays: 7,
+          uid: firebaseUser.uid,
+          name: formattedName,
+          email: firebaseUser.email || email,
+          avatar:
+            firebaseUser.photoURL ||
+            stored?.avatar ||
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+          provider: "password",
+          goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
+          dietPreference: stored?.dietPreference || "Vegetarian",
+          streakDays: stored?.streakDays || 7,
           loggedInAt: new Date().toISOString()
         };
 
         setUser(loggedInUser);
+        setStoredItem(AUTH_STORAGE_KEY, loggedInUser);
         setIsAuthModalOpen(false);
 
         if (typeof pendingAction === "function") {
@@ -109,7 +176,8 @@ export function AuthProvider({ children }) {
         return { success: true, user: loggedInUser };
       } catch (error) {
         console.warn("Email login error:", error);
-        return { success: false, error: "Unable to sign in with email. Please try again." };
+        const friendlyError = formatFirebaseAuthError(error);
+        return { success: false, error: friendlyError };
       } finally {
         setIsLoading(false);
       }
@@ -118,19 +186,34 @@ export function AuthProvider({ children }) {
   );
 
   /**
-   * Email Sign Up Flow (Demo)
+   * Email Sign Up Flow
    */
   const signupWithEmail = useCallback(
-    async (name, email, _password) => {
+    async (name, email, password) => {
       setIsLoading(true);
       try {
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        const cleanName = (name && name.trim()) || (email ? email.split("@")[0] : "New Foodie");
+        const res = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const firebaseUser = res.user;
+
+        const defaultAvatar =
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+
+        try {
+          await updateProfile(firebaseUser, {
+            displayName: cleanName,
+            photoURL: defaultAvatar
+          });
+        } catch (profileErr) {
+          console.warn("Could not update Firebase displayName:", profileErr);
+        }
 
         const newUser = {
-          name: name || (email ? email.split("@")[0] : "New Foodie"),
-          email: email || "newuser@example.com",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-          provider: "email",
+          uid: firebaseUser.uid,
+          name: cleanName,
+          email: firebaseUser.email || email,
+          avatar: defaultAvatar,
+          provider: "password",
           goal: "Healthy Lifestyle & Metabolic Energy",
           dietPreference: "Vegetarian",
           streakDays: 1,
@@ -138,6 +221,7 @@ export function AuthProvider({ children }) {
         };
 
         setUser(newUser);
+        setStoredItem(AUTH_STORAGE_KEY, newUser);
         setIsAuthModalOpen(false);
 
         if (typeof pendingAction === "function") {
@@ -150,7 +234,8 @@ export function AuthProvider({ children }) {
         return { success: true, user: newUser };
       } catch (error) {
         console.warn("Signup error:", error);
-        return { success: false, error: "Unable to create account. Please try again." };
+        const friendlyError = formatFirebaseAuthError(error);
+        return { success: false, error: friendlyError };
       } finally {
         setIsLoading(false);
       }
@@ -159,15 +244,38 @@ export function AuthProvider({ children }) {
   );
 
   /**
+   * Password Reset Flow
+   */
+  const resetPassword = useCallback(async (email) => {
+    setIsLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      return { success: true };
+    } catch (error) {
+      console.warn("Password reset error:", error);
+      const friendlyError = formatFirebaseAuthError(error);
+      return { success: false, error: friendlyError };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
    * Logout Flow
    */
-  const logout = useCallback(() => {
-    setUser(null);
-    setPendingAction(null);
-    setIsAuthModalOpen(false);
+  const logout = useCallback(async () => {
     try {
-      setStoredItem(AUTH_STORAGE_KEY, null);
-    } catch (_e) {}
+      await signOut(auth);
+    } catch (e) {
+      console.warn("Sign out error:", e);
+    } finally {
+      setUser(null);
+      setPendingAction(null);
+      setIsAuthModalOpen(false);
+      try {
+        setStoredItem(AUTH_STORAGE_KEY, null);
+      } catch (_e) {}
+    }
   }, []);
 
   /**
@@ -211,11 +319,13 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated,
     isLoading,
+    isInitializing,
     isAuthModalOpen,
     authModalReason,
     loginWithGoogle,
     loginWithEmail,
     signupWithEmail,
+    resetPassword,
     logout,
     openAuthModal,
     closeAuthModal,
@@ -234,11 +344,13 @@ export function useAuth() {
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitializing: false,
       isAuthModalOpen: false,
       authModalReason: "",
       loginWithGoogle: async () => ({ success: false }),
       loginWithEmail: async () => ({ success: false }),
       signupWithEmail: async () => ({ success: false }),
+      resetPassword: async () => ({ success: false }),
       logout: () => {},
       openAuthModal: () => {},
       closeAuthModal: () => {},
@@ -248,4 +360,3 @@ export function useAuth() {
   }
   return context;
 }
-
