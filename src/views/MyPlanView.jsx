@@ -6,9 +6,7 @@ import OrderDeliveryLinks from "../components/OrderDeliveryLinks";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
 import { getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
 import { useLocation } from "../context/LocationContext";
-import { useAuth } from "../context/AuthContext";
 import {
-  Sparkles,
   CheckCircle2,
   Circle,
   Utensils,
@@ -17,12 +15,10 @@ import {
   ShoppingBag,
   Share2,
   Clock,
-  Calendar,
   SlidersHorizontal,
-  ExternalLink,
   Bookmark,
-  ChevronRight,
-  ArrowRight
+  ArrowRight,
+  ExternalLink
 } from "lucide-react";
 
 export default function MyPlanView({
@@ -43,7 +39,6 @@ export default function MyPlanView({
   onSelectRoutine,
   savedRoutines = []
 }) {
-  const { requireAuth } = useAuth();
   const { locationData, setIsManualModalOpen } = useLocation();
 
   // Top Tabs: "today" | "weekly" | "saved"
@@ -128,6 +123,10 @@ export default function MyPlanView({
 
   const isCurrentlyRegional = planCuisineMode === "regional" || displayedRoutine.isRegionalAdapted;
 
+  const safeDailyTimeline = Array.isArray(displayedRoutine.dailyTimeline)
+    ? displayedRoutine.dailyTimeline
+    : (routine.dailyTimeline || ROUTINES_DATA[0].dailyTimeline);
+
   const completedMealsList =
     completedMealsData && Array.isArray(completedMealsData.meals)
       ? completedMealsData.meals
@@ -157,10 +156,6 @@ export default function MyPlanView({
     e.stopPropagation();
     if (onToggleFavoriteMeal) onToggleFavoriteMeal(mealId);
   };
-
-  const safeDailyTimeline = Array.isArray(displayedRoutine.dailyTimeline)
-    ? displayedRoutine.dailyTimeline
-    : (routine.dailyTimeline || ROUTINES_DATA[0].dailyTimeline);
 
   // Saved routines list
   const savedRoutinesList = ROUTINES_DATA.filter((r) => savedRoutines.includes(r.id));
@@ -914,7 +909,7 @@ export default function MyPlanView({
                           style={{ width: "100%", justifyContent: "center" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSelectRoutine && onSelectRoutine(routineItem.id);
+                            if (onSelectRoutine) onSelectRoutine(routineItem.id);
                           }}
                         >
                           <span>Open Routine</span>
@@ -961,7 +956,7 @@ export default function MyPlanView({
                         alignItems: "center",
                         cursor: "pointer"
                       }}
-                      onClick={() => onOpenRecipe && onOpenRecipe(meal, meal.parentRoutine || displayedRoutine)}
+                      onClick={() => { if (onOpenRecipe) onOpenRecipe(meal, meal.parentRoutine || displayedRoutine); }}
                     >
                       {meal.image && (
                         <img
@@ -983,7 +978,7 @@ export default function MyPlanView({
                             style={{ padding: "0.25rem 0.6rem", fontSize: "0.72rem" }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              onOpenRecipe && onOpenRecipe(meal, meal.parentRoutine || displayedRoutine);
+                              if (onOpenRecipe) onOpenRecipe(meal, meal.parentRoutine || displayedRoutine);
                             }}
                           >
                             <Utensils size={11} />

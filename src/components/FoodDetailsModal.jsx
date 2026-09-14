@@ -96,9 +96,6 @@ export default function FoodDetailsModal({
     }
   };
 
-  const swiggyUrl = `https://www.swiggy.com/search?query=${encodeURIComponent(title)}`;
-  const zomatoUrl = `https://www.zomato.com/search?q=${encodeURIComponent(title)}`;
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div

@@ -28,27 +28,16 @@ export default function Navbar({
     }
   };
 
-  const handleTabClick = (tab, reason) => {
-    if (tab === "home") {
-      setActiveTab("home");
-      return;
-    }
-
-    requireAuth(() => {
-      setActiveTab(tab);
-    }, reason);
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
   };
 
   const handleCreatePlanClick = () => {
-    requireAuth(() => {
-      if (onOpenPlanWizard) onOpenPlanWizard();
-    }, "Sign in to create your AI-tailored personalized nutrition blueprint.");
+    if (onOpenPlanWizard) onOpenPlanWizard();
   };
 
   const handleSearchClick = () => {
-    requireAuth(() => {
-      if (onOpenSearch) onOpenSearch();
-    }, "Sign in to search healthy recipes, disease-specific routines, and macronutrients.");
+    if (onOpenSearch) onOpenSearch();
   };
 
   return (

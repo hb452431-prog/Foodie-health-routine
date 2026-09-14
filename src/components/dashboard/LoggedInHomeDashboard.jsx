@@ -5,18 +5,13 @@ import {
   Sparkles,
   Search,
   MapPin,
-  Compass,
   Calendar,
   ArrowRight,
   Utensils,
-  Clock,
-  Flame,
   CheckCircle2,
   Circle,
-  ShoppingBag,
   ExternalLink,
   ChevronRight,
-  SlidersHorizontal,
   Navigation
 } from "lucide-react";
 import { ROUTINES_DATA, getRoutineById } from "../../data/routinesData";
@@ -563,7 +558,7 @@ export default function LoggedInHomeDashboard({
                     style={{ width: "100%", justifyContent: "center" }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onSelectRoutine && onSelectRoutine(routineItem.id);
+                      if (onSelectRoutine) onSelectRoutine(routineItem.id);
                     }}
                   >
                     <span>View Daily Schedule</span>

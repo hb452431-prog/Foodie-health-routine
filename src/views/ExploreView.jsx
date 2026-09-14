@@ -94,23 +94,17 @@ export default function ExploreView({
     setCalorieRange(3200);
   };
 
-  // Auth-Gated Action Handlers
+  // Direct Action Handlers
   const handleSelectRoutineWithAuth = (routineId) => {
-    requireAuth(() => {
-      if (onSelectRoutine) onSelectRoutine(routineId);
-    }, "Sign in to view detailed daily routine timelines, recipes and nutrition.");
+    if (onSelectRoutine) onSelectRoutine(routineId);
   };
 
   const handleToggleSaveWithAuth = (routineId) => {
-    requireAuth(() => {
-      if (onToggleSaveRoutine) onToggleSaveRoutine(routineId);
-    }, "Sign in to save routines to your personal library.");
+    if (onToggleSaveRoutine) onToggleSaveRoutine(routineId);
   };
 
   const handleShareWithAuth = (routine) => {
-    requireAuth(() => {
-      if (onOpenShare) onOpenShare(routine);
-    }, "Sign in to share routines with friends.");
+    if (onOpenShare) onOpenShare(routine);
   };
 
   // Filtered routines logic

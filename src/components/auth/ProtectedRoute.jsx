@@ -1,17 +1,57 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { Lock, LogIn, Sparkles } from "lucide-react";
+import { Lock, LogIn, Sparkles, ArrowRight, Eye } from "lucide-react";
 
 /**
  * ProtectedRoute component wrapper.
  * If user is logged in, renders children.
- * If logged out, displays a clean lock banner and prompts login.
+ * If logged out, offers a smooth sign-in modal or 1-click Guest Preview mode so users can test immediately.
  */
-export default function ProtectedRoute({ children, title = "Login Required", subtitle = "Please sign in to access this feature." }) {
+export default function ProtectedRoute({
+  children,
+  title = "Login Required",
+  subtitle = "Please sign in to access this feature.",
+  allowGuestPreview = true
+}) {
   const { isAuthenticated, openAuthModal } = useAuth();
+  const [guestPreview, setGuestPreview] = useState(false);
 
-  if (isAuthenticated) {
-    return children;
+  if (isAuthenticated || (allowGuestPreview && guestPreview)) {
+    return (
+      <div>
+        {!isAuthenticated && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)",
+              borderBottom: "1px solid #A7F3D0",
+              padding: "0.6rem 1rem",
+              fontSize: "0.84rem",
+              color: "#065F46",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "0.5rem"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontWeight: 600 }}>
+              <Sparkles size={15} style={{ color: "#059669" }} />
+              <span>You are exploring in <strong>Guest Mode</strong>. Data is saved locally in your browser.</span>
+            </div>
+            <button
+              type="button"
+              className="btn btn-accent btn-sm"
+              style={{ padding: "0.25rem 0.75rem", fontSize: "0.78rem" }}
+              onClick={() => openAuthModal("Sign in to sync your routines and meal plans across all your devices.")}
+            >
+              <LogIn size={13} />
+              <span>Save to Account</span>
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -48,15 +88,29 @@ export default function ProtectedRoute({ children, title = "Login Required", sub
           {subtitle}
         </p>
 
-        <button
-          type="button"
-          className="btn btn-primary btn-lg"
-          style={{ width: "100%", justifyContent: "center" }}
-          onClick={() => openAuthModal(subtitle)}
-        >
-          <LogIn size={18} />
-          <span>Sign In to Continue</span>
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <button
+            type="button"
+            className="btn btn-primary btn-lg"
+            style={{ width: "100%", justifyContent: "center" }}
+            onClick={() => openAuthModal(subtitle)}
+          >
+            <LogIn size={18} />
+            <span>Sign In to Continue</span>
+          </button>
+
+          {allowGuestPreview && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: "100%", justifyContent: "center" }}
+              onClick={() => setGuestPreview(true)}
+            >
+              <Eye size={16} />
+              <span>Explore in Guest Mode</span>
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

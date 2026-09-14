@@ -9,7 +9,7 @@ import { ROUTINES_DATA } from "../data/routinesData";
 import { getAdaptedRoutinesList } from "../data/regionalCuisinesData";
 import { useLocation } from "../context/LocationContext";
 import { useAuth } from "../context/AuthContext";
-import { Sparkles, ArrowRight, ShieldCheck, Heart, Flame, Zap, Award, MapPin } from "lucide-react";
+import { Sparkles, ArrowRight, Award } from "lucide-react";
 
 export default function HomeView({
   userProfile,
@@ -31,68 +31,13 @@ export default function HomeView({
   completedMealsData,
   onToggleMealCompleted
 }) {
-  const { isAuthenticated, requireAuth } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { locationData } = useLocation();
   const userCountry = locationData?.country || userProfile?.country || "India";
   const userState = locationData?.state || userProfile?.state || "Karnataka";
   
   const adaptedRoutines = getAdaptedRoutinesList(ROUTINES_DATA, userCountry, userState);
   const featuredRoutines = adaptedRoutines.slice(0, 6);
-
-  // Protected action triggers for landing page
-  const handleProtectedSearch = (query) => {
-    requireAuth(() => {
-      onSearchSubmit(query);
-    }, `Sign in to find custom food routines matching "${query}".`);
-  };
-
-  const handleProtectedExplore = () => {
-    requireAuth(() => {
-      onExploreClick();
-    }, "Sign in to explore all personalized food and health routines.");
-  };
-
-  const handleProtectedPlanWizard = () => {
-    requireAuth(() => {
-      onOpenPlanWizard();
-    }, "Sign in to generate your AI-tailored personalized nutrition blueprint.");
-  };
-
-  const handleProtectedSelectRoutine = (routineId) => {
-    requireAuth(() => {
-      onSelectRoutine(routineId);
-    }, "Sign in to view full meal timeline and personalized recipes.");
-  };
-
-  const handleProtectedSelectCategory = (categoryId) => {
-    requireAuth(() => {
-      onSelectCategory(categoryId);
-    }, "Sign in to browse food routines by health category.");
-  };
-
-  const handleProtectedSaveRoutine = (routineId) => {
-    requireAuth(() => {
-      onToggleSaveRoutine(routineId);
-    }, "Sign in to save routines to your personal library.");
-  };
-
-  const handleProtectedFavoriteMeal = (mealId) => {
-    requireAuth(() => {
-      onToggleFavoriteMeal(mealId);
-    }, "Sign in to save meals to your favorite recipes.");
-  };
-
-  const handleProtectedOpenRecipe = (meal, routine) => {
-    requireAuth(() => {
-      onOpenRecipe(meal, routine);
-    }, "Sign in to access detailed step-by-step recipes and nutrition.");
-  };
-
-  const handleProtectedOpenOrder = (meal) => {
-    requireAuth(() => {
-      onOpenOrder(meal);
-    }, "Sign in to order healthy food from nearby restaurants.");
-  };
 
   // 1. Logged-In User Experience: Personalized Dashboard
   if (isAuthenticated) {
@@ -138,28 +83,28 @@ export default function HomeView({
     );
   }
 
-  // 2. Logged-Out Public Landing Page Experience
+  // 2. Logged-Out Public Landing Page Experience (Instant Exploration)
   return (
     <div>
       {/* Hero Section */}
       <HeroSection
-        onSearchSubmit={handleProtectedSearch}
-        onOpenPlanWizard={handleProtectedPlanWizard}
-        onExploreClick={handleProtectedExplore}
-        onSelectRoutine={handleProtectedSelectRoutine}
+        onSearchSubmit={onSearchSubmit}
+        onOpenPlanWizard={onOpenPlanWizard}
+        onExploreClick={onExploreClick}
+        onSelectRoutine={onSelectRoutine}
       />
 
       {/* Location-Based Food Around You Section */}
       <NearbyFoodSection
-        onOpenRecipe={handleProtectedOpenRecipe}
+        onOpenRecipe={onOpenRecipe}
         onOpenYouTube={onOpenYouTube}
-        onOpenOrder={handleProtectedOpenOrder}
+        onOpenOrder={onOpenOrder}
         favoriteMeals={favoriteMeals}
-        onToggleFavoriteMeal={handleProtectedFavoriteMeal}
+        onToggleFavoriteMeal={onToggleFavoriteMeal}
       />
 
       {/* Quick Category Section */}
-      <CategorySection onSelectCategory={handleProtectedSelectCategory} />
+      <CategorySection onSelectCategory={onSelectCategory} />
 
       {/* Featured Routines Grid */}
       <section style={{ padding: "3.5rem 0" }}>
@@ -179,9 +124,9 @@ export default function HomeView({
               <RoutineCard
                 key={routine.id}
                 routine={routine}
-                onSelectRoutine={handleProtectedSelectRoutine}
+                onSelectRoutine={onSelectRoutine}
                 isSaved={savedRoutines.includes(routine.id)}
-                onToggleSave={handleProtectedSaveRoutine}
+                onToggleSave={onToggleSaveRoutine}
                 onOpenShare={onOpenShare}
               />
             ))}
@@ -190,7 +135,7 @@ export default function HomeView({
           <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
             <button
               className="btn btn-secondary btn-lg"
-              onClick={handleProtectedExplore}
+              onClick={onExploreClick}
             >
               <span>Explore All {ROUTINES_DATA.length} Food Routines</span>
               <ArrowRight size={18} />
@@ -203,8 +148,8 @@ export default function HomeView({
       <section style={{ padding: "1rem 0 3.5rem" }}>
         <div className="container">
           <NutritionCalculator
-            onOpenPlanWizard={handleProtectedPlanWizard}
-            onSelectRoutine={handleProtectedSelectRoutine}
+            onOpenPlanWizard={onOpenPlanWizard}
+            onSelectRoutine={onSelectRoutine}
           />
         </div>
       </section>
@@ -248,7 +193,7 @@ export default function HomeView({
 
               <button
                 className="btn btn-accent btn-lg"
-                onClick={handleProtectedPlanWizard}
+                onClick={onOpenPlanWizard}
               >
                 <Sparkles size={18} />
                 <span>Get Your Personalized Plan</span>

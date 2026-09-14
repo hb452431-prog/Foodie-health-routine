@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ArrowUp, Droplet, Sparkles, Plus } from "lucide-react";
+import { Search, ArrowUp, Droplet, Plus } from "lucide-react";
 
 export default function FloatingQuickBar({
   onOpenCommandPalette,

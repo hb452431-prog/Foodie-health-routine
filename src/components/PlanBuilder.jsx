@@ -192,7 +192,7 @@ export default function PlanBuilder({
 
       try {
         confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
-      } catch (e) {}
+      } catch (_e) {}
 
       if (onShowToast) {
         onShowToast("✨ Gemini AI personalized food routine generated!");
@@ -306,7 +306,7 @@ export default function PlanBuilder({
 
     try {
       confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
-    } catch (e) {}
+    } catch (_e) {}
   };
 
   const toggleShoppingCheck = (idx) => {

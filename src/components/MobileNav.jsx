@@ -3,23 +3,12 @@ import { useAuth } from "../context/AuthContext";
 import { Home, Compass, Calendar, User, Sparkles } from "lucide-react";
 
 export default function MobileNav({ activeTab, setActiveTab, onOpenPlanWizard }) {
-  const { requireAuth } = useAuth();
-
-  const handleTabClick = (tab, reason) => {
-    if (tab === "home") {
-      setActiveTab("home");
-      return;
-    }
-
-    requireAuth(() => {
-      setActiveTab(tab);
-    }, reason);
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
   };
 
   const handlePlanClick = () => {
-    requireAuth(() => {
-      if (onOpenPlanWizard) onOpenPlanWizard();
-    }, "Sign in to create your personalized food plan.");
+    if (onOpenPlanWizard) onOpenPlanWizard();
   };
 
   return (

@@ -67,7 +67,7 @@ export default function LoginModal({ onShowToast }) {
       if (res.isVerified) {
         try {
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-        } catch (_e) {}
+        } catch {}
         if (onShowToast) {
           onShowToast("🎉 Email verified! Welcome to Foodie's Adda!");
         }
@@ -103,7 +103,7 @@ export default function LoginModal({ onShowToast }) {
     if (res.success) {
       try {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-      } catch (_e) {}
+      } catch {}
       if (onShowToast) {
         onShowToast(`🎉 Welcome, ${res.user.name}!`);
       }
@@ -162,7 +162,7 @@ export default function LoginModal({ onShowToast }) {
       if (res.success) {
         try {
           confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-        } catch (_e) {}
+        } catch {}
         if (onShowToast) {
           onShowToast(`🎉 Welcome back, ${res.user.name}!`);
         }
@@ -183,7 +183,7 @@ export default function LoginModal({ onShowToast }) {
     if (res.isVerified) {
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-      } catch (_e) {}
+      } catch {}
       if (onShowToast) {
         onShowToast("🎉 Email verified successfully! Welcome to Foodie's Adda.");
       }

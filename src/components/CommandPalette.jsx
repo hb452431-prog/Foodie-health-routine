@@ -11,12 +11,7 @@ import {
   Utensils,
   ChevronRight,
   X,
-  Flame,
-  Clock,
-  ArrowRight,
-  Filter,
-  CheckCircle2,
-  Heart
+  Flame
 } from "lucide-react";
 import { ROUTINES_DATA } from "../data/routinesData";
 import { CATEGORIES_DATA } from "../data/categoriesData";

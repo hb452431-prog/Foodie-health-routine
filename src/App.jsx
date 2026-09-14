@@ -70,7 +70,7 @@ const getTabFromPath = (path) => {
 };
 
 function AppContent() {
-  const { isAuthenticated, requireAuth, openAuthModal } = useAuth();
+  const { openAuthModal } = useAuth();
 
   // Navigation State with SPA direct URL support
   const [activeTab, setActiveTab] = useState(() => getTabFromPath(window.location.pathname));
@@ -81,7 +81,7 @@ function AppContent() {
       if (clean === "health") return "healthy";
       if (clean === "fitness") return "high-protein";
       return "all";
-    } catch (e) {
+    } catch (_e) {
       return "all";
     }
   });
@@ -94,7 +94,7 @@ function AppContent() {
       if (window.location.pathname !== targetPath) {
         window.history.pushState({ tab: newTab }, "", targetPath);
       }
-    } catch (e) {
+    } catch (_e) {
       // Safe fallback if history API is restricted
     }
   };
@@ -138,7 +138,7 @@ function AppContent() {
         if (stored.id) return getRoutineById(stored.id) || ROUTINES_DATA[0];
       }
       return ROUTINES_DATA[0];
-    } catch (e) {
+    } catch (_e) {
       return ROUTINES_DATA[0];
     }
   });
@@ -190,20 +190,14 @@ function AppContent() {
           handleTabChange("home");
           showToast("🏠 Switched to Home");
         } else if (e.key === "2") {
-          requireAuth(() => {
-            handleTabChange("explore");
-            showToast("🧭 Switched to Explore");
-          }, "Sign in to explore all food routines.");
+          handleTabChange("explore");
+          showToast("🧭 Switched to Explore");
         } else if (e.key === "3") {
-          requireAuth(() => {
-            handleTabChange("my-plan");
-            showToast("📅 Switched to My Plan");
-          }, "Sign in to view your live daily plan.");
+          handleTabChange("my-plan");
+          showToast("📅 Switched to My Plan");
         } else if (e.key === "4") {
-          requireAuth(() => {
-            handleTabChange("profile");
-            showToast("👤 Switched to Profile");
-          }, "Sign in to view your health profile.");
+          handleTabChange("profile");
+          showToast("👤 Switched to Profile");
         }
       }
 
@@ -221,30 +215,24 @@ function AppContent() {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [isCommandPaletteOpen, isPlanWizardOpen, selectedRoutine, selectedRecipeMeal, selectedYouTubeMeal, selectedOrderMeal, selectedShareRoutine, requireAuth]);
+  }, [isCommandPaletteOpen, isPlanWizardOpen, selectedRoutine, selectedRecipeMeal, selectedYouTubeMeal, selectedOrderMeal, selectedShareRoutine]);
 
-  // Handlers for Routines & Favorites (Protected)
+  // Handlers for Routines & Favorites (Seamless Local + Cloud)
   const handleToggleSaveRoutine = (routineId) => {
-    requireAuth(() => {
-      const res = toggleSaveRoutine(routineId);
-      setSavedRoutines([...res.updated]);
-      showToast(res.isSaved ? "⭐ Routine saved to your library!" : "Routine removed from saved list.");
-    }, "Sign in to save routines to your personal collection.");
+    const res = toggleSaveRoutine(routineId);
+    setSavedRoutines([...res.updated]);
+    showToast(res.isSaved ? "⭐ Routine saved to your library!" : "Routine removed from saved list.");
   };
 
   const handleToggleFavoriteMeal = (mealId) => {
-    requireAuth(() => {
-      const res = toggleFavoriteMeal(mealId);
-      setFavoriteMeals([...res.updated]);
-      showToast(res.isFavorite ? "❤️ Meal added to favorite recipes!" : "Meal removed from favorites.");
-    }, "Sign in to save recipes to your favorites.");
+    const res = toggleFavoriteMeal(mealId);
+    setFavoriteMeals([...res.updated]);
+    showToast(res.isFavorite ? "❤️ Meal added to favorite recipes!" : "Meal removed from favorites.");
   };
 
   const handleToggleMealCompleted = (mealId) => {
-    requireAuth(() => {
-      const res = toggleCompletedMeal(mealId);
-      setCompletedMealsData({ ...res });
-    }, "Sign in to track and complete your daily meals.");
+    const res = toggleCompletedMeal(mealId);
+    setCompletedMealsData({ ...res });
   };
 
   const handleUpdateWater = (glasses) => {
@@ -270,25 +258,21 @@ function AppContent() {
   };
 
   const handleSelectRoutine = (routineId) => {
-    requireAuth(() => {
-      const rawRoutine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
-      if (rawRoutine) {
-        const adapted = getAdaptedRoutineForLocation(
-          rawRoutine,
-          userProfile?.country || "India",
-          userProfile?.state || "Karnataka",
-          "regional"
-        ) || rawRoutine;
-        setSelectedRoutine(adapted);
-      }
-    }, "Sign in to view complete daily routine timeline and recipes.");
+    const rawRoutine = getRoutineById(routineId) || ROUTINES_DATA.find((r) => r.id === routineId);
+    if (rawRoutine) {
+      const adapted = getAdaptedRoutineForLocation(
+        rawRoutine,
+        userProfile?.country || "India",
+        userProfile?.state || "Karnataka",
+        "regional"
+      ) || rawRoutine;
+      setSelectedRoutine(adapted);
+    }
   };
 
   const handleOpenRecipe = (meal, routine) => {
-    requireAuth(() => {
-      setSelectedRecipeMeal(meal);
-      setSelectedRecipeRoutine(routine || selectedRoutine || activePlan);
-    }, "Sign in to access detailed ingredients and preparation steps.");
+    setSelectedRecipeMeal(meal);
+    setSelectedRecipeRoutine(routine || selectedRoutine || activePlan);
   };
 
   const handleOpenYouTube = (meal) => {
@@ -296,9 +280,7 @@ function AppContent() {
   };
 
   const handleOpenOrder = (meal) => {
-    requireAuth(() => {
-      setSelectedOrderMeal(meal);
-    }, "Sign in to order healthy dishes from nearby restaurants.");
+    setSelectedOrderMeal(meal);
   };
 
   const handleOpenShare = (routine) => {

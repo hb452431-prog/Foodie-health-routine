@@ -44,7 +44,11 @@ export default function LocationPermissionModal() {
   };
 
   const handleRetry = () => {
-    retryLocation ? retryLocation() : requestLocation();
+    if (typeof retryLocation === "function") {
+      retryLocation();
+    } else if (typeof requestLocation === "function") {
+      requestLocation();
+    }
   };
 
   const isLoading = locationStatus === "loading";
