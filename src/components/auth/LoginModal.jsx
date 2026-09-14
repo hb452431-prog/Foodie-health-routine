@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import Logo from "../Logo";
 import confetti from "canvas-confetti";
@@ -15,8 +15,9 @@ import {
   EyeOff,
   AlertCircle,
   RotateCcw,
-  Edit3,
-  KeyRound
+  ExternalLink,
+  MailCheck,
+  Send
 } from "lucide-react";
 
 export default function LoginModal({ onShowToast }) {
@@ -26,13 +27,14 @@ export default function LoginModal({ onShowToast }) {
     closeAuthModal,
     loginWithGoogle,
     loginWithEmail,
-    requestSignupOtp,
-    completeSignupWithOtp,
+    signupWithEmail,
+    sendVerificationEmail,
+    checkEmailVerified,
     resetPassword,
     isLoading
   } = useAuth();
 
-  const [mode, setMode] = useState("login"); // "login" | "signup" | "otp-verify" | "forgot"
+  const [mode, setMode] = useState("login"); // "login" | "signup" | "verify-email" | "forgot"
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,17 +42,14 @@ export default function LoginModal({ onShowToast }) {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState("");
   const [resetSuccessMessage, setResetSuccessMessage] = useState("");
-
-  // OTP State
-  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
-  const [devOtp, setDevOtp] = useState("");
-  const [countdown, setCountdown] = useState(60);
-  const otpInputRefs = useRef([]);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
 
   // Resend Countdown Timer
+  const [countdown, setCountdown] = useState(60);
+
   useEffect(() => {
     let timer = null;
-    if (mode === "otp-verify" && countdown > 0) {
+    if (mode === "verify-email" && countdown > 0) {
       timer = setInterval(() => {
         setCountdown((prev) => prev - 1);
       }, 1000);
@@ -60,14 +59,37 @@ export default function LoginModal({ onShowToast }) {
     };
   }, [mode, countdown]);
 
-  // Focus first OTP input when transitioning to OTP mode
+  // Auto-check verification status periodically and when tab regains focus
   useEffect(() => {
-    if (mode === "otp-verify") {
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 150);
-    }
-  }, [mode]);
+    if (mode !== "verify-email") return;
+
+    const handleCheck = async () => {
+      const res = await checkEmailVerified();
+      if (res.isVerified) {
+        try {
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        } catch (_e) {}
+        if (onShowToast) {
+          onShowToast(`🎉 Email verified! Welcome to Foodie's Adda!`);
+        }
+        closeAuthModal();
+      }
+    };
+
+    // Check every 4 seconds
+    const interval = setInterval(handleCheck, 4000);
+
+    // Check immediately when user switches back from their email tab
+    const handleFocus = () => {
+      handleCheck();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [mode, checkEmailVerified, closeAuthModal, onShowToast]);
 
   if (!isAuthModalOpen) return null;
 
@@ -124,18 +146,16 @@ export default function LoginModal({ onShowToast }) {
         return;
       }
 
-      // Step 1 of Sign Up: Send 6-digit OTP to Email
-      const res = await requestSignupOtp(name, email, password);
+      // Create Account & Send Firebase Verification Link
+      const res = await signupWithEmail(name, email, password);
       if (res.success) {
-        setDevOtp(res.devOtp || "");
-        setOtpDigits(["", "", "", "", "", ""]);
         setCountdown(60);
-        setMode("otp-verify");
+        setMode("verify-email");
         if (onShowToast) {
-          onShowToast(`📧 Verification OTP sent to ${email}!`);
+          onShowToast(`📧 Verification link sent to ${email}!`);
         }
       } else {
-        setAuthError(res.error || "Unable to send verification code.");
+        setAuthError(res.error || "Unable to create account.");
       }
     } else {
       // Direct Login
@@ -153,104 +173,41 @@ export default function LoginModal({ onShowToast }) {
     }
   };
 
-  // Handle individual OTP Box Changes
-  const handleOtpChange = (index, value) => {
-    const char = value.replace(/\D/g, "").slice(-1); // Only digits, last character
-    const newDigits = [...otpDigits];
-    newDigits[index] = char;
-    setOtpDigits(newDigits);
+  // Manual Check Verification Button
+  const handleManualCheckVerification = async () => {
+    setIsCheckingStatus(true);
     setAuthError("");
 
-    // Auto-focus next input if digit entered
-    if (char && index < 5) {
-      otpInputRefs.current[index + 1]?.focus();
-    }
-  };
+    const res = await checkEmailVerified();
+    setIsCheckingStatus(false);
 
-  // Handle Backspace and Navigation Keys
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === "Backspace") {
-      if (!otpDigits[index] && index > 0) {
-        const newDigits = [...otpDigits];
-        newDigits[index - 1] = "";
-        setOtpDigits(newDigits);
-        otpInputRefs.current[index - 1]?.focus();
-      }
-    } else if (e.key === "ArrowLeft" && index > 0) {
-      otpInputRefs.current[index - 1]?.focus();
-    } else if (e.key === "ArrowRight" && index < 5) {
-      otpInputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  // Handle Clipboard Paste for OTP (e.g. user pastes 6 digits)
-  const handleOtpPaste = (e) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (!pastedData) return;
-
-    const newDigits = [...otpDigits];
-    for (let i = 0; i < 6; i++) {
-      newDigits[i] = pastedData[i] || "";
-    }
-    setOtpDigits(newDigits);
-    setAuthError("");
-
-    const targetIndex = Math.min(pastedData.length, 5);
-    otpInputRefs.current[targetIndex]?.focus();
-  };
-
-  // Resend OTP Code
-  const handleResendOtp = async () => {
-    if (countdown > 0) return;
-    setAuthError("");
-    const res = await requestSignupOtp(name, email, password);
-    if (res.success) {
-      setDevOtp(res.devOtp || "");
-      setCountdown(60);
-      setOtpDigits(["", "", "", "", "", ""]);
-      if (onShowToast) {
-        onShowToast(`🔄 New verification code sent to ${email}!`);
-      }
-      setTimeout(() => {
-        otpInputRefs.current[0]?.focus();
-      }, 100);
-    } else {
-      setAuthError(res.error || "Unable to resend verification code.");
-    }
-  };
-
-  // Step 2 of Sign Up: Verify OTP and complete Firebase account creation
-  const handleVerifyOtpSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError("");
-
-    const otpCode = otpDigits.join("");
-    if (otpCode.length < 6) {
-      setAuthError("Please enter all 6 digits of the verification code.");
-      return;
-    }
-
-    const res = await completeSignupWithOtp(name, email, password, otpCode);
-    if (res.success) {
+    if (res.isVerified) {
       try {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } catch (_e) {}
       if (onShowToast) {
-        onShowToast(`🎉 Account created! Welcome to Foodie's Adda, ${res.user.name}.`);
+        onShowToast(`🎉 Email verified successfully! Welcome to Foodie's Adda.`);
       }
+      closeAuthModal();
     } else {
-      setAuthError(res.error || "Invalid verification code.");
+      setAuthError("Verification link has not been clicked yet. Please open your email and click the link.");
     }
   };
 
-  // Quick auto-fill helper for development / demo
-  const handleAutoFillOtp = () => {
-    if (!devOtp) return;
-    const digits = devOtp.split("").slice(0, 6);
-    setOtpDigits(digits);
+  // Resend Verification Email Link via Firebase
+  const handleResendVerificationLink = async () => {
+    if (countdown > 0) return;
     setAuthError("");
-    otpInputRefs.current[5]?.focus();
+
+    const res = await sendVerificationEmail();
+    if (res.success) {
+      setCountdown(60);
+      if (onShowToast) {
+        onShowToast(`🔄 Fresh verification link sent to ${email}!`);
+      }
+    } else {
+      setAuthError(res.error || "Unable to resend verification link.");
+    }
   };
 
   return (
@@ -319,7 +276,7 @@ export default function LoginModal({ onShowToast }) {
             </div>
 
             {/* Reason Banner */}
-            {authModalReason && mode !== "otp-verify" && (
+            {authModalReason && mode !== "verify-email" && (
               <div className="auth-reason-banner">
                 <Lock size={16} color="#059669" style={{ flexShrink: 0, marginTop: "2px" }} />
                 <div>
@@ -333,14 +290,14 @@ export default function LoginModal({ onShowToast }) {
               </div>
             )}
 
-            {/* Title & Subtitle */}
+            {/* Header Text */}
             <div style={{ marginBottom: "1.25rem" }}>
               <h3 style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--primary-900)", marginBottom: "0.25rem" }}>
                 {mode === "login"
                   ? "Welcome Back 👋"
                   : mode === "signup"
                   ? "Create Account 🚀"
-                  : mode === "otp-verify"
+                  : mode === "verify-email"
                   ? "Verify Your Email ✉️"
                   : "Reset Password 🔑"}
               </h3>
@@ -349,8 +306,8 @@ export default function LoginModal({ onShowToast }) {
                   ? "Sign in with Google or your email to continue."
                   : mode === "signup"
                   ? "Sign up to personalize and save your meal plans."
-                  : mode === "otp-verify"
-                  ? "Enter the 6-digit code sent to verify your email."
+                  : mode === "verify-email"
+                  ? "We've sent an official Firebase verification link to your email."
                   : "Enter your registered email to receive a password reset link."}
               </p>
             </div>
@@ -399,151 +356,123 @@ export default function LoginModal({ onShowToast }) {
               </div>
             )}
 
-            {/* OTP VERIFICATION VIEW */}
-            {mode === "otp-verify" ? (
-              <form onSubmit={handleVerifyOtpSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {/* Email Chip with Edit button */}
+            {/* VERIFY EMAIL LINK SCREEN */}
+            {mode === "verify-email" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {/* Visual Mail Icon Card */}
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0.6rem 0.85rem",
-                    background: "#F8FAFC",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--border-subtle)",
-                    fontSize: "0.85rem"
+                    background: "linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%)",
+                    border: "1.5px solid #A7F3D0",
+                    borderRadius: "var(--radius-lg)",
+                    padding: "1.25rem",
+                    textAlign: "center"
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", overflow: "hidden" }}>
-                    <Mail size={15} color="#059669" />
-                    <span style={{ fontWeight: 700, color: "var(--primary-900)", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {email}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode("signup");
-                      resetFormState();
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.25rem",
-                      background: "none",
-                      border: "none",
-                      color: "#059669",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      padding: 0
-                    }}
-                  >
-                    <Edit3 size={13} />
-                    <span>Change</span>
-                  </button>
-                </div>
-
-                {/* 6-Digit OTP Box Grid */}
-                <div>
-                  <label
-                    style={{
-                      fontSize: "0.8rem",
-                      fontWeight: 700,
-                      color: "var(--text-secondary)",
-                      display: "block",
-                      marginBottom: "0.5rem"
-                    }}
-                  >
-                    Enter 6-Digit Verification Code
-                  </label>
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(6, 1fr)",
-                      gap: "0.5rem"
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      background: "#059669",
+                      color: "#FFFFFF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      margin: "0 auto 0.75rem",
+                      boxShadow: "0 4px 12px rgba(5, 150, 105, 0.25)"
                     }}
-                    onPaste={handleOtpPaste}
                   >
-                    {otpDigits.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        ref={(el) => (otpInputRefs.current[idx] = el)}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleOtpChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                        style={{
-                          width: "100%",
-                          height: "48px",
-                          textAlign: "center",
-                          fontSize: "1.4rem",
-                          fontWeight: 800,
-                          color: "var(--primary-900)",
-                          borderRadius: "var(--radius-md)",
-                          border: digit ? "2px solid #059669" : "1.5px solid var(--border-subtle)",
-                          background: digit ? "#F0FDF4" : "#FFFFFF",
-                          outline: "none",
-                          transition: "all 0.15s ease"
-                        }}
-                      />
-                    ))}
+                    <MailCheck size={24} />
+                  </div>
+
+                  <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#065F46", marginBottom: "0.3rem" }}>
+                    Verification Link Sent!
+                  </div>
+                  <p style={{ fontSize: "0.84rem", color: "#047857", marginBottom: "0.6rem", lineHeight: 1.4 }}>
+                    We dispatched an official Firebase confirmation link to:
+                  </p>
+                  <div
+                    style={{
+                      display: "inline-block",
+                      background: "#FFFFFF",
+                      border: "1px solid #6EE7B7",
+                      padding: "0.35rem 0.8rem",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "0.88rem",
+                      fontWeight: 800,
+                      color: "#065F46"
+                    }}
+                  >
+                    {email}
                   </div>
                 </div>
 
-                {/* Dev Code Quick helper if available */}
-                {devOtp && (
-                  <div
-                    onClick={handleAutoFillOtp}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      background: "#EFF6FF",
-                      border: "1px dashed #60A5FA",
-                      padding: "0.45rem 0.75rem",
-                      borderRadius: "var(--radius-md)",
-                      fontSize: "0.78rem",
-                      color: "#1E40AF",
-                      cursor: "pointer"
-                    }}
-                    title="Click to automatically fill the OTP"
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                      <KeyRound size={14} color="#2563EB" />
-                      <span>
-                        Test Code: <strong>{devOtp}</strong>
-                      </span>
-                    </div>
-                    <span style={{ fontWeight: 700, textDecoration: "underline" }}>Auto-fill</span>
-                  </div>
-                )}
-
-                {/* Submit Verification Button */}
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  style={{ width: "100%", justifyContent: "center", padding: "0.75rem 1rem", fontSize: "0.95rem" }}
-                  disabled={isLoading || otpDigits.join("").length < 6}
+                {/* Instructions List */}
+                <div
+                  style={{
+                    background: "#F8FAFC",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "0.75rem 0.9rem",
+                    fontSize: "0.82rem",
+                    color: "var(--text-secondary)",
+                    lineHeight: 1.5
+                  }}
                 >
-                  <span>{isLoading ? "Verifying & Creating Account..." : "Verify & Complete Sign Up"}</span>
-                  <ArrowRight size={16} />
+                  <ol style={{ paddingLeft: "1.1rem", margin: 0, display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                    <li>Open your email inbox (and check the Spam/Junk folder).</li>
+                    <li>Click the link provided by Firebase to confirm your email.</li>
+                    <li>Return here — this window will automatically detect your verification!</li>
+                  </ol>
+                </div>
+
+                {/* Quick Webmail Buttons */}
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <a
+                    href="https://mail.google.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-secondary"
+                    style={{ flex: 1, justifyContent: "center", fontSize: "0.8rem", padding: "0.5rem" }}
+                  >
+                    <span>Open Gmail</span>
+                    <ExternalLink size={13} />
+                  </a>
+                  <a
+                    href="https://outlook.live.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-secondary"
+                    style={{ flex: 1, justifyContent: "center", fontSize: "0.8rem", padding: "0.5rem" }}
+                  >
+                    <span>Open Outlook</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+
+                {/* Manual Check Verification Button */}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleManualCheckVerification}
+                  disabled={isCheckingStatus || isLoading}
+                  style={{ width: "100%", justifyContent: "center", padding: "0.75rem 1rem" }}
+                >
+                  <CheckCircle2 size={16} />
+                  <span>{isCheckingStatus ? "Checking Status..." : "I've Verified My Email"}</span>
                 </button>
 
-                {/* Resend Timer / CTA */}
+                {/* Resend Link Button */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.82rem" }}>
                   {countdown > 0 ? (
                     <span style={{ color: "var(--text-muted)" }}>
-                      Resend code in <strong style={{ color: "var(--primary-800)" }}>{countdown}s</strong>
+                      Resend link in <strong style={{ color: "var(--primary-800)" }}>{countdown}s</strong>
                     </span>
                   ) : (
                     <button
                       type="button"
-                      onClick={handleResendOtp}
+                      onClick={handleResendVerificationLink}
                       disabled={isLoading}
                       style={{
                         display: "flex",
@@ -558,7 +487,7 @@ export default function LoginModal({ onShowToast }) {
                       }}
                     >
                       <RotateCcw size={13} />
-                      <span>Resend Verification Code</span>
+                      <span>Resend Verification Link</span>
                     </button>
                   )}
 
@@ -577,10 +506,10 @@ export default function LoginModal({ onShowToast }) {
                       padding: 0
                     }}
                   >
-                    Cancel
+                    Back to Sign In
                   </button>
                 </div>
-              </form>
+              </div>
             ) : (
               /* LOGIN, SIGNUP, FORGOT PASSWORD VIEW */
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -772,7 +701,7 @@ export default function LoginModal({ onShowToast }) {
                           : mode === "login"
                           ? "Sign In with Email"
                           : mode === "signup"
-                          ? "Send Verification Code"
+                          ? "Send Verification Link"
                           : "Send Reset Link"}
                       </span>
                       <ArrowRight size={15} />
@@ -849,7 +778,7 @@ export default function LoginModal({ onShowToast }) {
               }}
             >
               <ShieldCheck size={13} color="#10B981" />
-              <span>Firebase Authentication • 2FA Email OTP Verification</span>
+              <span>Firebase Authentication • Direct Email Verification Link</span>
             </div>
           </div>
         </div>

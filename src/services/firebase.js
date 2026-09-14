@@ -8,6 +8,7 @@ import {
   updateProfile,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   onAuthStateChanged
 } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -98,5 +99,6 @@ export {
   updateProfile,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   onAuthStateChanged
 };

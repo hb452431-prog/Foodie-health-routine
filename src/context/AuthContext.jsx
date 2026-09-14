@@ -9,14 +9,14 @@ import {
   updateProfile,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   onAuthStateChanged,
   formatFirebaseAuthError
 } from "../services/firebase";
-import { sendOtp, verifyOtp } from "../services/otpService";
 
 /**
  * Single Source of Truth for Authentication across Foodie-Health-Routine.
- * Powered by Firebase Auth (Google OAuth & Email/Password with Email OTP verification).
+ * Powered by Firebase Auth with Google OAuth, Email/Password & Firebase Email Verification Links.
  */
 const AuthContext = createContext(null);
 
@@ -55,6 +55,7 @@ export function AuthProvider({ children }) {
           uid: firebaseUser.uid,
           name: capitalizedName,
           email: firebaseUser.email || stored?.email || "",
+          emailVerified: firebaseUser.emailVerified || false,
           avatar:
             firebaseUser.photoURL ||
             stored?.avatar ||
@@ -100,6 +101,7 @@ export function AuthProvider({ children }) {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split("@")[0] : "Foodie User"),
         email: firebaseUser.email || "",
+        emailVerified: true, // Google accounts are pre-verified
         avatar:
           firebaseUser.photoURL ||
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
@@ -152,6 +154,7 @@ export function AuthProvider({ children }) {
           uid: firebaseUser.uid,
           name: formattedName,
           email: firebaseUser.email || email,
+          emailVerified: firebaseUser.emailVerified || false,
           avatar:
             firebaseUser.photoURL ||
             stored?.avatar ||
@@ -174,7 +177,11 @@ export function AuthProvider({ children }) {
           }, 100);
         }
 
-        return { success: true, user: loggedInUser };
+        return {
+          success: true,
+          user: loggedInUser,
+          emailVerified: firebaseUser.emailVerified
+        };
       } catch (error) {
         console.warn("Email login error:", error);
         const friendlyError = formatFirebaseAuthError(error);
@@ -187,58 +194,22 @@ export function AuthProvider({ children }) {
   );
 
   /**
-   * Request Sign-Up OTP
-   * Sends 6-digit OTP code to the provided email before account creation.
+   * Email Sign Up Flow with Firebase Email Verification Link
    */
-  const requestSignupOtp = useCallback(async (name, email, password) => {
-    setIsLoading(true);
-    try {
-      if (!email || !email.includes("@")) {
-        return { success: false, error: "Please provide a valid email address." };
-      }
-      if (!password || password.length < 6) {
-        return { success: false, error: "Password must be at least 6 characters long." };
-      }
-
-      const res = await sendOtp(email.trim(), name || "Foodie");
-      if (res.success) {
-        return {
-          success: true,
-          message: res.message,
-          devOtp: res.devOtp
-        };
-      } else {
-        return { success: false, error: res.error || "Failed to send verification code." };
-      }
-    } catch (error) {
-      console.warn("Error requesting signup OTP:", error);
-      return { success: false, error: "Unable to send verification code. Please try again." };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  /**
-   * Complete Sign Up after OTP verification
-   */
-  const completeSignupWithOtp = useCallback(
-    async (name, email, password, otp) => {
+  const signupWithEmail = useCallback(
+    async (name, email, password) => {
       setIsLoading(true);
       try {
-        // 1. Verify OTP code
-        const verifyRes = await verifyOtp(email.trim(), otp);
-        if (!verifyRes.success) {
-          return { success: false, error: verifyRes.error || "Invalid verification code." };
-        }
-
-        // 2. Create user with Firebase Auth
         const cleanName = (name && name.trim()) || (email ? email.split("@")[0] : "New Foodie");
+        
+        // 1. Create User in Firebase
         const res = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const firebaseUser = res.user;
 
         const defaultAvatar =
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
 
+        // 2. Set Profile Display Name
         try {
           await updateProfile(firebaseUser, {
             displayName: cleanName,
@@ -248,10 +219,18 @@ export function AuthProvider({ children }) {
           console.warn("Could not update Firebase displayName:", profileErr);
         }
 
+        // 3. Send Official Firebase Email Verification Link
+        try {
+          await sendEmailVerification(firebaseUser);
+        } catch (mailErr) {
+          console.warn("Failed to send Firebase verification email:", mailErr);
+        }
+
         const newUser = {
           uid: firebaseUser.uid,
           name: cleanName,
           email: firebaseUser.email || email,
+          emailVerified: false,
           avatar: defaultAvatar,
           provider: "password",
           goal: "Healthy Lifestyle & Metabolic Energy",
@@ -262,7 +241,60 @@ export function AuthProvider({ children }) {
 
         setUser(newUser);
         setStoredItem(AUTH_STORAGE_KEY, newUser);
-        setIsAuthModalOpen(false);
+
+        return {
+          success: true,
+          user: newUser,
+          emailSent: true,
+          message: `Verification link sent to ${email}`
+        };
+      } catch (error) {
+        console.warn("Signup error:", error);
+        const friendlyError = formatFirebaseAuthError(error);
+        return { success: false, error: friendlyError };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Resend Firebase Email Verification Link
+   */
+  const sendVerificationEmail = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (!auth.currentUser) {
+        return { success: false, error: "No active user session. Please sign in first." };
+      }
+      await sendEmailVerification(auth.currentUser);
+      return { success: true, message: "Verification link resent successfully!" };
+    } catch (error) {
+      console.warn("Resend verification email error:", error);
+      const friendlyError = formatFirebaseAuthError(error);
+      return { success: false, error: friendlyError };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Check if User has clicked and verified their email link
+   */
+  const checkEmailVerified = useCallback(async () => {
+    try {
+      if (!auth.currentUser) {
+        return { isVerified: false };
+      }
+      // Reload Firebase user instance to fetch latest token and verification claim
+      await auth.currentUser.reload();
+      const isVerified = auth.currentUser.emailVerified;
+
+      if (isVerified && user) {
+        const updatedUser = { ...user, emailVerified: true };
+        setUser(updatedUser);
+        setStoredItem(AUTH_STORAGE_KEY, updatedUser);
 
         if (typeof pendingAction === "function") {
           setTimeout(() => {
@@ -270,28 +302,14 @@ export function AuthProvider({ children }) {
             setPendingAction(null);
           }, 100);
         }
-
-        return { success: true, user: newUser };
-      } catch (error) {
-        console.warn("Complete signup error:", error);
-        const friendlyError = formatFirebaseAuthError(error);
-        return { success: false, error: friendlyError };
-      } finally {
-        setIsLoading(false);
       }
-    },
-    [pendingAction]
-  );
 
-  /**
-   * Legacy / Direct signup helper if needed
-   */
-  const signupWithEmail = useCallback(
-    async (name, email, password) => {
-      return requestSignupOtp(name, email, password);
-    },
-    [requestSignupOtp]
-  );
+      return { isVerified, user: auth.currentUser };
+    } catch (error) {
+      console.warn("Check verification error:", error);
+      return { isVerified: false, error: error.message };
+    }
+  }, [user, pendingAction]);
 
   /**
    * Password Reset Flow
@@ -374,9 +392,9 @@ export function AuthProvider({ children }) {
     authModalReason,
     loginWithGoogle,
     loginWithEmail,
-    requestSignupOtp,
-    completeSignupWithOtp,
     signupWithEmail,
+    sendVerificationEmail,
+    checkEmailVerified,
     resetPassword,
     logout,
     openAuthModal,
@@ -401,9 +419,9 @@ export function useAuth() {
       authModalReason: "",
       loginWithGoogle: async () => ({ success: false }),
       loginWithEmail: async () => ({ success: false }),
-      requestSignupOtp: async () => ({ success: false }),
-      completeSignupWithOtp: async () => ({ success: false }),
       signupWithEmail: async () => ({ success: false }),
+      sendVerificationEmail: async () => ({ success: false }),
+      checkEmailVerified: async () => ({ isVerified: false }),
       resetPassword: async () => ({ success: false }),
       logout: () => {},
       openAuthModal: () => {},
