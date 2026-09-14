@@ -16,8 +16,7 @@ import {
   AlertCircle,
   RotateCcw,
   ExternalLink,
-  MailCheck,
-  Send
+  MailCheck
 } from "lucide-react";
 
 export default function LoginModal({ onShowToast }) {
@@ -70,7 +69,7 @@ export default function LoginModal({ onShowToast }) {
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         } catch (_e) {}
         if (onShowToast) {
-          onShowToast(`🎉 Email verified! Welcome to Foodie's Adda!`);
+          onShowToast("🎉 Email verified! Welcome to Foodie's Adda!");
         }
         closeAuthModal();
       }
@@ -186,7 +185,7 @@ export default function LoginModal({ onShowToast }) {
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } catch (_e) {}
       if (onShowToast) {
-        onShowToast(`🎉 Email verified successfully! Welcome to Foodie's Adda.`);
+        onShowToast("🎉 Email verified successfully! Welcome to Foodie's Adda.");
       }
       closeAuthModal();
     } else {

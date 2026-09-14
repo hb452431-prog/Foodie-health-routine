@@ -10,17 +10,22 @@ import {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   onAuthStateChanged,
   formatFirebaseAuthError
 } from "../services/firebase";
 
 /**
  * Single Source of Truth for Authentication across Foodie-Health-Routine.
- * Powered by Firebase Auth with Google OAuth, Email/Password & Firebase Email Verification Links.
+ * Powered by Firebase Auth with Google OAuth, Password, and Email Link (Magic Link) Account Creation.
  */
 const AuthContext = createContext(null);
 
 const AUTH_STORAGE_KEY = "foodie_auth_user";
+const EMAIL_SIGNIN_STORAGE_KEY = "foodie_email_for_signin";
+const NAME_SIGNIN_STORAGE_KEY = "foodie_name_for_signin";
 
 export function AuthProvider({ children }) {
   // Authentication State
@@ -87,6 +92,54 @@ export function AuthProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
+  // Handle incoming Firebase Email Link click (e.g. user clicked link from their email)
+  useEffect(() => {
+    const processIncomingEmailLink = async () => {
+      if (typeof window === "undefined") return;
+
+      if (isSignInWithEmailLink(auth, window.location.href)) {
+        setIsLoading(true);
+        let storedEmail = window.localStorage.getItem(EMAIL_SIGNIN_STORAGE_KEY);
+        const storedName = window.localStorage.getItem(NAME_SIGNIN_STORAGE_KEY) || "Foodie User";
+
+        if (!storedEmail) {
+          // If opened on another device/browser without local storage
+          storedEmail = window.prompt("Please enter the email address you used to request the verification link:");
+        }
+
+        if (storedEmail) {
+          try {
+            const result = await signInWithEmailLink(auth, storedEmail.trim(), window.location.href);
+            const firebaseUser = result.user;
+
+            // Set user profile display name if available
+            if (storedName && (!firebaseUser.displayName || firebaseUser.displayName === "Foodie User")) {
+              try {
+                await updateProfile(firebaseUser, {
+                  displayName: storedName,
+                  photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
+                });
+              } catch (_e) {}
+            }
+
+            // Clean up the URL query params
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.localStorage.removeItem(EMAIL_SIGNIN_STORAGE_KEY);
+            window.localStorage.removeItem(NAME_SIGNIN_STORAGE_KEY);
+
+            setIsAuthModalOpen(false);
+          } catch (err) {
+            console.error("Failed to sign in with email link:", err);
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+
+    processIncomingEmailLink();
+  }, []);
+
   /**
    * Google Authentication Flow
    */
@@ -101,7 +154,7 @@ export function AuthProvider({ children }) {
         uid: firebaseUser.uid,
         name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split("@")[0] : "Foodie User"),
         email: firebaseUser.email || "",
-        emailVerified: true, // Google accounts are pre-verified
+        emailVerified: true,
         avatar:
           firebaseUser.photoURL ||
           "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
@@ -194,6 +247,42 @@ export function AuthProvider({ children }) {
   );
 
   /**
+   * Send Firebase Verification Link to Create Account
+   * Uses sendSignInLinkToEmail & actionCodeSettings pointing back to app.
+   */
+  const sendAccountCreationLink = useCallback(async (name, email) => {
+    setIsLoading(true);
+    try {
+      const cleanEmail = email.trim();
+      const cleanName = (name && name.trim()) || cleanEmail.split("@")[0];
+
+      // Save credentials in local storage for when the user clicks the link
+      try {
+        window.localStorage.setItem(EMAIL_SIGNIN_STORAGE_KEY, cleanEmail);
+        window.localStorage.setItem(NAME_SIGNIN_STORAGE_KEY, cleanName);
+      } catch (_e) {}
+
+      const actionCodeSettings = {
+        url: `${window.location.origin}/?emailAuth=true`,
+        handleCodeInApp: true
+      };
+
+      await sendSignInLinkToEmail(auth, cleanEmail, actionCodeSettings);
+
+      return {
+        success: true,
+        message: `Verification link sent to ${cleanEmail}`
+      };
+    } catch (error) {
+      console.warn("Send account creation link error:", error);
+      const friendlyError = formatFirebaseAuthError(error);
+      return { success: false, error: friendlyError };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
    * Email Sign Up Flow with Firebase Email Verification Link
    */
   const signupWithEmail = useCallback(
@@ -201,9 +290,10 @@ export function AuthProvider({ children }) {
       setIsLoading(true);
       try {
         const cleanName = (name && name.trim()) || (email ? email.split("@")[0] : "New Foodie");
-        
+        const cleanEmail = email.trim();
+
         // 1. Create User in Firebase
-        const res = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const res = await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const firebaseUser = res.user;
 
         const defaultAvatar =
@@ -219,9 +309,14 @@ export function AuthProvider({ children }) {
           console.warn("Could not update Firebase displayName:", profileErr);
         }
 
-        // 3. Send Official Firebase Email Verification Link
+        // 3. Send Official Firebase Email Verification Link with return URL
+        const actionCodeSettings = {
+          url: `${window.location.origin}/?emailVerified=true`,
+          handleCodeInApp: true
+        };
+
         try {
-          await sendEmailVerification(firebaseUser);
+          await sendEmailVerification(firebaseUser, actionCodeSettings);
         } catch (mailErr) {
           console.warn("Failed to send Firebase verification email:", mailErr);
         }
@@ -229,7 +324,7 @@ export function AuthProvider({ children }) {
         const newUser = {
           uid: firebaseUser.uid,
           name: cleanName,
-          email: firebaseUser.email || email,
+          email: cleanEmail,
           emailVerified: false,
           avatar: defaultAvatar,
           provider: "password",
@@ -246,7 +341,7 @@ export function AuthProvider({ children }) {
           success: true,
           user: newUser,
           emailSent: true,
-          message: `Verification link sent to ${email}`
+          message: `Verification link sent to ${cleanEmail}`
         };
       } catch (error) {
         console.warn("Signup error:", error);
@@ -268,7 +363,11 @@ export function AuthProvider({ children }) {
       if (!auth.currentUser) {
         return { success: false, error: "No active user session. Please sign in first." };
       }
-      await sendEmailVerification(auth.currentUser);
+      const actionCodeSettings = {
+        url: `${window.location.origin}/?emailVerified=true`,
+        handleCodeInApp: true
+      };
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
       return { success: true, message: "Verification link resent successfully!" };
     } catch (error) {
       console.warn("Resend verification email error:", error);
@@ -393,6 +492,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     loginWithEmail,
     signupWithEmail,
+    sendAccountCreationLink,
     sendVerificationEmail,
     checkEmailVerified,
     resetPassword,
@@ -420,6 +520,7 @@ export function useAuth() {
       loginWithGoogle: async () => ({ success: false }),
       loginWithEmail: async () => ({ success: false }),
       signupWithEmail: async () => ({ success: false }),
+      sendAccountCreationLink: async () => ({ success: false }),
       sendVerificationEmail: async () => ({ success: false }),
       checkEmailVerified: async () => ({ isVerified: false }),
       resetPassword: async () => ({ success: false }),

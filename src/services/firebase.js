@@ -9,6 +9,9 @@ import {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   onAuthStateChanged
 } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -100,5 +103,8 @@ export {
   signOut,
   sendPasswordResetEmail,
   sendEmailVerification,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   onAuthStateChanged
 };
