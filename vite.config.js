@@ -6,10 +6,17 @@ function devApiPlugin() {
     name: 'dev-api-middleware',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (req.url && req.url.startsWith('/api/ai/food-plan')) {
+        if (req.url && req.url.startsWith('/api/')) {
           try {
-            // Dynamically import handler
-            const { default: handler } = await import('./api/ai/food-plan.js');
+            const cleanPath = req.url.split('?')[0].replace(/^\/api\//, '');
+            // Dynamically import handler for this route
+            const handlerModule = await import(`./api/${cleanPath}.js`).catch(() => null);
+            
+            if (!handlerModule || !handlerModule.default) {
+              return next();
+            }
+
+            const handler = handlerModule.default;
             
             // Read request body
             let body = '';

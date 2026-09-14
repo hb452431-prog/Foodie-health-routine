@@ -12,10 +12,11 @@ import {
   onAuthStateChanged,
   formatFirebaseAuthError
 } from "../services/firebase";
+import { sendOtp, verifyOtp } from "../services/otpService";
 
 /**
  * Single Source of Truth for Authentication across Foodie-Health-Routine.
- * Powered by Firebase Auth (Google OAuth & Email/Password).
+ * Powered by Firebase Auth (Google OAuth & Email/Password with Email OTP verification).
  */
 const AuthContext = createContext(null);
 
@@ -186,12 +187,51 @@ export function AuthProvider({ children }) {
   );
 
   /**
-   * Email Sign Up Flow
+   * Request Sign-Up OTP
+   * Sends 6-digit OTP code to the provided email before account creation.
    */
-  const signupWithEmail = useCallback(
-    async (name, email, password) => {
+  const requestSignupOtp = useCallback(async (name, email, password) => {
+    setIsLoading(true);
+    try {
+      if (!email || !email.includes("@")) {
+        return { success: false, error: "Please provide a valid email address." };
+      }
+      if (!password || password.length < 6) {
+        return { success: false, error: "Password must be at least 6 characters long." };
+      }
+
+      const res = await sendOtp(email.trim(), name || "Foodie");
+      if (res.success) {
+        return {
+          success: true,
+          message: res.message,
+          devOtp: res.devOtp
+        };
+      } else {
+        return { success: false, error: res.error || "Failed to send verification code." };
+      }
+    } catch (error) {
+      console.warn("Error requesting signup OTP:", error);
+      return { success: false, error: "Unable to send verification code. Please try again." };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  /**
+   * Complete Sign Up after OTP verification
+   */
+  const completeSignupWithOtp = useCallback(
+    async (name, email, password, otp) => {
       setIsLoading(true);
       try {
+        // 1. Verify OTP code
+        const verifyRes = await verifyOtp(email.trim(), otp);
+        if (!verifyRes.success) {
+          return { success: false, error: verifyRes.error || "Invalid verification code." };
+        }
+
+        // 2. Create user with Firebase Auth
         const cleanName = (name && name.trim()) || (email ? email.split("@")[0] : "New Foodie");
         const res = await createUserWithEmailAndPassword(auth, email.trim(), password);
         const firebaseUser = res.user;
@@ -233,7 +273,7 @@ export function AuthProvider({ children }) {
 
         return { success: true, user: newUser };
       } catch (error) {
-        console.warn("Signup error:", error);
+        console.warn("Complete signup error:", error);
         const friendlyError = formatFirebaseAuthError(error);
         return { success: false, error: friendlyError };
       } finally {
@@ -241,6 +281,16 @@ export function AuthProvider({ children }) {
       }
     },
     [pendingAction]
+  );
+
+  /**
+   * Legacy / Direct signup helper if needed
+   */
+  const signupWithEmail = useCallback(
+    async (name, email, password) => {
+      return requestSignupOtp(name, email, password);
+    },
+    [requestSignupOtp]
   );
 
   /**
@@ -324,6 +374,8 @@ export function AuthProvider({ children }) {
     authModalReason,
     loginWithGoogle,
     loginWithEmail,
+    requestSignupOtp,
+    completeSignupWithOtp,
     signupWithEmail,
     resetPassword,
     logout,
@@ -349,6 +401,8 @@ export function useAuth() {
       authModalReason: "",
       loginWithGoogle: async () => ({ success: false }),
       loginWithEmail: async () => ({ success: false }),
+      requestSignupOtp: async () => ({ success: false }),
+      completeSignupWithOtp: async () => ({ success: false }),
       signupWithEmail: async () => ({ success: false }),
       resetPassword: async () => ({ success: false }),
       logout: () => {},
