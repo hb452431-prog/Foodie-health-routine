@@ -332,7 +332,6 @@ function AppContent() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={handleTabChange}
-        onOpenSearch={() => setIsCommandPaletteOpen(true)}
         onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
         waterGlasses={waterGlasses}
         onUpdateWater={handleUpdateWater}

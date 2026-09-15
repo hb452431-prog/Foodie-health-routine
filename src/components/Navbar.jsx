@@ -3,12 +3,11 @@ import Logo from "./Logo";
 import LocationIndicator from "./location/LocationIndicator";
 import UserMenu from "./auth/UserMenu";
 import { useAuth } from "../context/AuthContext";
-import { Search, Sparkles, User, Calendar, Compass, Home, Droplet, Plus } from "lucide-react";
+import { Sparkles, User, Calendar, Compass, Home, Droplet, Plus } from "lucide-react";
 
 export default function Navbar({
   activeTab,
   setActiveTab,
-  onOpenSearch,
   onOpenPlanWizard,
   waterGlasses = 0,
   onUpdateWater,
@@ -34,10 +33,6 @@ export default function Navbar({
 
   const handleCreatePlanClick = () => {
     if (onOpenPlanWizard) onOpenPlanWizard();
-  };
-
-  const handleSearchClick = () => {
-    if (onOpenSearch) onOpenSearch();
   };
 
   return (
@@ -68,7 +63,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "explore" ? "active" : ""}`}
-                onClick={() => handleTabClick("explore", "Sign in to explore all curated food and nutrition routines.")}
+                onClick={() => handleTabClick("explore")}
                 title="Explore all Food Routines (Press 2)"
               >
                 <Compass size={17} />
@@ -78,7 +73,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "my-plan" ? "active" : ""}`}
-                onClick={() => handleTabClick("my-plan", "Sign in to view your live daily meal schedule and weekly timetable.")}
+                onClick={() => handleTabClick("my-plan")}
                 title="View today's live nutrition schedule & timetable (Press 3)"
               >
                 <Calendar size={17} />
@@ -89,7 +84,7 @@ export default function Navbar({
             <li>
               <button
                 className={`nav-link-item ${activeTab === "profile" ? "active" : ""}`}
-                onClick={() => handleTabClick("profile", "Sign in to view your health profile, goals, and saved routines.")}
+                onClick={() => handleTabClick("profile")}
                 title="View your Health Profile & saved routines (Press 4)"
               >
                 <User size={17} />
@@ -103,17 +98,6 @@ export default function Navbar({
         <div className="nav-actions-desktop">
           {/* Location Indicator Badge */}
           <LocationIndicator />
-
-          {/* Quick Search Button */}
-          <button
-            className="nav-search-btn"
-            onClick={handleSearchClick}
-            title="Search food routines, recipes & macros (Ctrl+K / ⌘K)"
-          >
-            <Search size={14} />
-            <span>Search routines, recipes...</span>
-            <kbd className="nav-search-kbd">⌘K</kbd>
-          </button>
 
           {/* Quick Water Pill */}
           <div
@@ -166,15 +150,6 @@ export default function Navbar({
             <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0284C7" }}>
               {waterGlasses}
             </span>
-          </button>
-
-          <button
-            className="mobile-header-icon-btn"
-            onClick={handleSearchClick}
-            title="Universal Search (Tap to search)"
-            aria-label="Search"
-          >
-            <Search size={17} />
           </button>
 
           <UserMenu

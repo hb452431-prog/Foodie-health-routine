@@ -301,6 +301,11 @@ export default function AvatarPickerModal({
                   <img
                     src={avatar.url}
                     alt={avatar.name}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                    }}
                     style={{
                       width: "100%",
                       height: "100%",
