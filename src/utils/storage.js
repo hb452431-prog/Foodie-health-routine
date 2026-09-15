@@ -26,7 +26,7 @@ export const DEFAULT_USER_PROFILE = {
   activityLevel: "Moderate",
   targetCalories: 2000,
   targetWaterGlasses: 8,
-  streakDays: 7,
+  streakDays: 0,
   joinDate: "September 2026"
 };
 
@@ -98,7 +98,7 @@ export const getUserProfile = () => {
 
 export const saveUserProfile = (profile) => setStoredItem(KEYS.USER_PROFILE, profile);
 
-export const getSavedRoutines = () => getStoredItem(KEYS.SAVED_ROUTINES, ["diabetes-friendly", "gym-beginner"]);
+export const getSavedRoutines = () => getStoredItem(KEYS.SAVED_ROUTINES, []);
 export const toggleSaveRoutine = (routineId) => {
   const current = getSavedRoutines();
   const exists = current.includes(routineId);
@@ -107,7 +107,7 @@ export const toggleSaveRoutine = (routineId) => {
   return { updated, isSaved: !exists };
 };
 
-export const getFavoriteMeals = () => getStoredItem(KEYS.FAVORITE_MEALS, ["df-m2", "gb-m4"]);
+export const getFavoriteMeals = () => getStoredItem(KEYS.FAVORITE_MEALS, []);
 export const toggleFavoriteMeal = (mealId) => {
   const current = getFavoriteMeals();
   const exists = current.includes(mealId);
@@ -118,7 +118,7 @@ export const toggleFavoriteMeal = (mealId) => {
 
 export const getCompletedMeals = () => {
   const today = new Date().toISOString().slice(0, 10);
-  const data = getStoredItem(KEYS.COMPLETED_MEALS, { date: today, meals: ["df-m1"] });
+  const data = getStoredItem(KEYS.COMPLETED_MEALS, { date: today, meals: [] });
   if (data.date !== today) {
     return { date: today, meals: [] };
   }
@@ -138,7 +138,7 @@ export const toggleCompletedMeal = (mealId) => {
 
 export const getWaterIntake = () => {
   const today = new Date().toISOString().slice(0, 10);
-  const data = getStoredItem(KEYS.WATER_INTAKE, { date: today, glasses: 4 });
+  const data = getStoredItem(KEYS.WATER_INTAKE, { date: today, glasses: 0 });
   if (data.date !== today) {
     return { date: today, glasses: 0 };
   }
@@ -170,7 +170,7 @@ export const toggleShoppingChecked = (itemKey) => {
 // =========================================================================
 
 export const getStreakDays = () => {
-  return Number(getStoredItem(KEYS.STREAK_DAYS, 7));
+  return Number(getStoredItem(KEYS.STREAK_DAYS, 0));
 };
 
 export const setStreakDays = (days) => {
@@ -180,7 +180,7 @@ export const setStreakDays = (days) => {
 };
 
 export const getUserBadges = () => {
-  return getStoredItem(KEYS.UNLOCKED_BADGES, ["daily-starter", "weekly-warrior", "regional-foodie"]);
+  return getStoredItem(KEYS.UNLOCKED_BADGES, []);
 };
 
 export const unlockBadge = (badgeId) => {
@@ -198,15 +198,21 @@ export const evaluateMilestones = ({
   totalMealsCount = 6,
   waterGlasses = 0,
   savedRecipesCount = 0,
-  isRegionalPlan = true
+  isRegionalPlan = false
 }) => {
   const newlyUnlocked = [];
   const currentStreak = getStreakDays();
 
-  // 1. Daily routine completion
+  // 1. Daily routine completion: Only unlock when all scheduled meals of today's routine are completed
   if (completedMealsCount >= totalMealsCount && totalMealsCount > 0) {
     const res = unlockBadge("daily-starter");
     if (res.isNew) newlyUnlocked.push("daily-starter");
+
+    // 6. Regional cuisine badge: Unlock when daily routine of a regional cuisine plan is completed
+    if (isRegionalPlan) {
+      const regRes = unlockBadge("regional-foodie");
+      if (regRes.isNew) newlyUnlocked.push("regional-foodie");
+    }
   }
 
   // 2. Weekly routine completion (7+ days streak)
@@ -233,19 +239,13 @@ export const evaluateMilestones = ({
     if (res.isNew) newlyUnlocked.push("sixty-day-titan");
   }
 
-  // 6. Regional cuisine badge
-  if (isRegionalPlan) {
-    const res = unlockBadge("regional-foodie");
-    if (res.isNew) newlyUnlocked.push("regional-foodie");
-  }
-
-  // 7. Hydration goal
+  // 7. Hydration goal (8+ glasses of water logged)
   if (waterGlasses >= 8) {
     const res = unlockBadge("hydration-hero");
     if (res.isNew) newlyUnlocked.push("hydration-hero");
   }
 
-  // 8. Recipe curator
+  // 8. Recipe curator (3+ recipes added to favorites)
   if (savedRecipesCount >= 3) {
     const res = unlockBadge("recipe-curator");
     if (res.isNew) newlyUnlocked.push("recipe-curator");

@@ -68,7 +68,7 @@ export function AuthProvider({ children }) {
           provider: firebaseUser.providerData?.[0]?.providerId || stored?.provider || "firebase",
           goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
           dietPreference: stored?.dietPreference || "Vegetarian",
-          streakDays: stored?.streakDays || 7,
+          streakDays: typeof stored?.streakDays === "number" ? stored.streakDays : 0,
           loggedInAt: stored?.loggedInAt || new Date().toISOString()
         };
 
@@ -161,7 +161,7 @@ export function AuthProvider({ children }) {
         provider: "google.com",
         goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
         dietPreference: stored?.dietPreference || "Vegetarian",
-        streakDays: stored?.streakDays || 7,
+        streakDays: typeof stored?.streakDays === "number" ? stored.streakDays : 0,
         loggedInAt: new Date().toISOString()
       };
 
@@ -215,7 +215,7 @@ export function AuthProvider({ children }) {
           provider: "password",
           goal: stored?.goal || "Healthy Lifestyle & Metabolic Energy",
           dietPreference: stored?.dietPreference || "Vegetarian",
-          streakDays: stored?.streakDays || 7,
+          streakDays: typeof stored?.streakDays === "number" ? stored.streakDays : 0,
           loggedInAt: new Date().toISOString()
         };
 
@@ -330,7 +330,7 @@ export function AuthProvider({ children }) {
           provider: "password",
           goal: "Healthy Lifestyle & Metabolic Energy",
           dietPreference: "Vegetarian",
-          streakDays: 1,
+          streakDays: 0,
           loggedInAt: new Date().toISOString()
         };
 

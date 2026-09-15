@@ -59,7 +59,7 @@ export default function ProfileCard({
     profile.state || "Karnataka"
   );
 
-  const currentStreak = profile.streakDays || getStreakDays();
+  const currentStreak = typeof profile.streakDays === "number" ? profile.streakDays : getStreakDays();
   const currentStage = calculateStage(currentStreak);
   const unlockedBadgesList = getUserBadges();
 

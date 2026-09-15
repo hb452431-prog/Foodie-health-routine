@@ -43,6 +43,14 @@ export default function DashboardWidgets({
   const safeTotalMeals = Math.max(1, totalMealsCount || routine?.dailyTimeline?.length || 6);
   const completionPercentage = Math.min(100, Math.round((completedCount / safeTotalMeals) * 100));
 
+  const isRegionalPlan = !!(
+    routine?.isRegionalAdapted ||
+    routine?.regionalCuisine ||
+    routine?.state ||
+    (routine?.badge && typeof routine.badge === "string" && routine.badge.toLowerCase().includes("heritage")) ||
+    (routine?.subtitle && typeof routine.subtitle === "string" && routine.subtitle.toLowerCase().includes("authentic"))
+  );
+
   // Live streak and badges state
   const [streakDays, setStreakDaysState] = useState(() => getStreakDays());
   const [unlockedBadges, setUnlockedBadges] = useState(() => getUserBadges());
@@ -63,7 +71,7 @@ export default function DashboardWidgets({
       totalMealsCount: safeTotalMeals,
       waterGlasses: currentGlasses,
       savedRecipesCount: savedRecipesCount,
-      isRegionalPlan: true
+      isRegionalPlan
     });
 
     if (res.newlyUnlocked && res.newlyUnlocked.length > 0) {
@@ -75,7 +83,7 @@ export default function DashboardWidgets({
         }
       });
     }
-  }, [completedCount, safeTotalMeals, currentGlasses, savedRecipesCount]);
+  }, [completedCount, safeTotalMeals, currentGlasses, savedRecipesCount, isRegionalPlan]);
 
   const handleAddGlass = () => {
     if (currentGlasses < 16) {
@@ -91,7 +99,7 @@ export default function DashboardWidgets({
   };
 
   const handleIncrementStreak = (daysToAdd) => {
-    const newStreak = Math.max(1, streakDays + daysToAdd);
+    const newStreak = Math.max(0, streakDays + daysToAdd);
     setStreakDays(newStreak);
     setStreakDaysState(newStreak);
     const newStage = calculateStage(newStreak);
@@ -102,7 +110,7 @@ export default function DashboardWidgets({
       totalMealsCount: safeTotalMeals,
       waterGlasses: currentGlasses,
       savedRecipesCount: savedRecipesCount,
-      isRegionalPlan: true
+      isRegionalPlan
     });
     setUnlockedBadges(res.allBadges);
 
@@ -118,18 +126,18 @@ export default function DashboardWidgets({
   };
 
   const handleResetStreak = () => {
-    setStreakDays(1);
-    setStreakDaysState(1);
-    const s1 = calculateStage(1);
-    setActiveStage(s1);
-    if (onShowToast) onShowToast("🔄 Streak reset to Day 1");
+    setStreakDays(0);
+    setStreakDaysState(0);
+    const s0 = calculateStage(0);
+    setActiveStage(s0);
+    if (onShowToast) onShowToast("🔄 Streak reset to 0 days");
   };
 
   // Find next stage target
   const currentStageIndex = STAGES_CONFIG.findIndex((s) => s.stage === activeStage.stage);
   const nextStage = STAGES_CONFIG[currentStageIndex + 1];
   const progressToNext = nextStage
-    ? Math.min(100, Math.round(((streakDays - activeStage.minStreak) / (nextStage.minStreak - activeStage.minStreak)) * 100))
+    ? Math.min(100, Math.max(0, Math.round(((streakDays - activeStage.minStreak) / (nextStage.minStreak - activeStage.minStreak)) * 100)))
     : 100;
 
   return (
@@ -356,7 +364,7 @@ export default function DashboardWidgets({
               className="btn btn-sm"
               onClick={handleResetStreak}
               style={{ padding: "0.2rem 0.4rem", fontSize: "0.7rem", background: "rgba(239, 68, 68, 0.2)", color: "#FCA5A5", border: "1px solid rgba(239, 68, 68, 0.3)" }}
-              title="Reset streak to 1 day"
+              title="Reset streak to 0 days"
             >
               <RotateCcw size={10} />
             </button>

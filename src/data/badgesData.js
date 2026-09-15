@@ -4,7 +4,7 @@ export const STAGES_CONFIG = [
   {
     stage: 1,
     name: "Bronze Initiate",
-    minStreak: 1,
+    minStreak: 0,
     maxStreak: 6,
     color: "#CD7F32",
     badgeIcon: "🥉",
@@ -140,8 +140,9 @@ export const BADGES_DATA = [
 ];
 
 export function calculateStage(streakDays = 0) {
+  const safeStreak = Math.max(0, Number(streakDays) || 0);
   for (let i = STAGES_CONFIG.length - 1; i >= 0; i--) {
-    if (streakDays >= STAGES_CONFIG[i].minStreak) {
+    if (safeStreak >= STAGES_CONFIG[i].minStreak) {
       return STAGES_CONFIG[i];
     }
   }
