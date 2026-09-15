@@ -2,15 +2,13 @@ import React, { useState, useEffect } from "react";
 import { X, Globe, Tag, Utensils, ExternalLink, Play, BookOpen } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
+import FoodImage from "./FoodImage";
 import { getMealById } from "../services/mealDbService";
-
-const FALLBACK_DISH_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
 
 export default function MealDbRecipeModal({ meal, onClose, onShowToast }) {
   const [detailedMeal, setDetailedMeal] = useState(meal);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [checkedIngredients, setCheckedIngredients] = useState({});
-  const [imgError, setImgError] = useState(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function MealDbRecipeModal({ meal, onClose, onShowToast }) {
 
   const current = detailedMeal || meal;
   const title = current.strMeal || current.title || "Delicious Recipe";
-  const image = imgError ? FALLBACK_DISH_IMG : (current.strMealThumb || current.image || FALLBACK_DISH_IMG);
   const area = current.strArea || current.area || "Global";
   const category = current.strCategory || current.category || "Main Dish";
   const youtubeUrl = current.strYoutube || current.youtubeUrl;
@@ -84,11 +81,11 @@ export default function MealDbRecipeModal({ meal, onClose, onShowToast }) {
       >
         {/* Header Hero Image */}
         <div style={{ position: "relative", height: "280px", flexShrink: 0, background: "#0F172A", overflow: "hidden" }}>
-          <img
-            src={image}
-            alt={title}
-            onError={() => setImgError(true)}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          <FoodImage
+            dish={current}
+            alt={`Authentic ${title}`}
+            style={{ width: "100%", height: "100%" }}
+            showAiBadge={false}
           />
 
           <button

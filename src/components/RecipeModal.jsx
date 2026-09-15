@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Clock, Flame, Utensils, Heart, CheckCircle, ExternalLink, ShieldAlert, Sparkles } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
+import FoodImage from "./FoodImage";
 
 export default function RecipeModal({
   meal,
@@ -37,11 +38,12 @@ export default function RecipeModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "860px" }}>
         {/* Header Visual */}
-        <div style={{ position: "relative", height: "260px" }}>
-          <img
-            src={meal.image}
-            alt={meal.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        <div style={{ position: "relative", height: "260px", overflow: "hidden", background: "#0F172A" }}>
+          <FoodImage
+            dish={meal}
+            alt={`Authentic ${meal.title}`}
+            style={{ width: "100%", height: "100%" }}
+            showAiBadge={true}
           />
           <button
             className="modal-close-btn"

@@ -9,6 +9,7 @@ import {
   Heart
 } from "lucide-react";
 import YouTubeIcon from "../YouTubeIcon";
+import FoodImage from "../FoodImage";
 
 export default function LocationFoodCard({
   dish,
@@ -28,17 +29,12 @@ export default function LocationFoodCard({
   return (
     <div className="location-dish-card glass-card">
       {/* Top Image & Floating Badges */}
-      <div className="location-dish-img-wrap">
-        <img
-          src={dish.image}
-          alt={dish.title}
-          className="location-dish-img"
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80";
-          }}
+      <div className="location-dish-img-wrap" style={{ position: "relative", overflow: "hidden" }}>
+        <FoodImage
+          dish={dish}
+          alt={`Authentic ${dish.title}`}
+          style={{ width: "100%", height: "100%" }}
+          showAiBadge={true}
         />
 
         {/* Slot / Category Tag */}

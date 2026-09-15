@@ -1,18 +1,15 @@
 import React, { useState } from "react";
 import { Utensils, MapPin, Tag, ArrowRight, Sparkles, Flame } from "lucide-react";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
-
-const FALLBACK_FOOD_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+import FoodImage from "./FoodImage";
 
 export default function FoodCard({ food, onViewFood }) {
-  const [imgError, setImgError] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   if (!food) return null;
 
-  const imgSrc = imgError ? FALLBACK_FOOD_IMG : (food.imageUrl || food.strMealThumb || food.image || FALLBACK_FOOD_IMG);
-  const title = food.dishName || food.title || food.strMeal || "Delicious Dish";
-  const region = food.stateOrRegion || food.strArea || "Authentic";
+  const title = food.dishName || food.title || food.strMeal || "Authentic Dish";
+  const region = food.stateOrRegion || food.region || food.strArea || "Authentic";
   const country = food.country || "Global";
   const cuisine = food.cuisine || (food.strArea ? `${food.strArea} Cuisine` : "Regional");
   const calories = food.calories || 350;
@@ -38,20 +35,17 @@ export default function FoodCard({ food, onViewFood }) {
         transform: isHovered ? "translateY(-4px)" : "translateY(0)"
       }}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail with exact dish image */}
       <div style={{ position: "relative", width: "100%", height: "205px", overflow: "hidden", background: "#F1F5F9" }}>
-        <img
-          src={imgSrc}
-          alt={title}
-          loading="lazy"
-          onError={() => setImgError(true)}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
+        <FoodImage
+          dish={food}
+          alt={`Authentic ${title}`}
+          style={{ width: "100%", height: "100%" }}
+          imgStyle={{
             transition: "transform 0.4s ease",
             transform: isHovered ? "scale(1.05)" : "scale(1)"
           }}
+          showAiBadge={true}
         />
 
         {/* Gradient Overlay */}
@@ -63,7 +57,8 @@ export default function FoodCard({ food, onViewFood }) {
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            padding: "0.85rem"
+            padding: "0.85rem",
+            pointerEvents: "none"
           }}
         >
           {/* Top Badges */}
@@ -87,40 +82,20 @@ export default function FoodCard({ food, onViewFood }) {
               <span>{region}</span>
             </span>
 
-            {food.imageGenerated ? (
-              <span
-                style={{
-                  background: "rgba(168, 85, 247, 0.85)",
-                  backdropFilter: "blur(6px)",
-                  color: "#FFFFFF",
-                  fontSize: "0.72rem",
-                  fontWeight: 800,
-                  padding: "0.2rem 0.55rem",
-                  borderRadius: "var(--radius-full)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.25rem"
-                }}
-              >
-                <Sparkles size={11} />
-                <span>AI Photo</span>
-              </span>
-            ) : (
-              <span
-                className="badge"
-                style={{
-                  background: "rgba(16, 185, 129, 0.85)",
-                  backdropFilter: "blur(6px)",
-                  color: "#FFFFFF",
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                  padding: "0.25rem 0.6rem",
-                  borderRadius: "var(--radius-full)"
-                }}
-              >
-                {topHealthTag.replace(/-/g, " ")}
-              </span>
-            )}
+            <span
+              className="badge"
+              style={{
+                background: "rgba(16, 185, 129, 0.85)",
+                backdropFilter: "blur(6px)",
+                color: "#FFFFFF",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                padding: "0.25rem 0.6rem",
+                borderRadius: "var(--radius-full)"
+              }}
+            >
+              {topHealthTag.replace(/-/g, " ")}
+            </span>
           </div>
 
           {/* Title on Image */}
@@ -148,56 +123,74 @@ export default function FoodCard({ food, onViewFood }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "var(--text-secondary)", fontSize: "0.82rem", marginBottom: "0.6rem" }}>
             <span style={{ fontWeight: 600 }}>{cuisine}</span>
             <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", color: "var(--primary-700)", fontWeight: 700 }}>
-              <Flame size={13} />
-              {calories} kcal • {protein}g prot
+              <Flame size={14} fill="#059669" color="#059669" />
+              <span>{calories} kcal</span>
             </span>
           </div>
 
-          {food.description && (
-            <p
-              style={{
-                fontSize: "0.82rem",
-                color: "var(--text-secondary)",
-                lineHeight: 1.45,
-                margin: "0 0 1rem 0",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden"
-              }}
-            >
-              {food.description}
-            </p>
-          )}
-        </div>
-
-        {/* Action Buttons: View Dish Details + Swiggy / Zomato Ordering */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-          <button
-            type="button"
-            onClick={() => onViewFood && onViewFood(food)}
-            className="btn btn-primary btn-sm"
+          <p
             style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              padding: "0.55rem 1rem",
-              fontWeight: 700,
-              borderRadius: "var(--radius-lg)"
+              fontSize: "0.85rem",
+              color: "var(--text-secondary)",
+              lineHeight: "1.4",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              marginBottom: "1rem"
             }}
           >
-            <Utensils size={14} />
-            <span>View Dish Details</span>
+            {food.description || `Authentic ${title} crafted with wholesome traditional ingredients.`}
+          </p>
+        </div>
+
+        <div>
+          {/* Quick Macro Specs */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              background: "var(--bg-main)",
+              padding: "0.5rem",
+              borderRadius: "var(--radius-md)",
+              textAlign: "center",
+              marginBottom: "0.9rem",
+              fontSize: "0.75rem"
+            }}
+          >
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>Protein</div>
+              <div style={{ fontWeight: 800, color: "var(--primary-900)" }}>{protein}g</div>
+            </div>
+            <div style={{ borderLeft: "1px solid var(--border-subtle)", borderRight: "1px solid var(--border-subtle)" }}>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>Carbs</div>
+              <div style={{ fontWeight: 800, color: "var(--primary-900)" }}>{food.carbs || 45}g</div>
+            </div>
+            <div>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>Fats</div>
+              <div style={{ fontWeight: 800, color: "var(--primary-900)" }}>{food.fat || 8}g</div>
+            </div>
+          </div>
+
+          {/* Delivery quick links */}
+          <div style={{ marginBottom: "0.75rem" }}>
+            <OrderDeliveryLinks
+              dishName={title}
+              cityName={region}
+              size="sm"
+            />
+          </div>
+
+          {/* Actions */}
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => onViewFood && onViewFood(food)}
+            style={{ width: "100%", justifyContent: "center", gap: "0.4rem" }}
+          >
+            <span>View Recipe & Macros</span>
             <ArrowRight size={14} />
           </button>
-
-          {/* Quick Online Order Links */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.35rem" }}>
-            <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700 }}>Order:</span>
-            <OrderDeliveryLinks dishName={title} variant="pills" />
-          </div>
         </div>
       </div>
     </div>

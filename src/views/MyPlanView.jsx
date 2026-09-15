@@ -3,6 +3,7 @@ import DashboardWidgets from "../components/DashboardWidgets";
 import WeeklyPlanner from "../components/WeeklyPlanner";
 import YouTubeIcon from "../components/YouTubeIcon";
 import OrderDeliveryLinks from "../components/OrderDeliveryLinks";
+import FoodImage from "../components/FoodImage";
 import { ROUTINES_DATA, getRoutineById } from "../data/routinesData";
 import { getAdaptedRoutineForLocation, getCurrentDayId } from "../data/regionalCuisinesData";
 import { useLocation } from "../context/LocationContext";
@@ -647,20 +648,14 @@ export default function MyPlanView({
                             </button>
 
                             {/* Meal Thumbnail */}
-                            {meal.image && (
-                              <img
-                                src={meal.image}
-                                alt={mealTitle}
-                                style={{
-                                  width: "64px",
-                                  height: "64px",
-                                  borderRadius: "var(--radius-md)",
-                                  objectFit: "cover",
-                                  flexShrink: 0,
-                                  border: "1px solid var(--border-subtle)"
-                                }}
+                            <div style={{ width: "64px", height: "64px", borderRadius: "var(--radius-md)", overflow: "hidden", flexShrink: 0, border: "1px solid var(--border-subtle)" }}>
+                              <FoodImage
+                                dish={meal}
+                                alt={`Authentic ${mealTitle}`}
+                                style={{ width: "100%", height: "100%" }}
+                                showAiBadge={false}
                               />
-                            )}
+                            </div>
 
                             {/* Meal Details */}
                             <div style={{ flex: 1, minWidth: 0 }}>

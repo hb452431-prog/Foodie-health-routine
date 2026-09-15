@@ -19,6 +19,7 @@ import { generateAIFoodPlan, generateOfflineFallbackPlan } from "../services/gem
 import { findOrResolveFood } from "../services/foodService";
 import FoodDetailsModal from "./FoodDetailsModal";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
+import FoodImage from "./FoodImage";
 import confetti from "canvas-confetti";
 
 const POPULAR_DISEASES = [
@@ -351,11 +352,10 @@ export default function DiseaseRoutineGenerator({ onApplyPlan, onShowToast, init
             </div>
           </div>
 
-          {/* Daily Meal Schedule List with Stored Food Images */}
+          {/* Daily Meal Schedule List with Exact Food Images */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", marginBottom: "1.25rem" }}>
             {generatedPlan.dailyTimeline?.map((meal, idx) => {
               const foodRecord = findOrResolveFood(meal.foodId || meal.title);
-              const displayImage = meal.image || foodRecord?.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80";
 
               return (
                 <div
@@ -369,22 +369,15 @@ export default function DiseaseRoutineGenerator({ onApplyPlan, onShowToast, init
                   }}
                 >
                   <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
-                    {/* Meal Dish Image */}
-                    {displayImage && (
-                      <img
-                        src={displayImage}
-                        alt={meal.title}
-                        loading="lazy"
-                        style={{
-                          width: "72px",
-                          height: "72px",
-                          borderRadius: "var(--radius-md)",
-                          objectFit: "cover",
-                          border: "1px solid var(--border-subtle)",
-                          flexShrink: 0
-                        }}
+                    {/* Exact Meal Dish Image */}
+                    <div style={{ width: "76px", height: "76px", borderRadius: "var(--radius-md)", overflow: "hidden", flexShrink: 0 }}>
+                      <FoodImage
+                        dish={foodRecord || meal}
+                        alt={`Authentic ${meal.title}`}
+                        style={{ width: "100%", height: "100%" }}
+                        showAiBadge={true}
                       />
-                    )}
+                    </div>
 
                     <div style={{ flex: 1, minWidth: "200px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.4rem" }}>
@@ -429,7 +422,7 @@ export default function DiseaseRoutineGenerator({ onApplyPlan, onShowToast, init
                           <button
                             type="button"
                             className="btn btn-secondary btn-sm"
-                            onClick={() => setSelectedFoodDetail(foodRecord || { dishName: meal.title, category: meal.slotName, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, description: meal.description, imageUrl: displayImage })}
+                            onClick={() => setSelectedFoodDetail(foodRecord || { dishName: meal.title, category: meal.slotName, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat, description: meal.description })}
                             style={{
                               fontSize: "0.75rem",
                               padding: "0.25rem 0.65rem",
@@ -477,14 +470,14 @@ export default function DiseaseRoutineGenerator({ onApplyPlan, onShowToast, init
               display: "flex",
               gap: "0.6rem",
               alignItems: "flex-start",
-              fontSize: "0.75rem",
+              fontSize: "0.78rem",
               color: "#92400E",
               lineHeight: 1.45
             }}
           >
             <Info size={16} style={{ color: "#D97706", flexShrink: 0, marginTop: "0.1rem" }} />
             <div>
-              <strong>Educational Health Disclaimer:</strong> This disease nutrition routine is generated for general dietary wellness and nutritional lifestyle education. Food routines can be part of a balanced lifestyle, but are not intended to cure, treat, or replace professional clinical medical therapy. If you have active health conditions, always consult your physician or a registered clinical dietitian before making dietary modifications.
+              <strong>Medical Disclaimer:</strong> This food routine is for general information only and is not medical advice. Consult a qualified healthcare professional for personalized dietary guidance.
             </div>
           </div>
         </div>

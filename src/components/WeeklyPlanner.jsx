@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Calendar, CheckCircle, Clock, Utensils, ChevronRight, ShoppingBag, Sparkles } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
+import FoodImage from "./FoodImage";
 import { ROUTINES_DATA } from "../data/routinesData";
 
 // Helper function to calculate current week's 7 days based on today
@@ -203,7 +204,14 @@ export default function WeeklyPlanner({ routine, onOpenRecipe, onOpenYouTube, on
               title="Click to view preparation recipe and details"
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-                <span style={{ fontSize: "1.3rem" }}>{mealEmoji}</span>
+                <div style={{ width: "42px", height: "42px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+                  <FoodImage
+                    dish={meal}
+                    alt={`Authentic ${mealTitle}`}
+                    style={{ width: "100%", height: "100%" }}
+                    showAiBadge={false}
+                  />
+                </div>
                 <div>
                   <div
                     style={{

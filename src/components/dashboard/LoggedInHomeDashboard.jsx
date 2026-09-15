@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ROUTINES_DATA, getRoutineById } from "../../data/routinesData";
 import { getAdaptedRoutineForLocation } from "../../data/regionalCuisinesData";
+import FoodImage from "../FoodImage";
 
 export default function LoggedInHomeDashboard({
   userProfile,
@@ -394,19 +395,14 @@ export default function LoggedInHomeDashboard({
                     </div>
 
                     {/* Meal Image & Title */}
-                    {meal.image && (
-                      <img
-                        src={meal.image}
-                        alt={mealTitle}
-                        style={{
-                          width: "100%",
-                          height: "120px",
-                          borderRadius: "var(--radius-md)",
-                          objectFit: "cover",
-                          marginBottom: "0.75rem"
-                        }}
+                    <div style={{ width: "100%", height: "125px", borderRadius: "var(--radius-md)", overflow: "hidden", marginBottom: "0.75rem" }}>
+                      <FoodImage
+                        dish={meal}
+                        alt={`Authentic ${mealTitle}`}
+                        style={{ width: "100%", height: "100%" }}
+                        showAiBadge={true}
                       />
-                    )}
+                    </div>
 
                     <h4 style={{ fontSize: "1rem", fontWeight: 700, color: isDone ? "#065F46" : "var(--text-primary)", marginBottom: "0.35rem", textDecoration: isDone ? "line-through" : "none" }}>
                       {mealTitle}

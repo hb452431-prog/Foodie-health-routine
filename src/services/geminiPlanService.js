@@ -14,32 +14,6 @@ import { findOrResolveFood, getFoodsForPlan } from "./foodService";
 const DEFAULT_TIMEOUT_MS = 25000;
 
 /**
- * Maps goal/diet to appropriate curated imagery.
- */
-function getHeroImageForPlan(goal, diet) {
-  if (diet === "Vegan") {
-    return "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=1000&q=80";
-  }
-  if (goal === "Fitness/Muscle" || goal === "Weight Gain") {
-    return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
-  }
-  if (goal === "Weight Loss") {
-    return "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1000&q=80";
-  }
-  return "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1000&q=80";
-}
-
-/**
- * Safely extracts integer from macro strings (e.g. "95g" -> 95, "1900 kcal" -> 1900).
- */
-function parseMacroNumber(val, fallback = 0) {
-  if (typeof val === "number" && !isNaN(val)) return val;
-  if (!val) return fallback;
-  const match = String(val).match(/\d+/);
-  return match ? parseInt(match[0], 10) : fallback;
-}
-
-/**
  * Transforms AI structured response into the full Routine model used by Foodie-Health-Routine.
  * Every meal is mapped and validated against the Central Food Knowledge Base.
  */
@@ -97,8 +71,10 @@ export function formatAIResponseToRoutine(aiData, formData) {
         emoji: meal.emoji || slot.defaultEmoji,
         title: dishTitle,
         dish: dishTitle,
-        image: verifiedFood?.imageUrl || getHeroImageForPlan(formData.goal, formData.diet),
-        imageUrl: verifiedFood?.imageUrl || getHeroImageForPlan(formData.goal, formData.diet),
+        image: verifiedFood?.imageUrl || null,
+        imageUrl: verifiedFood?.imageUrl || null,
+        imageSource: verifiedFood?.imageSource || "database",
+        imageStatus: verifiedFood?.imageStatus || (verifiedFood?.imageUrl ? "verified" : "pending"),
         calories: cal,
         protein: prot,
         carbs: carbs,
@@ -150,7 +126,8 @@ export function formatAIResponseToRoutine(aiData, formData) {
     fat: totalFat,
     water: dailyTargets.water || "8-10 glasses (2.5 - 3.0 Liters)",
     isVegetarian: formData.diet === "Vegetarian" || formData.diet === "Vegan",
-    image: getHeroImageForPlan(formData.goal, formData.diet),
+    image: dailyTimeline[0]?.image || dailyTimeline[1]?.image || null,
+    imageUrl: dailyTimeline[0]?.imageUrl || dailyTimeline[1]?.imageUrl || null,
     mealsCount: dailyTimeline.length,
     difficulty: formData.cookingTime === "Quick" ? "Quick & Easy" : "Balanced",
     prepTimeAvg: formData.cookingTime === "Quick" ? "10-15 min" : "20-25 min",
@@ -166,7 +143,7 @@ export function formatAIResponseToRoutine(aiData, formData) {
     ],
     medicalDisclaimer:
       medicalDisclaimer ||
-      "This information is for general educational purposes and may be suitable as part of a balanced diet. Consult a qualified healthcare professional before making major dietary changes.",
+      "This food routine is for general information only and is not medical advice. Consult a qualified healthcare professional for personalized dietary guidance.",
     userPreferences: { ...formData }
   };
 }

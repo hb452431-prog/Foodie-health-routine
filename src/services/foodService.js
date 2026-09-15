@@ -13,56 +13,32 @@
 
 import { FOOD_KNOWLEDGE_BASE, FOOD_BY_ID, FOOD_BY_ALIAS } from "../data/foodKnowledgeBase";
 import { searchMeals as searchMealDb, getMealById as getMealDbById } from "./mealDbService";
+import { getExactDishImage, normalizeDishName, useExactDishImage, saveToPersistentCache } from "./imageService";
 
-// Local storage key for persistent AI-generated image cache
-const AI_IMAGE_STORAGE_KEY = "foodie_ai_generated_images_cache_v1";
-
-/**
- * In-memory map for AI-generated images cache (loaded from localStorage on client)
- */
-function getPersistentAiImageCache() {
-  if (typeof window === "undefined" || !window.localStorage) return {};
-  try {
-    const raw = localStorage.getItem(AI_IMAGE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function savePersistentAiImage(foodId, imageUrl) {
-  if (typeof window === "undefined" || !window.localStorage) return;
-  try {
-    const cache = getPersistentAiImageCache();
-    cache[foodId] = {
-      imageUrl,
-      imageSource: "AI_GENERATED",
-      imageGenerated: true,
-      savedAt: new Date().toISOString()
-    };
-    localStorage.setItem(AI_IMAGE_STORAGE_KEY, JSON.stringify(cache));
-  } catch (e) {
-    console.warn("Could not save to localStorage image cache:", e);
-  }
-}
+// Re-export central image utilities for universal availability
+export { getExactDishImage, normalizeDishName, useExactDishImage };
 
 /**
- * Hydrates a food item with any stored AI-generated image if present
+ * Hydrates a food item with standardized exact image fields & metadata
  */
-function hydrateFoodWithPersistentData(food) {
+export function hydrateFoodWithPersistentData(food) {
   if (!food) return null;
-  const aiCache = getPersistentAiImageCache();
-  const cachedItem = aiCache[food.id];
 
-  if (cachedItem && cachedItem.imageUrl) {
-    return {
-      ...food,
-      imageUrl: cachedItem.imageUrl,
-      imageSource: "AI_GENERATED",
-      imageGenerated: true
-    };
-  }
-  return food;
+  return {
+    ...food,
+    name: food.name || food.dishName,
+    dishName: food.dishName || food.name,
+    aliases: food.aliases || [],
+    cuisine: food.cuisine || "Authentic",
+    region: food.region || food.stateOrRegion || "Regional",
+    stateOrRegion: food.stateOrRegion || food.region || "Regional",
+    country: food.country || "India",
+    ingredients: food.ingredients || [],
+    imageUrl: food.imageUrl || food.strMealThumb || food.image || null,
+    imageSource: food.imageSource || (food.id?.startsWith("themealdb-") ? "themealdb" : "database"),
+    imageStatus: food.imageStatus || (food.imageUrl ? "verified" : "unavailable"),
+    imageVerified: Boolean(food.imageUrl && food.imageUrl.length > 5)
+  };
 }
 
 /**
@@ -397,45 +373,9 @@ export function getFoodsForPlan(criteria = {}) {
 
 /**
  * 7. AI Image Generation & Cache Service
- * Sends request to serverless /api/ai/generate-food-image only for missing images.
+ * Routes to centralized getExactDishImage service.
  */
 export async function generateAndStoreFoodImage(foodId, dishPrompt = "") {
   if (!foodId) throw new Error("foodId is required to generate food image.");
-
-  // 1. Check if image already exists in persistent cache
-  const aiCache = getPersistentAiImageCache();
-  if (aiCache[foodId] && aiCache[foodId].imageUrl) {
-    console.log(`[foodService] Reusing existing stored image for ${foodId}:`, aiCache[foodId].imageUrl);
-    return aiCache[foodId];
-  }
-
-  // 2. Call server-side image generation endpoint
-  try {
-    const res = await fetch("/api/ai/generate-food-image", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ foodId, dishPrompt })
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || `Server responded with status ${res.status}`);
-    }
-
-    const generatedUrl = data.imageUrl;
-
-    // 3. Save to persistent cache so it is NEVER generated twice
-    savePersistentAiImage(foodId, generatedUrl);
-
-    return {
-      foodId,
-      imageUrl: generatedUrl,
-      imageSource: "AI_GENERATED",
-      imageGenerated: true,
-      savedAt: new Date().toISOString()
-    };
-  } catch (err) {
-    console.error(`[foodService] Image generation error for ${foodId}:`, err);
-    throw err;
-  }
+  return getExactDishImage({ id: foodId, dishPrompt });
 }

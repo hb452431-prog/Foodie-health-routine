@@ -3703,3 +3703,37 @@
     opacity: 0.85;
   }
 }
+
+/* Food Image System & Shimmer States */
+@keyframes shimmer-load {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.food-img-container {
+  position: relative;
+  overflow: hidden;
+  background-color: #F8FAFC;
+}
+
+.food-img-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.food-img-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+  border: 1px solid #E2E8F0;
+  color: var(--text-muted);
+  user-select: none;
+}

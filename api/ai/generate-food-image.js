@@ -129,11 +129,19 @@ export default async function handler(req, res) {
       }
     }
 
-    // Fallback: If Imagen API tier is restricted for this key, provide verified curated HD image
+    // If AI generation is unavailable, return clean structured status without any random fallback
     if (!generatedImageUrl) {
-      console.warn(`[API /api/ai/generate-food-image] Imagen API unavailable (${lastError}), applying curated HD dish asset fallback.`);
-      generatedImageUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
-      usedModel = "curated-hd-fallback";
+      console.warn(`[API /api/ai/generate-food-image] AI Image generation unavailable (${lastError}). Returning unavailable status.`);
+      return res.status(200).json({
+        success: false,
+        imageUrl: null,
+        foodId: foodId || dishName,
+        model: null,
+        imageSource: "unavailable",
+        imageStatus: "unavailable",
+        error: sanitizeErrorMessage(lastError, apiKey),
+        timestamp: new Date().toISOString()
+      });
     }
 
     return res.status(200).json({
@@ -141,7 +149,8 @@ export default async function handler(req, res) {
       imageUrl: generatedImageUrl,
       foodId: foodId || dishName,
       model: usedModel,
-      imageSource: "AI_GENERATED",
+      imageSource: "ai-generated",
+      imageStatus: "generated",
       imageGenerated: true,
       timestamp: new Date().toISOString()
     });
@@ -149,6 +158,9 @@ export default async function handler(req, res) {
     console.error("[API /api/ai/generate-food-image] Uncaught exception:", err?.message);
     return res.status(500).json({
       success: false,
+      imageUrl: null,
+      imageStatus: "unavailable",
+      imageSource: "unavailable",
       error: "Failed to generate food image. Please try again later.",
       code: "IMAGE_GENERATION_FAILED"
     });

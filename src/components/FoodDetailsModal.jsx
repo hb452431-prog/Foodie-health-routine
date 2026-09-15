@@ -17,9 +17,8 @@ import {
 } from "lucide-react";
 import YouTubeIcon from "./YouTubeIcon";
 import OrderDeliveryLinks from "./OrderDeliveryLinks";
-import { generateAndStoreFoodImage } from "../services/foodService";
-
-const FALLBACK_FOOD_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80";
+import FoodImage from "./FoodImage";
+import { getExactDishImage } from "../services/imageService";
 
 export default function FoodDetailsModal({
   food,
@@ -31,12 +30,10 @@ export default function FoodDetailsModal({
   const [currentFood, setCurrentFood] = useState(food);
   const [checkedIngredients, setCheckedIngredients] = useState({});
   const [isGeneratingImg, setIsGeneratingImg] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     setCurrentFood(food);
     setCheckedIngredients({});
-    setImgError(false);
   }, [food]);
 
   useEffect(() => {
@@ -50,9 +47,8 @@ export default function FoodDetailsModal({
   if (!currentFood) return null;
 
   const title = currentFood.dishName || currentFood.title || currentFood.strMeal || "Nutritious Dish";
-  const image = imgError ? FALLBACK_FOOD_IMG : (currentFood.imageUrl || currentFood.strMealThumb || currentFood.image || FALLBACK_FOOD_IMG);
   const cuisine = currentFood.cuisine || (currentFood.strArea ? `${currentFood.strArea} Cuisine` : "Global");
-  const region = currentFood.stateOrRegion || currentFood.strArea || "Authentic";
+  const region = currentFood.stateOrRegion || currentFood.region || currentFood.strArea || "Authentic";
   const country = currentFood.country || "Global";
   const category = currentFood.category || currentFood.strCategory || "Main Course";
   const calories = currentFood.calories || 380;
@@ -75,12 +71,13 @@ export default function FoodDetailsModal({
   const handleGenerateAiImage = async () => {
     setIsGeneratingImg(true);
     try {
-      const res = await generateAndStoreFoodImage(currentFood.id, `Authentic ${cuisine} ${title} from ${region}, ${country}`);
+      const res = await getExactDishImage(currentFood, { forceAi: true });
       if (res && res.imageUrl) {
         setCurrentFood((prev) => ({
           ...prev,
           imageUrl: res.imageUrl,
-          imageSource: "AI_GENERATED",
+          imageSource: "ai-generated",
+          imageStatus: "generated",
           imageGenerated: true
         }));
         if (onShowToast) {
@@ -105,11 +102,11 @@ export default function FoodDetailsModal({
       >
         {/* Visual Hero Header */}
         <div style={{ position: "relative", height: "290px", flexShrink: 0, background: "#0F172A", overflow: "hidden" }}>
-          <img
-            src={image}
-            alt={title}
-            onError={() => setImgError(true)}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          <FoodImage
+            dish={currentFood}
+            alt={`Authentic ${title}`}
+            style={{ width: "100%", height: "100%" }}
+            showAiBadge={false}
           />
 
           {/* Close Button */}
