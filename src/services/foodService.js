@@ -46,7 +46,6 @@ export function hydrateFoodWithPersistentData(food) {
  */
 export async function searchFoods(query = "", options = {}) {
   const cleanQuery = query.trim().toLowerCase();
-  const aiCache = getPersistentAiImageCache();
 
   // If query is empty, return top curated database records
   if (!cleanQuery) {

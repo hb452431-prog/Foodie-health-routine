@@ -3,20 +3,20 @@
  *
  * Implements strict priority:
  * 1. Central Food Database (foodKnowledgeBase.js) exact ID & alias matches
- * 2. Cached verified / AI-generated dish images (in-memory + localStorage)
+ * 2. Cached verified / AI-generated dish images (in-memory + localStorage with stable keys)
  * 3. TheMealDB API with strict relevance and title validation
- * 4. Server-Side Gemini / Imagen AI Image Generation (/api/ai/generate-food-image)
- * 5. Clean "Image unavailable" fallback (NEVER random or unrelated food images)
+ * 4. Server-Side Gemini Nano Banana Image Generation (/api/generate-food-image)
+ * 5. Clean structured state (NEVER random or unrelated food images)
  */
 
-import { useState, useEffect } from "react";
-import { FOOD_KNOWLEDGE_BASE, FOOD_BY_ID, FOOD_BY_ALIAS } from "../data/foodKnowledgeBase";
-import { searchMeals as searchMealDb } from "./mealDbService";
+import { useState, useEffect, useCallback } from "react";
+import { FOOD_KNOWLEDGE_BASE, FOOD_BY_ID, FOOD_BY_ALIAS } from "../data/foodKnowledgeBase.js";
+import { searchMeals as searchMealDb } from "./mealDbService.js";
 
 // LocalStorage persistent cache key
-const EXACT_IMAGE_STORAGE_KEY = "foodie_exact_dish_images_v2";
+const EXACT_IMAGE_STORAGE_KEY = "foodie_exact_dish_images_v3";
 
-// In-memory runtime cache for instantaneous lookups
+// In-memory runtime cache for instantaneous synchronous lookups
 const memoryImageCache = new Map();
 
 // In-flight request deduplication map to prevent redundant concurrent API calls
@@ -27,7 +27,7 @@ const inFlightRequests = new Map();
  * - Lowercase
  * - Trim extra spaces
  * - Strip punctuation, special characters, and dashes
- * - Normalize common suffix noise (e.g. "recipe", "dish", "special")
+ * - Normalize common suffix noise
  */
 export function normalizeDishName(name = "") {
   if (!name || typeof name !== "string") return "";
@@ -37,6 +37,23 @@ export function normalizeDishName(name = "") {
     .replace(/\b(authentic|traditional|healthy|crispy|steamed|homestyle|special|style|recipe|dish|bowl|platter)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Returns a stable storage cache key for a dish
+ * Format: food-image-{cleanIdOrName}
+ */
+export function getStableImageKey(dishOrName) {
+  if (!dishOrName) return "food-image-unknown";
+  if (typeof dishOrName === "object" && dishOrName.id) {
+    const cleanId = String(dishOrName.id).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return `food-image-${cleanId}`;
+  }
+  const raw = typeof dishOrName === "object"
+    ? (dishOrName.dishName || dishOrName.name || dishOrName.title || dishOrName.id || "")
+    : String(dishOrName || "");
+  const clean = normalizeDishName(raw).replace(/\s+/g, "-");
+  return `food-image-${clean || "dish"}`;
 }
 
 /**
@@ -53,7 +70,7 @@ function getPersistentCache() {
 }
 
 /**
- * Saves a resolved image to persistent cache
+ * Saves a resolved image to persistent cache (localStorage + memory)
  */
 export function saveToPersistentCache(key, imageRecord) {
   if (!key || !imageRecord || typeof window === "undefined" || !window.localStorage) return;
@@ -186,41 +203,54 @@ async function findInTheMealDB(dishName) {
 }
 
 /**
- * Priority 4: Server-Side Gemini AI Image Generation (/api/ai/generate-food-image)
+ * Priority 3: Server-Side Gemini Nano Banana AI Image Generation (/api/generate-food-image)
  */
 async function generateExactDishImageAI(dishInfo) {
   const dishName = dishInfo.dishName || dishInfo.name || dishInfo.title || dishInfo.id || "Healthy Dish";
   const cuisine = dishInfo.cuisine || "Authentic Regional";
   const region = dishInfo.region || dishInfo.stateOrRegion || "";
-  const ingredientsList = Array.isArray(dishInfo.ingredients)
-    ? dishInfo.ingredients.map((i) => (typeof i === "string" ? i : i.name)).join(", ")
-    : "";
-
-  // Construct high-detail, authentic culinary prompt with negative constraints
-  const dishPrompt =
-    `Create a realistic high-quality food photograph of authentic ${dishName}, ` +
-    `a ${cuisine} ${region ? `from ${region}` : ""} dish ` +
-    `${ingredientsList ? `prepared with ${ingredientsList}` : "made with traditional fresh wholesome ingredients"}. ` +
-    `Show only the exact dish freshly prepared on a clean plate or bowl in appetizing natural lighting with authentic garnishes. ` +
-    `Do not include pizza, bread, roti, noodles, or unrelated food. ` +
-    `No text, no labels, no logo, no people, no watermark.`;
+  const ingredients = Array.isArray(dishInfo.ingredients)
+    ? dishInfo.ingredients.map((i) => (typeof i === "string" ? i : i.name)).filter(Boolean)
+    : [];
 
   const foodId = dishInfo.id || `dish-${normalizeDishName(dishName).replace(/\s+/g, "-")}`;
 
-  const res = await fetch("/api/ai/generate-food-image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      foodId,
-      dishName,
-      cuisine,
-      dishPrompt
-    })
-  });
+  const payload = {
+    foodId,
+    dishName,
+    cuisine,
+    region,
+    ingredients,
+    dishPrompt: dishInfo.dishPrompt || undefined
+  };
 
-  const data = await res.json();
-  if (!res.ok || !data.success || !data.imageUrl) {
-    throw new Error(data.error || "AI Image generation returned empty image.");
+  console.log(`[imageService] Requesting AI image generation for "${dishName}" via /api/generate-food-image...`);
+
+  // Try primary endpoint first, then fallback to /api/ai/generate-food-image
+  let response = null;
+  try {
+    response = await fetch("/api/generate-food-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (_e) {
+    response = await fetch("/api/ai/generate-food-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.success || !data.imageUrl) {
+    const errorMsg = data.error || data.userMessage || `Image generation failed (${response.status})`;
+    console.error(`[imageService] Generation failed for "${dishName}":`, errorMsg);
+    const err = new Error(errorMsg);
+    err.userMessage = data.userMessage || "We couldn't generate an image right now. Please try again.";
+    err.code = data.code || "IMAGE_GEN_FAILED";
+    throw err;
   }
 
   return {
@@ -230,15 +260,21 @@ async function generateExactDishImageAI(dishInfo) {
     dishName,
     cuisine,
     region,
-    imagePrompt: dishPrompt,
-    imageGeneratedAt: new Date().toISOString(),
+    model: data.model,
+    imageGeneratedAt: data.timestamp || new Date().toISOString(),
     imageVerified: false
   };
 }
 
 /**
- * Main Centralized Image Resolver: getExactDishImage(dish)
- * Follows strict priority order with deduplication & caching.
+ * Main Centralized Image Resolver: getExactDishImage(dish, options)
+ *
+ * Follows strict priority order:
+ * 1. Database Match
+ * 2. Persistent / Memory Cache (food-image-{key})
+ * 3. TheMealDB Exact Match
+ * 4. Gemini Nano Banana AI Generation
+ * 5. Controlled fallback (no random images)
  */
 export async function getExactDishImage(dishOrName, options = {}) {
   if (!dishOrName) {
@@ -258,11 +294,14 @@ export async function getExactDishImage(dishOrName, options = {}) {
   }
 
   const rawName = dishInfo.dishName || dishInfo.name || dishInfo.title || dishInfo.id || "";
-  const cacheKey = dishInfo.id ? `id_${dishInfo.id}` : `name_${normalizeDishName(rawName)}`;
+  const cacheKey = getStableImageKey(dishInfo);
 
-  // 2. Check in-memory cache
+  // 2. Check in-memory cache (instantaneous)
   if (memoryImageCache.has(cacheKey)) {
-    return memoryImageCache.get(cacheKey);
+    const cached = memoryImageCache.get(cacheKey);
+    if (cached && cached.imageUrl) {
+      return cached;
+    }
   }
 
   // 3. Check localStorage persistent cache
@@ -273,7 +312,7 @@ export async function getExactDishImage(dishOrName, options = {}) {
     return cached;
   }
 
-  // 4. Check if exact request is already in-flight (Request Deduplication)
+  // 4. Check if request is already in-flight (Deduplication)
   if (inFlightRequests.has(cacheKey)) {
     return inFlightRequests.get(cacheKey);
   }
@@ -281,7 +320,7 @@ export async function getExactDishImage(dishOrName, options = {}) {
   // Start execution promise
   const fetchPromise = (async () => {
     try {
-      // Priority 1: Check existing Food Database
+      // Step 1: Check existing Food Database
       const dbMatch = findInFoodDatabase(dishOrName);
       if (dbMatch && dbMatch.imageUrl) {
         saveToPersistentCache(cacheKey, dbMatch);
@@ -289,7 +328,7 @@ export async function getExactDishImage(dishOrName, options = {}) {
       }
 
       // If existing dishInfo already has a verified explicit imageUrl
-      if (dishInfo.imageUrl && typeof dishInfo.imageUrl === "string" && dishInfo.imageUrl.startsWith("http")) {
+      if (dishInfo.imageUrl && typeof dishInfo.imageUrl === "string" && (dishInfo.imageUrl.startsWith("http") || dishInfo.imageUrl.startsWith("data:"))) {
         const directRecord = {
           imageUrl: dishInfo.imageUrl,
           imageSource: dishInfo.imageSource || "database",
@@ -303,14 +342,14 @@ export async function getExactDishImage(dishOrName, options = {}) {
         return directRecord;
       }
 
-      // Priority 2: Search TheMealDB API with strict validation
+      // Step 2: Search TheMealDB API with strict validation
       const mealDbMatch = await findInTheMealDB(rawName);
       if (mealDbMatch && mealDbMatch.imageUrl) {
         saveToPersistentCache(cacheKey, mealDbMatch);
         return mealDbMatch;
       }
 
-      // Priority 4: Server-Side Gemini AI Image Generation (only if allowed by options)
+      // Step 3: Server-Side Gemini AI Image Generation (only if allowed by options)
       if (!options.skipAiGeneration) {
         try {
           const aiGenerated = await generateExactDishImageAI(dishInfo);
@@ -319,19 +358,26 @@ export async function getExactDishImage(dishOrName, options = {}) {
             return aiGenerated;
           }
         } catch (aiErr) {
-          console.warn(`[imageService] AI image generation for "${rawName}" failed:`, aiErr?.message);
+          console.warn(`[imageService] AI generation for "${rawName}" failed:`, aiErr?.message);
+          // Return failure object with error details for UI retry, but do NOT permanently cache as unavailable
+          return {
+            imageUrl: null,
+            imageSource: "unavailable",
+            imageStatus: "unavailable",
+            dishName: rawName,
+            error: aiErr.message,
+            userMessage: aiErr.userMessage || "Image generation temporarily unavailable"
+          };
         }
       }
 
-      // Fallback: Clean Image Unavailable State (NEVER random unrelated food!)
-      const unavailableRecord = {
+      // Final structured fallback (NEVER random unrelated food!)
+      return {
         imageUrl: null,
         imageSource: "unavailable",
         imageStatus: "unavailable",
         dishName: rawName
       };
-      saveToPersistentCache(cacheKey, unavailableRecord);
-      return unavailableRecord;
     } finally {
       inFlightRequests.delete(cacheKey);
     }
@@ -342,21 +388,23 @@ export async function getExactDishImage(dishOrName, options = {}) {
 }
 
 /**
- * React Hook for seamless component integration: useExactDishImage(dish)
+ * React Hook for seamless component integration: useExactDishImage(dish, options)
+ * Provides progressive loading states and safe retry trigger
  */
 export function useExactDishImage(dishOrName, options = {}) {
+  const [loadingPhase, setLoadingPhase] = useState("finding"); // "finding" | "generating" | "saving"
+  const [retryCount, setRetryCount] = useState(0);
+
   const [imageState, setImageState] = useState(() => {
     if (!dishOrName) {
       return { imageUrl: null, imageStatus: "unavailable", imageSource: "unavailable", loading: false };
     }
-    const rawName = typeof dishOrName === "object"
-      ? (dishOrName.dishName || dishOrName.name || dishOrName.title || dishOrName.id || "")
-      : String(dishOrName || "");
-    const cacheKey = dishOrName?.id ? `id_${dishOrName.id}` : `name_${normalizeDishName(rawName)}`;
+    const cacheKey = getStableImageKey(dishOrName);
 
     // Immediate synchronous cache hit
     if (memoryImageCache.has(cacheKey)) {
-      return { ...memoryImageCache.get(cacheKey), loading: false, error: null };
+      const hit = memoryImageCache.get(cacheKey);
+      if (hit?.imageUrl) return { ...hit, loading: false, error: null };
     }
     const pCache = getPersistentCache();
     if (pCache[cacheKey] && pCache[cacheKey].imageUrl) {
@@ -378,6 +426,10 @@ export function useExactDishImage(dishOrName, options = {}) {
     };
   });
 
+  const retry = useCallback(() => {
+    setRetryCount((prev) => prev + 1);
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -389,8 +441,24 @@ export function useExactDishImage(dishOrName, options = {}) {
         return;
       }
 
+      if (isMounted) {
+        setLoadingPhase("finding");
+      }
+
+      // Advance loading stage visualizer after short interval to inform user
+      const timerGen = setTimeout(() => {
+        if (isMounted) setLoadingPhase("generating");
+      }, 700);
+
+      const timerSave = setTimeout(() => {
+        if (isMounted) setLoadingPhase("saving");
+      }, 2500);
+
       try {
         const result = await getExactDishImage(dishOrName, options);
+        clearTimeout(timerGen);
+        clearTimeout(timerSave);
+
         if (isMounted) {
           setImageState({
             imageUrl: result.imageUrl,
@@ -398,10 +466,14 @@ export function useExactDishImage(dishOrName, options = {}) {
             imageSource: result.imageSource || "database",
             isAiGenerated: result.imageSource === "ai-generated" || result.imageStatus === "generated",
             loading: false,
-            error: null
+            error: result.error || null,
+            userMessage: result.userMessage || null
           });
         }
       } catch (err) {
+        clearTimeout(timerGen);
+        clearTimeout(timerSave);
+
         if (isMounted) {
           setImageState({
             imageUrl: null,
@@ -409,7 +481,8 @@ export function useExactDishImage(dishOrName, options = {}) {
             imageSource: "unavailable",
             isAiGenerated: false,
             loading: false,
-            error: err?.message
+            error: err?.message,
+            userMessage: err?.userMessage || "We couldn't generate an image right now. Please try again."
           });
         }
       }
@@ -421,8 +494,13 @@ export function useExactDishImage(dishOrName, options = {}) {
       isMounted = false;
     };
   }, [
-    typeof dishOrName === "object" ? (dishOrName.id || dishOrName.dishName || dishOrName.title) : dishOrName
+    typeof dishOrName === "object" ? (dishOrName.id || dishOrName.dishName || dishOrName.title) : dishOrName,
+    retryCount
   ]);
 
-  return imageState;
+  return {
+    ...imageState,
+    loadingPhase,
+    retry
+  };
 }
