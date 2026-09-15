@@ -47,6 +47,60 @@ const isStorageAvailable = () => {
 
 const hasLocalStorage = isStorageAvailable();
 
+// Auto-cleanup legacy dummy test data (e.g. stale default badges, dummy streak, dummy completed meals)
+const MIGRATION_KEY = "fhr_storage_clean_v2";
+const runInitialStorageCleanup = () => {
+  if (typeof window === "undefined" || !hasLocalStorage) return;
+  try {
+    const isCleaned = window.localStorage.getItem(MIGRATION_KEY);
+    if (!isCleaned) {
+      // 1. Purge legacy pre-unlocked badges
+      const currentBadges = window.localStorage.getItem(KEYS.UNLOCKED_BADGES);
+      if (currentBadges) {
+        try {
+          const parsed = JSON.parse(currentBadges);
+          if (
+            Array.isArray(parsed) &&
+            (parsed.includes("daily-starter") ||
+              parsed.includes("weekly-warrior") ||
+              parsed.includes("regional-foodie"))
+          ) {
+            window.localStorage.removeItem(KEYS.UNLOCKED_BADGES);
+          }
+        } catch (_e) {
+          window.localStorage.removeItem(KEYS.UNLOCKED_BADGES);
+        }
+      }
+
+      // 2. Purge dummy completed meal "df-m1"
+      const completedMealsRaw = window.localStorage.getItem(KEYS.COMPLETED_MEALS);
+      if (completedMealsRaw) {
+        try {
+          const parsed = JSON.parse(completedMealsRaw);
+          if (parsed && Array.isArray(parsed.meals) && parsed.meals.includes("df-m1") && parsed.meals.length <= 1) {
+            const today = new Date().toISOString().slice(0, 10);
+            window.localStorage.setItem(KEYS.COMPLETED_MEALS, JSON.stringify({ date: today, meals: [] }));
+          }
+        } catch (_e) {
+          window.localStorage.removeItem(KEYS.COMPLETED_MEALS);
+        }
+      }
+
+      // 3. Purge dummy streak of 7
+      const streakRaw = window.localStorage.getItem(KEYS.STREAK_DAYS);
+      if (streakRaw === "7" || streakRaw === 7) {
+        window.localStorage.setItem(KEYS.STREAK_DAYS, "0");
+      }
+
+      window.localStorage.setItem(MIGRATION_KEY, "true");
+    }
+  } catch (e) {
+    console.warn("Initial storage cleanup notice:", e);
+  }
+};
+
+runInitialStorageCleanup();
+
 export const getStoredItem = (key, fallback) => {
   try {
     if (hasLocalStorage) {
