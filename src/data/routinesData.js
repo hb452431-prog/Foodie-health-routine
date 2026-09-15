@@ -1,4 +1,4 @@
-import { REGIONAL_ROUTINES_MAP } from "./regionalCuisinesData";
+import { REGIONAL_ROUTINES_MAP } from "./regionalCuisinesData.js";
 
 export const BASE_ROUTINES_DATA = [
   {
