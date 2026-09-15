@@ -487,18 +487,266 @@ export const REGIONAL_DAILY_MENUS = {
   }
 };
 
-// Fallback routine builder for any other location
+// =========================================================================
+// GLOBAL / WESTERN 7-DAY DIVERSE NUTRITION MENUS
+// =========================================================================
+
+export const GLOBAL_DAILY_MENUS = {
+  mon: {
+    breakfast: { title: "Artisan Avocado Sourdough Toast with Microgreens & Poached Eggs / Tofu", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80", desc: "Fermented sourdough layered with ripe avocado, hemp seeds, and eggs or tofu.", order: "Avocado Sourdough Toast" },
+    lunch: { title: "California Green Goddess Quinoa & Roasted Veggie Power Bowl", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Tricolor quinoa with baby kale, edamame, avocado, and herb-tahini dressing.", order: "Green Goddess Quinoa Bowl" },
+    dinner: { title: "Wild Pan-Seared Salmon (or Herbed Tofu Steak) with Asparagus & Sweet Potato Mash", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", desc: "Omega-3 rich salmon or herbed tofu with sweet potato mash and vegetables.", order: "Grilled Salmon Asparagus Bowl" },
+    drink: { title: "Cold-Pressed Celery-Cucumber Electrolyte Elixir", order: "Cold Pressed Green Juice" },
+    snack: { title: "Single-Origin Dark Chocolate (85%) & Roasted Pumpkin Seeds", order: "Dark Chocolate Pumpkin Seeds" }
+  },
+  tue: {
+    breakfast: { title: "Acai Superfood Smoothie Bowl with Chia Seeds & Wild Berries", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=800&q=80", desc: "Antioxidant rich organic acai topped with sliced bananas and hemp seeds.", order: "Acai Bowl Granola" },
+    lunch: { title: "Mediterranean Farro Salad with Kalamata Olives, Feta & Herb Dressing", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Nutty ancient farro grain tossed with cherry tomatoes, cucumbers, and Greek herbs.", order: "Mediterranean Farro Salad" },
+    dinner: { title: "Roasted Cauliflower Steak with Herbed Quinoa Pilaf & Broccolini", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80", desc: "Herb crusted thick-cut cauliflower steak over lemon zest quinoa.", order: "Cauliflower Steak Quinoa" },
+    drink: { title: "Cold Pressed Citrus Green Tea Tonic", order: "Green Tea Citrus" },
+    snack: { title: "Raw California Walnuts & Dried Cranberries", order: "Walnuts Snack" }
+  },
+  wed: {
+    breakfast: { title: "Overnight Chia Oats with Blueberries & Hemp Seed Sprinkle", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=800&q=80", desc: "Steel cut oats soaked in almond milk with wild berries and chia seeds.", order: "Chia Overnight Oats" },
+    lunch: { title: "Pacific Wild Salmon / Edamame Poke Bowl with Brown Rice & Seaweed", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Fresh poke bowl with seaweed salad, cucumber slices, and sesame ginger dressing.", order: "Salmon Poke Bowl" },
+    dinner: { title: "Lemon Rosemary Grilled Tofu / Chicken with Roasted Root Vegetables", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", desc: "Rosemary marinated protein with roasted carrots, parsnips, and green beans.", order: "Grilled Herb Tofu Bowl" },
+    drink: { title: "Celery Lemon Herbal Tonic", order: "Celery Juice" },
+    snack: { title: "Roasted Pumpkin Seeds & Almonds", order: "Pumpkin Seeds" }
+  },
+  thu: {
+    breakfast: { title: "Spinach, Mushroom & Egg White Sourdough Frittata", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80", desc: "Fluffy egg white frittata with sautéed baby spinach and toasted sourdough.", order: "Egg White Frittata" },
+    lunch: { title: "Chickpea & Avocado Power Wrap with Lemon Tahini Dressing", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Whole grain wrap filled with spiced mashed chickpeas, shredded carrots, and greens.", order: "Chickpea Hummus Wrap" },
+    dinner: { title: "Zucchini Noodles with Rich Red Lentil Bolognese & Nutritional Yeast", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80", desc: "Flash-sautéed zucchini ribbon noodles topped with savory slow-cooked lentil marinara.", order: "Zucchini Bolognese Pasta" },
+    drink: { title: "Organic Ceremonial Matcha Green Tea", order: "Matcha Tea" },
+    snack: { title: "Raw Almonds & 85% Dark Chocolate", order: "Almonds Dark Chocolate" }
+  },
+  fri: {
+    breakfast: { title: "High-Protein Buckwheat Crepes with Wild Berries & Ricotta", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80", desc: "Gluten-free buckwheat crepes with fresh berries and low-fat creamy ricotta.", order: "Buckwheat Crepes Berries" },
+    lunch: { title: "Santa Monica Black Bean & Sweet Potato Veggie Power Bowl", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Warm bowl with roasted sweet potato cubes, spiced black beans, and cilantro vinaigrette.", order: "Veggie Power Bowl" },
+    dinner: { title: "Baked Cod / Trout Fillet with Sweet Potato Mash & Asparagus", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", desc: "Oven baked wild fish fillet seasoned with garlic, olive oil, and lemon.", order: "Baked Fish Sweet Potato" },
+    drink: { title: "Cold Pressed Cucumber & Celery Elixir", order: "Green Juice" },
+    snack: { title: "Dark Chocolate Square & Pumpkin Seeds", order: "Dark Chocolate" }
+  },
+  sat: {
+    breakfast: { title: "Greek Yogurt & Berry Superfood Parfait with Chia Seed Crunch", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=800&q=80", desc: "High protein unsweetened Greek yogurt layered with berries, hemp seeds, and walnuts.", order: "Greek Yogurt Parfait" },
+    lunch: { title: "California Kale Salad with Crispy Spiced Roasted Chickpeas & Avocado", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Massaged baby kale with crunchy chickpeas, diced avocado, and citrus vinaigrette.", order: "Kale Chickpea Salad" },
+    dinner: { title: "Grilled Herbed Polenta with Roasted Mediterranean Vegetables & Marinara", img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=800&q=80", desc: "Pan grilled corn polenta rounds with zucchini, bell peppers, and fresh basil.", order: "Herbed Polenta Veggies" },
+    drink: { title: "Sparkling Lemon Mint Infusion", order: "Sparkling Water" },
+    snack: { title: "Roasted Pumpkin Seeds & Sea Salt", order: "Pumpkin Seeds" }
+  },
+  sun: {
+    breakfast: { title: "Warm Steel-Cut Protein Oatmeal with Blueberries & Almond Butter", img: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=800&q=80", desc: "Hearty whole oats cooked with vanilla plant protein and fresh blueberries.", order: "Protein Oatmeal" },
+    lunch: { title: "California Citrus Quinoa Salad with Avocado, Walnuts & Arugula", img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80", desc: "Nutty quinoa salad with sweet orange slices, creamy avocado, and toasted nuts.", order: "Citrus Quinoa Salad" },
+    dinner: { title: "Grilled Herb Salmon / Tofu with Steamed Asparagus & Wild Rice", img: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", desc: "Light clean dinner rich in omega-3, essential minerals, and amino acids.", order: "Grilled Salmon Quinoa" },
+    drink: { title: "Cold Pressed Green Herb Elixir", order: "Green Juice" },
+    snack: { title: "Raw California Walnuts", order: "Walnuts" }
+  }
+};
+
+// Helper to get daily menu for location and day
 export function getDailyMenuForLocationAndDay(normLocation, dayId) {
   const day = dayId || "mon";
   if (REGIONAL_DAILY_MENUS[normLocation] && REGIONAL_DAILY_MENUS[normLocation][day]) {
     return REGIONAL_DAILY_MENUS[normLocation][day];
   }
-  // Fallback to Karnataka if specific day not defined
-  if (REGIONAL_DAILY_MENUS["karnataka"][day]) {
-    return REGIONAL_DAILY_MENUS["karnataka"][day];
+  if (GLOBAL_DAILY_MENUS[day]) {
+    return GLOBAL_DAILY_MENUS[day];
   }
   return REGIONAL_DAILY_MENUS["karnataka"]["mon"];
 }
+
+// =========================================================================
+// DISEASE & HEALTH CONDITION CALIBRATION SYSTEM
+// =========================================================================
+
+export function detectRoutineCondition(routine) {
+  if (!routine) return "wellness";
+  const str = `${routine.id || ""} ${routine.title || ""} ${routine.category || ""} ${routine.badge || ""} ${Array.isArray(routine.tags) ? routine.tags.join(" ") : ""}`.toLowerCase();
+  
+  if (str.includes("diabet") || str.includes("low-gi") || str.includes("sugar") || str.includes("glycemic") || str.includes("metabolic balance")) {
+    return "diabetes";
+  }
+  if (str.includes("gym") || str.includes("hypertrophy") || str.includes("muscle") || str.includes("high protein") || str.includes("strength") || routine.isHighProtein) {
+    return "gym";
+  }
+  if (str.includes("heart") || str.includes("cardio") || str.includes("hypertension") || str.includes("blood pressure") || str.includes("low sodium") || str.includes("dash")) {
+    return "heart";
+  }
+  if (str.includes("weight") || str.includes("fat loss") || str.includes("fat-loss") || str.includes("deficit") || str.includes("satiety")) {
+    return "weight-loss";
+  }
+  if (str.includes("pcos") || str.includes("pcod") || str.includes("hormon")) {
+    return "pcos";
+  }
+  if (str.includes("thyroid")) {
+    return "thyroid";
+  }
+  if (str.includes("liver") || str.includes("detox")) {
+    return "fatty-liver";
+  }
+  if (str.includes("student") || str.includes("budget") || str.includes("quick")) {
+    return "student";
+  }
+  return "wellness";
+}
+
+export const DISEASE_DAILY_NUTRITION_MAP = {
+  diabetes: {
+    badge: "Low-GI Glucose Control",
+    mon: {
+      morning: { title: "Fenugreek-Cinnamon Elixir & Soaked Almonds", calories: 105, protein: 4, carbs: 5, fat: 8, benefit: "Enhances insulin sensitivity and slow morning glucose release", order: "Cinnamon Fenugreek Tea" },
+      drink: { title: "Masala Majjige with Ginger, Hing & Curry Leaves", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Probiotic gut support with zero glycemic spike", order: "Masala Buttermilk" },
+      snack: { title: "Steamed Kadale Kalu Usli with Lime & Green Tea", calories: 160, protein: 9, carbs: 22, fat: 4, benefit: "High soluble fiber prevents afternoon sugar dips", order: "Kadale Usli" }
+    },
+    tue: {
+      morning: { title: "Jamun Seed & Bitter Gourd (Karela) Warm Decoction + 2 Walnuts", calories: 95, protein: 3, carbs: 4, fat: 8, benefit: "Contains polypeptide-p to mimic natural insulin activity", order: "Karela Jamun Juice" },
+      drink: { title: "Kokum & Roasted Cumin Digestive Cooler (Zero Sugar)", calories: 45, protein: 1, carbs: 7, fat: 1, benefit: "Natural hydroxycitric acid supports metabolic lipid balance", order: "Kokum Drink" },
+      snack: { title: "Sprouted Moong Kosambari with Grated Carrot & Lemon", calories: 150, protein: 10, carbs: 20, fat: 3, benefit: "Living digestive enzymes and steady complex carbs", order: "Moong Kosambari" }
+    },
+    wed: {
+      morning: { title: "Amla (Indian Gooseberry) & Turmeric Warm Infusion + Chia Seeds", calories: 90, protein: 3, carbs: 6, fat: 6, benefit: "Vitamin C and curcumin protect pancreatic beta cells", order: "Amla Turmeric Juice" },
+      drink: { title: "Neer Mor with Crushed Ginger & Fresh Mint Leaves", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Restores cellular hydration without simple sugars", order: "Neer Mor" },
+      snack: { title: "Roasted Black Chana with Flaxseeds & Green Tea", calories: 170, protein: 9, carbs: 22, fat: 5, benefit: "Low GI crunchy snack with alpha-linolenic acid", order: "Roasted Chana" }
+    },
+    thu: {
+      morning: { title: "Vijaysar Bark & Ceylon Cinnamon Infusion + 5 Soaked Almonds", calories: 105, protein: 4, carbs: 5, fat: 8, benefit: "Flavonoids promote steady postprandial glucose stability", order: "Cinnamon Herbal Tea" },
+      drink: { title: "Chilled Masala Buttermilk with Roasted Cumin & Coriander", calories: 55, protein: 3, carbs: 6, fat: 2, benefit: "Aids digestion and prevents metabolic sluggishness", order: "Masala Chaas" },
+      snack: { title: "Boiled Hesaru Kalu (Green Gram) with Mustard Tempering", calories: 155, protein: 9, carbs: 21, fat: 4, benefit: "Sustained amino acid and dietary fiber delivery", order: "Hesaru Kalu Usli" }
+    },
+    fri: {
+      morning: { title: "Methi Dana & Ajwain Warm Water + 2 Walnut Halves", calories: 95, protein: 3, carbs: 5, fat: 8, benefit: "Reduces insulin resistance and aids stomach motility", order: "Methi Ajwain Water" },
+      drink: { title: "Fresh Mint Majjige with Grated Ginger", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Cooling alkaline drink for optimal gut flora", order: "Mint Buttermilk" },
+      snack: { title: "Dry Roasted Makhana with Turmeric & Pink Salt", calories: 140, protein: 4, carbs: 24, fat: 3, benefit: "Very low glycemic index and rich in magnesium", order: "Roasted Makhana" }
+    },
+    sat: {
+      morning: { title: "Fresh Wheatgrass & Mint Detox Shot + 4 Soaked Almonds", calories: 90, protein: 3, carbs: 5, fat: 7, benefit: "Chlorophyll rich cleanser supporting cellular vitality", order: "Wheatgrass Shot" },
+      drink: { title: "Cucumber & Mint Probiotic Chaas", calories: 50, protein: 3, carbs: 6, fat: 2, benefit: "Electrolyte rich hydration with zero added sugar", order: "Cucumber Chaas" },
+      snack: { title: "Boiled Kadale Kalu Usli with Lime Squeeze & Coriander", calories: 165, protein: 9, carbs: 22, fat: 4, benefit: "Slow-burning fuel that maintains steady evening energy", order: "Kadale Usli" }
+    },
+    sun: {
+      morning: { title: "Ceylon Cinnamon & Ginger Warm Water + 1 Brazil Nut", calories: 100, protein: 3, carbs: 5, fat: 8, benefit: "Cinnamaldehyde boosts glucose transport into cells", order: "Cinnamon Ginger Tea" },
+      drink: { title: "Spiced Majjige with Roasted Jeera", calories: 55, protein: 3, carbs: 6, fat: 2, benefit: "Digestive cooling elixir after Sunday meals", order: "Masala Majjige" },
+      snack: { title: "Sprouted 3-Bean Chaat with Lime & Chaat Masala", calories: 160, protein: 10, carbs: 21, fat: 3, benefit: "Complete plant protein and prebiotic dietary fiber", order: "Sprouts Chaat" }
+    }
+  },
+
+  gym: {
+    badge: "Hypertrophy & Strength",
+    mon: {
+      morning: { title: "Banana Peanut Butter Rice Cake & Electrolyte Hydration", calories: 210, protein: 8, carbs: 32, fat: 7, benefit: "Fast glycogen replenishment and pre-workout potassium", order: "Peanut Butter Banana Toast" },
+      drink: { title: "High-Protein Sattu Chhaas (+18g Plant Protein)", calories: 160, protein: 18, carbs: 16, fat: 3, benefit: "Rapid muscle recovery and sustained intra-day protein balance", order: "Sattu Protein Drink" },
+      snack: { title: "Boiled Spiced Chickpeas with Crumbled Low-Fat Paneer / Egg", calories: 260, protein: 22, carbs: 24, fat: 8, benefit: "High leucine amino acid surge for anabolic stimulus", order: "Paneer Chana Chaat" }
+    },
+    tue: {
+      morning: { title: "Black Coffee Pre-Workout & Soaked Almonds with Golden Raisins", calories: 140, protein: 5, carbs: 18, fat: 7, benefit: "Caffeine stimulates central nervous system and motor unit recruitment", order: "Black Coffee Almonds" },
+      drink: { title: "Greek Yogurt Protein Smoothie Cup with Chia Seeds", calories: 180, protein: 20, carbs: 14, fat: 4, benefit: "Whey and casein proteins support continuous muscle repair", order: "Greek Yogurt Smoothie" },
+      snack: { title: "High-Protein Roasted Sattu Drink with Cumin & Rock Salt", calories: 170, protein: 19, carbs: 18, fat: 3, benefit: "Natural clean plant protein with zero bloating", order: "Sattu Drink" }
+    },
+    wed: {
+      morning: { title: "Green Tea & 2 Boiled Eggs (or Tofu Scramble Cubes)", calories: 160, protein: 14, carbs: 3, fat: 10, benefit: "Complete amino acid profile with bioavailable choline", order: "Boiled Eggs Tea" },
+      drink: { title: "Chilled Probiotic Majjige with Whey Protein Isolate", calories: 165, protein: 22, carbs: 8, fat: 3, benefit: "Immediate post-training protein synthesis boost", order: "Protein Buttermilk" },
+      snack: { title: "Roasted Edamame & Roasted Black Chana Trail Mix", calories: 220, protein: 18, carbs: 20, fat: 7, benefit: "Crunchy high-protein snack for positive nitrogen balance", order: "Roasted Edamame Chana" }
+    },
+    thu: {
+      morning: { title: "Beetroot Nitric Oxide Shot & Handful of Raw Walnuts", calories: 160, protein: 5, carbs: 16, fat: 10, benefit: "Dietary nitrates boost muscular endurance and vasodilation", order: "Beetroot Juice Walnuts" },
+      drink: { title: "Spiced Buttermilk with Crushed Flaxseeds & Hing", calories: 75, protein: 5, carbs: 6, fat: 3, benefit: "Omega-3 and probiotic anti-inflammatory support", order: "Flaxseed Buttermilk" },
+      snack: { title: "Sprouted Mixed Bean Sundal with Peanut & Coconut Garnish", calories: 240, protein: 16, carbs: 28, fat: 8, benefit: "Dense complex carbs and plant protein for recovery", order: "Bean Sundal" }
+    },
+    fri: {
+      morning: { title: "Lemon Electrolyte Warm Water & Banana with Almond Butter", calories: 200, protein: 6, carbs: 30, fat: 7, benefit: "Cellular hydration and sustained muscle glycogen loading", order: "Banana Almond Butter" },
+      drink: { title: "Greek Yogurt with Crushed Walnuts & Honey Drizzle", calories: 190, protein: 18, carbs: 16, fat: 6, benefit: "Slow-digesting casein keeps muscles fueled throughout the day", order: "Greek Yogurt Walnuts" },
+      snack: { title: "Protein Makhana Trail Mix with Almonds & Pumpkin Seeds", calories: 230, protein: 14, carbs: 22, fat: 10, benefit: "Mineral dense fuel for heavy lifting sessions", order: "Protein Makhana" }
+    },
+    sat: {
+      morning: { title: "Cold Brew Coffee & Soaked Dry Fruits (Almonds, Figs, Walnuts)", calories: 150, protein: 5, carbs: 20, fat: 7, benefit: "Pre-workout energy for weekend high-intensity training", order: "Cold Brew Dry Fruits" },
+      drink: { title: "Neer Mor with Crushed Ginger & Sattu Scoop", calories: 150, protein: 16, carbs: 12, fat: 3, benefit: "Refreshing post-workout recovery hydration", order: "Sattu Neer Mor" },
+      snack: { title: "Boiled Egg / Low-Fat Paneer Wrap with Mint Chutney", calories: 250, protein: 20, carbs: 22, fat: 8, benefit: "Anabolic fuel to prevent muscle catabolism", order: "Paneer Roll Wrap" }
+    },
+    sun: {
+      morning: { title: "Fresh Coconut Water with Chia Seeds & Soaked Nuts", calories: 150, protein: 5, carbs: 18, fat: 7, benefit: "Full electrolyte rehydration after weekly training cycles", order: "Coconut Water Chia" },
+      drink: { title: "Spiced Majjige with Roasted Jeera", calories: 60, protein: 4, carbs: 6, fat: 2, benefit: "Digestive recovery and metabolic calming", order: "Masala Majjige" },
+      snack: { title: "Spiced Black Bean & Sweet Corn Salad with Lime", calories: 210, protein: 12, carbs: 32, fat: 4, benefit: "Replenishes muscle glycogen for the upcoming week", order: "Black Bean Salad" }
+    }
+  },
+
+  heart: {
+    badge: "Cardio Vitality & DASH",
+    mon: {
+      morning: { title: "Dried Hibiscus & Pomegranate Antioxidant Tonic + 4 Walnuts", calories: 130, protein: 3, carbs: 8, fat: 10, benefit: "Nitric oxide booster relaxes arterial walls and lowers systolic pressure", order: "Hibiscus Pomegranate Tea" },
+      drink: { title: "Fresh Coconut Water with Soaked Chia Seeds", calories: 70, protein: 2, carbs: 12, fat: 2, benefit: "High potassium and magnesium supports healthy arterial flexibility", order: "Coconut Water Chia" },
+      snack: { title: "Steamed Chickpea (Kondakadalai) Sundal with Mint & Lime", calories: 150, protein: 8, carbs: 22, fat: 3, benefit: "Soluble fiber binds to excess dietary cholesterol", order: "Sundal Snack" }
+    },
+    tue: {
+      morning: { title: "Crushed Garlic & Warm Lemon Water + Soaked Flaxseeds", calories: 85, protein: 3, carbs: 6, fat: 6, benefit: "Allicin in fresh garlic aids arterial health and lipid clearance", order: "Garlic Lemon Water" },
+      drink: { title: "Neer Mor with Fresh Coriander & Roasted Cumin", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Cooling low-sodium probiotic electrolyte source", order: "Neer Mor" },
+      snack: { title: "Raw California Walnuts & Fresh Blueberries", calories: 160, protein: 4, carbs: 14, fat: 11, benefit: "Alpha-linolenic acid (ALA) omega-3s protect cardiac rhythm", order: "Walnuts Blueberries" }
+    },
+    wed: {
+      morning: { title: "Fresh Beetroot-Amla Nitric Oxide Booster + 4 Almonds", calories: 95, protein: 3, carbs: 9, fat: 6, benefit: "Dietary inorganic nitrates improve coronary blood flow", order: "Beetroot Amla Juice" },
+      drink: { title: "Kokum Sharbat with Himalayan Rock Salt Pinch (Zero Added Sugar)", calories: 45, protein: 1, carbs: 7, fat: 1, benefit: "Potent antioxidants reduce oxidative stress on vessel linings", order: "Kokum Drink" },
+      snack: { title: "Roasted Unsalted Makhana with Black Pepper", calories: 140, protein: 4, carbs: 24, fat: 3, benefit: "Zero sodium, high magnesium heart-protective crunchy snack", order: "Roasted Makhana" }
+    },
+    thu: {
+      morning: { title: "Green Tea with Basil & Crushed Cardamom + 3 Walnuts", calories: 110, protein: 3, carbs: 4, fat: 9, benefit: "Epigallocatechin gallate (EGCG) supports vascular elasticity", order: "Green Tea Basil" },
+      drink: { title: "Masala Majjige with Ginger & Curry Leaves (Low Salt)", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Curry leaves contain antioxidants that help lower LDL cholesterol", order: "Masala Majjige" },
+      snack: { title: "Boiled Green Gram (Moong) Salad with Lemon & Cucumber", calories: 150, protein: 9, carbs: 21, fat: 3, benefit: "Potassium rich legume snack aiding healthy blood pressure", order: "Moong Salad" }
+    },
+    fri: {
+      morning: { title: "Arjuna Bark Herbal Heart Decoction + Soaked Pumpkin Seeds", calories: 90, protein: 4, carbs: 4, fat: 7, benefit: "Traditional Ayurvedic cardiotonic strengthening heart muscle", order: "Arjuna Tea" },
+      drink: { title: "Cold-Pressed Celery & Cucumber Electrolyte Elixir", calories: 45, protein: 2, carbs: 8, fat: 1, benefit: "Phthalides in celery help relax the tissues of arterial walls", order: "Celery Green Juice" },
+      snack: { title: "Roasted Pumpkin Seeds & California Almonds", calories: 170, protein: 7, carbs: 8, fat: 13, benefit: "Magnesium rich seeds support steady heart rhythm", order: "Pumpkin Seeds Almonds" }
+    },
+    sat: {
+      morning: { title: "Hibiscus Mint Cooler + Sunflower & Flaxseeds", calories: 100, protein: 4, carbs: 6, fat: 7, benefit: "Flavonoids reduce systemic vascular resistance naturally", order: "Hibiscus Mint Tea" },
+      drink: { title: "Chilled Buttermilk with Crushed Mint & Ginger", calories: 50, protein: 3, carbs: 5, fat: 2, benefit: "Digestive calming drink without heavy dairy fats", order: "Mint Buttermilk" },
+      snack: { title: "Roasted Unsalted Peanuts with Green Tea", calories: 160, protein: 7, carbs: 6, fat: 12, benefit: "Resveratrol and healthy monounsaturated fatty acids", order: "Roasted Peanuts" }
+    },
+    sun: {
+      morning: { title: "Pomegranate Arils & Chia Seed Infusion + 4 Walnuts", calories: 135, protein: 4, carbs: 10, fat: 10, benefit: "Punicalagins protect LDL particles from dangerous oxidation", order: "Pomegranate Chia Tonic" },
+      drink: { title: "Spiced Majjige with Roasted Jeera", calories: 55, protein: 3, carbs: 6, fat: 2, benefit: "Probiotics maintain balanced gut-vascular axis", order: "Masala Majjige" },
+      snack: { title: "Sprouted 3-Bean Herb Salad with Lemon", calories: 155, protein: 9, carbs: 22, fat: 3, benefit: "High fiber promotes healthy hepatic cholesterol recycling", order: "Sprouts Salad" }
+    }
+  },
+
+  "weight-loss": {
+    badge: "Fat Loss & Satiety",
+    mon: {
+      morning: { title: "Organic Apple Cider Vinegar & Grated Ginger Warm Elixir", calories: 40, protein: 1, carbs: 6, fat: 0, benefit: "Acetic acid lowers morning insulin and triggers fat oxidation", order: "ACV Ginger Elixir" },
+      drink: { title: "Spiced Taak / Buttermilk with Roasted Cumin & Hing", calories: 45, protein: 3, carbs: 4, fat: 1, benefit: "Extremely low calorie hydration with high gut satiety", order: "Masala Taak" },
+      snack: { title: "Steamed Kadale Usli with Lime Squeeze & Green Tea", calories: 150, protein: 8, carbs: 20, fat: 3, benefit: "High thermic effect food keeps metabolic rate elevated", order: "Kadale Usli" }
+    },
+    tue: {
+      morning: { title: "Warm Lemon Water with Chia Seeds & Pinch of Cayenne", calories: 55, protein: 2, carbs: 6, fat: 3, benefit: "Capsaicin mildly boosts thermogenesis and suppresses early hunger", order: "Lemon Chia Water" },
+      drink: { title: "Chilled Kokum Sharbat (Zero Sugar, Himalayan Pink Salt)", calories: 35, protein: 1, carbs: 6, fat: 0, benefit: "Natural HCA supports body fat utilization", order: "Kokum Drink" },
+      snack: { title: "Roasted Spiced Makhana with Turmeric & Green Tea", calories: 130, protein: 3, carbs: 22, fat: 2, benefit: "High volume, crunchy satiety without calorie overload", order: "Roasted Makhana" }
+    },
+    wed: {
+      morning: { title: "Jeera & Ajwain Boiled Digestive Tea + 4 Soaked Almonds", calories: 75, protein: 3, carbs: 4, fat: 6, benefit: "Flushes water retention and kickstarts morning digestion", order: "Jeera Ajwain Tea" },
+      drink: { title: "Neer Mor with Crushed Ginger & Curry Leaves", calories: 45, protein: 3, carbs: 4, fat: 1, benefit: "Zero sugar electrolyte refresher for active mornings", order: "Neer Mor" },
+      snack: { title: "Sprouted Moong Salad with Chopped Cucumber, Tomato & Lime", calories: 140, protein: 9, carbs: 18, fat: 2, benefit: "Massive fiber volume fills the stomach with minimal calories", order: "Moong Sprouts Salad" }
+    },
+    thu: {
+      morning: { title: "Raw Turmeric & Black Pepper Fat-Oxidation Warm Water", calories: 45, protein: 1, carbs: 6, fat: 1, benefit: "Curcumin helps inhibit adipogenesis and reduces inflammation", order: "Turmeric Ginger Water" },
+      drink: { title: "Masala Majjige with Fresh Mint Leaves", calories: 45, protein: 3, carbs: 4, fat: 1, benefit: "Alkaline digestive support prevents acid reflux", order: "Mint Buttermilk" },
+      snack: { title: "Dry Roasted Chana with Flaxseeds", calories: 160, protein: 9, carbs: 20, fat: 4, benefit: "High protein and soluble fiber curtails dinner cravings", order: "Roasted Chana" }
+    },
+    fri: {
+      morning: { title: "Green Tea with Fresh Mint Leaves & Squeeze of Lemon", calories: 30, protein: 1, carbs: 4, fat: 0, benefit: "EGCG and caffeine work synergistically for fat oxidation", order: "Mint Green Tea" },
+      drink: { title: "Cold Pressed Cucumber & Celery Elixir", calories: 40, protein: 2, carbs: 7, fat: 0, benefit: "Natural diuretic action reduces bloating", order: "Celery Green Juice" },
+      snack: { title: "Boiled Black Chana Chaat with Raw Onions & Tomatoes", calories: 155, protein: 9, carbs: 21, fat: 3, benefit: "Complex carbs keep blood sugar flat and steady", order: "Chana Chaat" }
+    },
+    sat: {
+      morning: { title: "Cucumber & Coriander Cleansing Detox Water", calories: 35, protein: 1, carbs: 5, fat: 0, benefit: "Gently alkalizes the system and reduces fluid retention", order: "Cucumber Detox Water" },
+      drink: { title: "Mint Buttermilk with Cumin", calories: 45, protein: 3, carbs: 4, fat: 1, benefit: "Refreshing low-calorie probiotic beverage", order: "Mint Chaas" },
+      snack: { title: "Roasted Pumpkin Seeds & 4 Almonds", calories: 150, protein: 6, carbs: 6, fat: 11, benefit: "Essential fats ensure hormone production stays optimized", order: "Pumpkin Seeds Almonds" }
+    },
+    sun: {
+      morning: { title: "Apple Cider Vinegar & Ceylon Cinnamon Warm Shot", calories: 40, protein: 1, carbs: 5, fat: 0, benefit: "Stabilizes Sunday metabolic response and improves satiety", order: "ACV Cinnamon Shot" },
+      drink: { title: "Spiced Majjiga with Rock Salt", calories: 50, protein: 3, carbs: 5, fat: 1, benefit: "Post-weekend meal digestive relief", order: "Andhra Majjiga" },
+      snack: { title: "Roasted Makhana with Turmeric & Sea Salt", calories: 130, protein: 3, carbs: 22, fat: 2, benefit: "Light evening snack prevents late-night binge eating", order: "Roasted Makhana" }
+    }
+  }
+};
 
 // =========================================================================
 // UNIVERSAL 7-DAY SCHEDULE GENERATOR FOR ALL REGIONS & HEALTH GOALS
@@ -506,113 +754,127 @@ export function getDailyMenuForLocationAndDay(normLocation, dayId) {
 
 export function getWeeklyScheduleForRoutine(routine, country = "India", state = "Karnataka", mode = "regional") {
   const normState = normalizeStateKey(state, country);
+  const conditionKey = detectRoutineCondition(routine);
   const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
   const schedule = {};
 
+  const conditionMap = DISEASE_DAILY_NUTRITION_MAP[conditionKey] || DISEASE_DAILY_NUTRITION_MAP["diabetes"];
+
   days.forEach((day) => {
-    const dishes = getDailyMenuForLocationAndDay(normState, day);
+    // 1. Resolve Day's Core Dishes for Location (or Global)
+    const dishes = mode === "global" || mode === "western"
+      ? (GLOBAL_DAILY_MENUS[day] || GLOBAL_DAILY_MENUS["mon"])
+      : getDailyMenuForLocationAndDay(normState, day);
+
+    // 2. Resolve Disease Modifiers for that Day
+    const dayCondition = conditionMap[day] || conditionMap["mon"];
+
+    const routinePrefix = routine?.id || normState;
 
     schedule[day] = [
       {
-        id: `${normState}-${day}-1`,
-        slotName: "Morning Warmup",
+        id: `${routinePrefix}-${day}-1`,
+        slotName: "Morning Elixir",
         time: "6:30 AM",
         emoji: "🌅",
-        title: `Herbal Infusion & Soaked Nuts (${day.toUpperCase()})`,
-        calories: 100,
-        protein: 4,
-        carbs: 5,
-        fat: 8,
+        title: dayCondition.morning.title,
+        calories: dayCondition.morning.calories,
+        protein: dayCondition.morning.protein,
+        carbs: dayCondition.morning.carbs,
+        fat: dayCondition.morning.fat,
         prepTime: "5 min",
         isVeg: true,
         dietType: "Vegetarian",
-        description: "Warm herbal decoction steeped with digestive spices and soaked nuts.",
-        orderQuery: "Herbal Green Tea Almonds"
+        description: `Condition-calibrated morning warmup: ${dayCondition.morning.benefit}.`,
+        benefits: [dayCondition.morning.benefit, "Hydrates cells after sleep", "Primes metabolic digestion"],
+        orderQuery: dayCondition.morning.order || "Herbal Green Tea"
       },
       {
-        id: `${normState}-${day}-2`,
+        id: `${routinePrefix}-${day}-2`,
         slotName: "Breakfast",
         time: "8:30 AM",
         emoji: "🥣",
         title: dishes.breakfast.title,
-        calories: 380,
-        protein: 16,
-        carbs: 54,
-        fat: 10,
+        calories: conditionKey === "gym" ? 480 : (conditionKey === "weight-loss" ? 340 : 390),
+        protein: conditionKey === "gym" ? 28 : (conditionKey === "weight-loss" ? 16 : 18),
+        carbs: conditionKey === "gym" ? 58 : (conditionKey === "weight-loss" ? 42 : 52),
+        fat: conditionKey === "gym" ? 14 : (conditionKey === "weight-loss" ? 8 : 10),
         prepTime: "15 min",
         isVeg: true,
         dietType: "Vegetarian",
         image: dishes.breakfast.img,
         description: dishes.breakfast.desc,
-        benefits: ["Low GI steady energy", "Rich in fiber and minerals"],
+        benefits: ["Sustained morning energy", "Tailored to local authentic staples", "High micronutrient density"],
         orderQuery: dishes.breakfast.order
       },
       {
-        id: `${normState}-${day}-3`,
+        id: `${routinePrefix}-${day}-3`,
         slotName: "Mid-Day Hydration",
         time: "11:30 AM",
         emoji: "🥛",
-        title: dishes.drink.title,
-        calories: 55,
-        protein: 3,
-        carbs: 6,
-        fat: 2,
+        title: dayCondition.drink.title || dishes.drink.title,
+        calories: dayCondition.drink.calories || 55,
+        protein: dayCondition.drink.protein || 3,
+        carbs: dayCondition.drink.carbs || 6,
+        fat: dayCondition.drink.fat || 2,
         prepTime: "3 min",
         isVeg: true,
         dietType: "Vegetarian",
-        description: "Refreshing regional digestive beverage.",
-        orderQuery: dishes.drink.order
+        description: dayCondition.drink.benefit || "Refreshing regional probiotic digestive beverage.",
+        benefits: [dayCondition.drink.benefit || "Restores cellular hydration", "Zero sugar spikes"],
+        orderQuery: dayCondition.drink.order || dishes.drink.order
       },
       {
-        id: `${normState}-${day}-4`,
-        slotName: "Regional Lunch",
+        id: `${routinePrefix}-${day}-4`,
+        slotName: "Healthy Lunch",
         time: "1:30 PM",
         emoji: "🍛",
         title: dishes.lunch.title,
-        calories: 500,
-        protein: 20,
-        carbs: 70,
-        fat: 12,
+        calories: conditionKey === "gym" ? 640 : (conditionKey === "weight-loss" ? 440 : 510),
+        protein: conditionKey === "gym" ? 38 : (conditionKey === "weight-loss" ? 20 : 22),
+        carbs: conditionKey === "gym" ? 80 : (conditionKey === "weight-loss" ? 55 : 68),
+        fat: conditionKey === "gym" ? 18 : (conditionKey === "weight-loss" ? 10 : 12),
         prepTime: "25 min",
         isVeg: true,
         dietType: "Vegetarian",
         image: dishes.lunch.img,
         description: dishes.lunch.desc,
-        benefits: ["Balanced plant protein and low GI complex carbs"],
+        benefits: ["Balanced plant protein and low GI complex carbs", "Rich in dietary fiber and essential minerals"],
         orderQuery: dishes.lunch.order
       },
       {
-        id: `${normState}-${day}-5`,
+        id: `${routinePrefix}-${day}-5`,
         slotName: "Evening Snack",
         time: "5:00 PM",
         emoji: "🥜",
-        title: dishes.snack.title,
-        calories: 160,
-        protein: 9,
-        carbs: 21,
-        fat: 4,
+        title: dayCondition.snack.title || dishes.snack.title,
+        calories: dayCondition.snack.calories || 160,
+        protein: dayCondition.snack.protein || 9,
+        carbs: dayCondition.snack.carbs || 21,
+        fat: dayCondition.snack.fat || 4,
         prepTime: "5 min",
         isVeg: true,
         dietType: "Vegetarian",
-        description: "Healthy regional snack.",
-        orderQuery: dishes.snack.order
+        description: dayCondition.snack.benefit || "Wholesome condition-safe evening snack.",
+        benefits: [dayCondition.snack.benefit || "Curbs late-afternoon cravings", "Steadies evening glucose"],
+        orderQuery: dayCondition.snack.order || dishes.snack.order
       },
       {
-        id: `${normState}-${day}-6`,
-        slotName: "Dinner",
+        id: `${routinePrefix}-${day}-6`,
+        slotName: "Restorative Dinner",
         time: "8:00 PM",
         emoji: "🥗",
         title: dishes.dinner.title,
-        calories: 390,
-        protein: 15,
-        carbs: 56,
-        fat: 9,
+        calories: conditionKey === "gym" ? 520 : (conditionKey === "weight-loss" ? 340 : 400),
+        protein: conditionKey === "gym" ? 30 : (conditionKey === "weight-loss" ? 15 : 17),
+        carbs: conditionKey === "gym" ? 62 : (conditionKey === "weight-loss" ? 44 : 54),
+        fat: conditionKey === "gym" ? 15 : (conditionKey === "weight-loss" ? 8 : 10),
         prepTime: "20 min",
         isVeg: true,
         dietType: "Vegetarian",
         image: dishes.dinner.img,
         description: dishes.dinner.desc,
-        benefits: ["Light dinner aids sound sleep and insulin sensitivity"],
+        benefits: ["Light dinner aids sound sleep and nocturnal metabolic balance", "Easy on digestive system"],
         orderQuery: dishes.dinner.order
       }
     ];
@@ -627,7 +889,16 @@ export function getWeeklyScheduleForRoutine(routine, country = "India", state = 
 export function getAdaptedRoutineForLocation(baseRoutine, country = "India", state = "Karnataka", mode = "regional", targetDayId = null) {
   if (!baseRoutine) return null;
 
-  // Preserve custom and AI-generated personalized routines without overriding with templates
+  const normState = normalizeStateKey(state, country);
+  const stateLabel = state || "Karnataka";
+  const countryLabel = country || "India";
+  const activeDay = targetDayId || getCurrentDayId();
+
+  // Generate complete 7-Day Day-by-Day schedule tailored for disease + location (or global)
+  const weeklySchedule = getWeeklyScheduleForRoutine(baseRoutine, country, state, mode);
+  const dayTimeline = weeklySchedule[activeDay] || weeklySchedule["mon"] || baseRoutine.dailyTimeline;
+
+  // Preserve custom and AI-generated personalized routines while giving them the diverse 7-day schedule
   if (
     baseRoutine.isCustom ||
     baseRoutine.isAIGenerated ||
@@ -636,26 +907,37 @@ export function getAdaptedRoutineForLocation(baseRoutine, country = "India", sta
   ) {
     return {
       ...baseRoutine,
-      isRegionalAdapted: false,
-      cuisineMode: mode
+      isRegionalAdapted: mode === "regional",
+      cuisineMode: mode,
+      currentDay: activeDay,
+      dailyTimeline: dayTimeline || baseRoutine.dailyTimeline,
+      weeklySchedule: weeklySchedule
     };
   }
 
   if (mode === "global" || mode === "western") {
+    const totalCals = dayTimeline.reduce((sum, m) => sum + (m.calories || 0), 0);
+    const totalProtein = dayTimeline.reduce((sum, m) => sum + (m.protein || 0), 0);
+    const totalCarbs = dayTimeline.reduce((sum, m) => sum + (m.carbs || 0), 0);
+    const totalFat = dayTimeline.reduce((sum, m) => sum + (m.fat || 0), 0);
+
     return {
       ...baseRoutine,
+      title: `${baseRoutine.title} (Global Healthy Dishes)`,
+      subtitle: `7-day diverse international whole-food timetable calibrated for ${baseRoutine.badge || "your health goal"}.`,
+      category: `Global Wellness (${baseRoutine.category || "Health"})`,
+      calories: totalCals || baseRoutine.calories,
+      protein: totalProtein || baseRoutine.protein,
+      carbs: totalCarbs || baseRoutine.carbs,
+      fat: totalFat || baseRoutine.fat,
+      mealsCount: dayTimeline.length,
       isRegionalAdapted: false,
-      cuisineMode: "global"
+      cuisineMode: "global",
+      currentDay: activeDay,
+      dailyTimeline: dayTimeline,
+      weeklySchedule: weeklySchedule
     };
   }
-
-  const normState = normalizeStateKey(state, country);
-  const stateLabel = state || "Karnataka";
-  const countryLabel = country || "India";
-  const activeDay = targetDayId || getCurrentDayId();
-
-  const weeklySchedule = getWeeklyScheduleForRoutine(baseRoutine, country, state, mode);
-  const dayTimeline = weeklySchedule[activeDay] || weeklySchedule["mon"] || baseRoutine.dailyTimeline;
 
   if (dayTimeline && Array.isArray(dayTimeline) && dayTimeline.length > 0) {
     const totalCals = dayTimeline.reduce((sum, m) => sum + (m.calories || 0), 0);
