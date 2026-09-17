@@ -49,12 +49,12 @@ export default function ProfileCard({
 
   const handleSaveGeminiKey = (e) => {
     if (e) e.preventDefault();
-    const clean = geminiKeyInput.trim();
+    const clean = geminiKeyInput.trim().replace(/^["'`\s]+|["'`\s]+$/g, "");
     setGeminiApiKey(clean);
     setGeminiApiKeyState(clean);
     setIsEditingKey(false);
     if (onShowToast) {
-      onShowToast(clean ? "🔑 Gemini AI API Key saved successfully!" : "Gemini API Key removed. Using default.");
+      onShowToast(clean ? "🔑 Gemini AI API Key saved successfully!" : "Gemini API Key removed.");
     }
   };
 

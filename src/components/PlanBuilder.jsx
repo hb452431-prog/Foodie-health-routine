@@ -46,12 +46,13 @@ export default function PlanBuilder({
 
   const handleSaveApiKey = (e) => {
     if (e) e.preventDefault();
-    const cleanKey = tempApiKeyInput.trim();
+    const cleanKey = tempApiKeyInput.trim().replace(/^["'`\s]+|["'`\s]+$/g, "");
     setGeminiApiKey(cleanKey);
     setApiKey(cleanKey);
     setIsApiKeyModalOpen(false);
+    setGenerationError(null);
     if (onShowToast) {
-      onShowToast(cleanKey ? "🔑 Gemini API Key saved successfully!" : "Gemini API Key removed. Using default.");
+      onShowToast(cleanKey ? "🔑 Gemini API Key saved successfully!" : "Gemini API Key removed.");
     }
   };
 
@@ -60,6 +61,7 @@ export default function PlanBuilder({
     setGeminiApiKey("");
     setApiKey("");
     setIsApiKeyModalOpen(false);
+    setGenerationError(null);
     if (onShowToast) {
       onShowToast("Gemini API key cleared.");
     }

@@ -263,9 +263,23 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
 }
 
 /**
+ * Cleans and sanitizes an API key string (strips surrounding quotes, whitespace, and backticks)
+ */
+export function sanitizeApiKey(rawKey) {
+  if (!rawKey || typeof rawKey !== "string") return "";
+  return rawKey
+    .trim()
+    .replace(/^["'`\s]+|["'`\s]+$/g, "")
+    .trim();
+}
+
+/**
  * Dynamically queries Google Generative Language API to discover available models for this specific API key.
  */
 async function discoverKeyModels(apiKey) {
+  const cleanKey = sanitizeApiKey(apiKey);
+  if (!cleanKey) return [];
+
   const now = Date.now();
   if (cachedDiscoveredModels && now - modelCacheTimestamp < MODEL_CACHE_TTL_MS) {
     return cachedDiscoveredModels;
@@ -273,9 +287,9 @@ async function discoverKeyModels(apiKey) {
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => controller.abort(), 4500);
 
-    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`;
     const res = await fetch(listUrl, {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -285,7 +299,7 @@ async function discoverKeyModels(apiKey) {
     clearTimeout(timer);
 
     if (res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (Array.isArray(data?.models)) {
         const available = data.models
           .filter((m) => {
@@ -309,7 +323,7 @@ async function discoverKeyModels(apiKey) {
       }
     }
   } catch (_e) {
-    // Model discovery failed or was blocked; continue to prioritized static models
+    // Model discovery failed or timed out; proceed with static candidate models
   }
 
   return [];
@@ -319,9 +333,13 @@ async function discoverKeyModels(apiKey) {
  * Direct client-side Gemini generation using user's configured API Key and dynamic model selection.
  */
 async function generateWithGeminiDirect(apiKey, formData) {
-  const cleanKey = String(apiKey || "").trim();
+  const cleanKey = sanitizeApiKey(apiKey);
   if (!cleanKey) {
     throw new Error("No Gemini API key provided. Please enter a valid Gemini API key in the settings.");
+  }
+
+  if (cleanKey.startsWith("sk-")) {
+    throw new Error("The API key entered appears to be an OpenAI key ('sk-...'). Google Gemini AI requires an API key from Google AI Studio (starting with 'AIza...').");
   }
 
   const prompt = buildNutritionistPrompt(formData);
@@ -336,12 +354,13 @@ async function generateWithGeminiDirect(apiKey, formData) {
   }
 
   const fallbackKnownModels = [
-    "gemini-1.5-flash",
-    "gemini-2.0-flash",
     "gemini-2.5-flash",
-    "gemini-1.5-pro",
-    "gemini-pro",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
     "gemini-1.5-flash-8b",
+    "gemini-1.5-pro",
+    "gemini-2.0-flash-lite-preview-02-05",
+    "gemini-pro",
     "gemini-1.0-pro"
   ];
 
@@ -353,94 +372,108 @@ async function generateWithGeminiDirect(apiKey, formData) {
 
   let lastError = null;
 
-  for (const model of candidateModels) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
-      const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          temperature: 0.2,
-          maxOutputTokens: 2048
-        }
-      };
+  for (const rawModel of candidateModels) {
+    const model = (rawModel || "").replace(/^models\//, "").trim();
+    if (!model) continue;
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
+    // Try both v1beta and v1 endpoints if needed
+    const apiVersions = ["v1beta", "v1"];
 
-      let res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-
-      if (res.status === 400) {
-        // Retry without responseMimeType in case this specific model doesn't support json schema
-        const fallbackPayload = {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+    for (const version of apiVersions) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+        const payload = {
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2048,
+            responseMimeType: "application/json"
+          }
         };
-        const retryRes = await fetch(url, {
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 12000);
+
+        let res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(fallbackPayload),
+          body: JSON.stringify(payload),
           signal: controller.signal
         });
-        if (retryRes.ok) res = retryRes;
-      }
 
-      clearTimeout(timer);
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        const rawMsg = errData?.error?.message || `HTTP ${res.status}`;
-        const isAuthError =
-          res.status === 401 ||
-          res.status === 403 ||
-          rawMsg.toLowerCase().includes("api_key_invalid") ||
-          rawMsg.toLowerCase().includes("api key not valid") ||
-          rawMsg.toLowerCase().includes("permission_denied");
-
-        if (isAuthError) {
-          throw new Error("The Gemini API key is not valid or does not have access. Please check your key at Google AI Studio (aistudio.google.com).");
+        if (res.status === 400) {
+          // Retry without responseMimeType in case this specific model doesn't support json schema
+          const fallbackPayload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+          };
+          const retryRes = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fallbackPayload),
+            signal: controller.signal
+          });
+          res = retryRes;
         }
 
-        if (res.status === 429) {
-          throw new Error("Gemini AI rate limit reached. Please wait a few seconds and try again.");
+        clearTimeout(timer);
+
+        const responseText = await res.text().catch(() => "");
+        let json = null;
+        try {
+          json = JSON.parse(responseText);
+        } catch (_e) {
+          json = null;
         }
 
-        lastError = new Error(rawMsg);
-        continue;
-      }
+        if (!res.ok) {
+          const rawMsg = json?.error?.message || responseText || `HTTP ${res.status}`;
+          const isAuthError =
+            res.status === 401 ||
+            res.status === 403 ||
+            rawMsg.toLowerCase().includes("api_key_invalid") ||
+            rawMsg.toLowerCase().includes("api key not valid") ||
+            rawMsg.toLowerCase().includes("permission_denied");
 
-      const json = await res.json();
-      const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) continue;
+          if (isAuthError) {
+            throw new Error("The Gemini API key is not valid or does not have access. Please verify your key at Google AI Studio (aistudio.google.com).");
+          }
 
-      let cleaned = text.trim();
-      if (cleaned.startsWith("```json")) {
-        cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-      } else if (cleaned.startsWith("```")) {
-        cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
-      }
+          if (res.status === 429) {
+            throw new Error("Gemini AI rate limit reached. Please wait a few seconds and try again.");
+          }
 
-      const firstBrace = cleaned.indexOf("{");
-      const lastBrace = cleaned.lastIndexOf("}");
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-      }
+          lastError = new Error(rawMsg);
+          continue; // Try next model or version
+        }
 
-      const parsed = JSON.parse(cleaned);
-      if (parsed && parsed.meals) {
-        console.log(`[Gemini AI] Successfully generated food routine using model: ${model}`);
-        return formatAIResponseToRoutine(parsed, formData);
+        const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) continue;
+
+        let cleaned = text.trim();
+        if (cleaned.startsWith("```json")) {
+          cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+        } else if (cleaned.startsWith("```")) {
+          cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+        }
+
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+        }
+
+        const parsed = JSON.parse(cleaned);
+        if (parsed && parsed.meals) {
+          console.log(`[Gemini AI] Successfully generated food routine using model: ${model} (${version})`);
+          return formatAIResponseToRoutine(parsed, formData);
+        }
+      } catch (e) {
+        if (e.message.includes("API key is not valid") || e.message.includes("rate limit") || e.message.includes("OpenAI key")) {
+          throw e;
+        }
+        lastError = e;
       }
-    } catch (e) {
-      if (e.message.includes("API key is not valid") || e.message.includes("rate limit")) {
-        throw e;
-      }
-      lastError = e;
     }
   }
 
@@ -450,13 +483,13 @@ async function generateWithGeminiDirect(apiKey, formData) {
 /**
  * Generate a personalized food routine via Gemini AI.
  * If user configured an API key, performs dynamic direct generation;
- * otherwise queries the serverless /api/ai/food-plan endpoint.
+ * otherwise queries the serverless /api/ai/food-plan endpoint or uses smart nutritional engine.
  */
-export async function generateAIFoodPlan(formData) {
+export async function generateAIFoodPlan(formData = {}) {
   const customKey =
-    (formData?.apiKey && typeof formData.apiKey === "string" ? formData.apiKey.trim() : "") ||
-    getGeminiApiKey() ||
-    (typeof import.meta !== "undefined" && (import.meta.env?.VITE_GEMINI_API_KEY || import.meta.env?.GEMINI_API_KEY)) ||
+    sanitizeApiKey(formData?.apiKey) ||
+    sanitizeApiKey(getGeminiApiKey()) ||
+    sanitizeApiKey(typeof import.meta !== "undefined" && (import.meta.env?.VITE_GEMINI_API_KEY || import.meta.env?.GEMINI_API_KEY)) ||
     "";
 
   // If a Gemini API key is available, execute dynamic client generation directly
@@ -464,10 +497,11 @@ export async function generateAIFoodPlan(formData) {
     try {
       return await generateWithGeminiDirect(customKey, formData);
     } catch (directErr) {
-      // If it's explicitly an invalid key error or rate limit, throw directly to guide the user
+      // If it's explicitly an invalid key error, throw directly so user can correct it
       if (
         directErr.message.includes("API key is not valid") ||
-        directErr.message.includes("rate limit")
+        directErr.message.includes("rate limit") ||
+        directErr.message.includes("OpenAI key")
       ) {
         throw directErr;
       }
@@ -497,10 +531,7 @@ export async function generateAIFoodPlan(formData) {
     try {
       result = JSON.parse(rawText);
     } catch (_e) {
-      result = {
-        success: false,
-        error: response.ok ? "Invalid server response structure" : `Server returned status ${response.status}`
-      };
+      result = null;
     }
 
     if (response.ok && result?.success && result?.data) {
@@ -512,6 +543,12 @@ export async function generateAIFoodPlan(formData) {
       return await generateWithGeminiDirect(customKey, formData);
     }
 
+    // If no custom key and server has no key (503 / 404), seamlessly provide the smart clinical plan
+    if (!customKey && (response.status === 503 || response.status === 404 || !result?.success)) {
+      console.log("[FoodPlan] No GEMINI_API_KEY present; serving smart clinical nutritional routine.");
+      return generateOfflineFallbackPlan(formData);
+    }
+
     const errorMsg = result?.error || `Server responded with status ${response.status}`;
     const err = new Error(errorMsg);
     err.code = result?.code || "API_ERROR";
@@ -519,12 +556,18 @@ export async function generateAIFoodPlan(formData) {
   } catch (err) {
     clearTimeout(timeoutId);
 
-    if (customKey && !err.message.includes("API key is not valid")) {
+    if (customKey && !err.message.includes("API key is not valid") && !err.message.includes("OpenAI key")) {
       try {
         return await generateWithGeminiDirect(customKey, formData);
       } catch (fallbackDirectErr) {
         throw fallbackDirectErr;
       }
+    }
+
+    // If no custom key and network failed, provide safe smart plan instead of crashing
+    if (!customKey && !err.message.includes("API key is not valid")) {
+      console.log("[FoodPlan] Network error without key; serving smart clinical nutritional routine.");
+      return generateOfflineFallbackPlan(formData);
     }
 
     if (err.name === "AbortError") {

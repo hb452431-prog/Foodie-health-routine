@@ -274,13 +274,15 @@ export default async function handler(req, res) {
     // Read server environment variable or client-supplied API key
     const rawKey =
       req.headers?.["x-gemini-api-key"] ||
+      req.headers?.["x-api-key"] ||
       body.apiKey ||
       process.env.GEMINI_API_KEY ||
+      process.env.VITE_GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
       process.env.GOOGLE_GENAI_API_KEY ||
       process.env.GEMINI_KEY;
 
-    const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+    const apiKey = typeof rawKey === "string" ? rawKey.trim().replace(/^["'`\s]+|["'`\s]+$/g, "") : "";
 
     if (!apiKey) {
       return res.status(503).json({
@@ -336,7 +338,8 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
     "Prep protein and chopped veggies ahead of time."
   ],
   "medicalDisclaimer": "General nutrition guidance only. Consult a physician for specific health conditions."
-}`;
+}
+`;
 
     // Auto-discover key-accessible models upfront (cached in memory)
     const discovered = await discoverSupportedModels(apiKey);
@@ -361,7 +364,13 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
       lastError = { ...result, model };
 
       // Stop immediately on API key auth rejection
-      if (result.status === 401 || result.status === 403) {
+      const isAuthFail =
+        result.status === 401 ||
+        result.status === 403 ||
+        String(result.message || "").toLowerCase().includes("api key not valid") ||
+        String(result.message || "").toLowerCase().includes("api_key_invalid");
+
+      if (isAuthFail) {
         break;
       }
     }
