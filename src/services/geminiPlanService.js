@@ -5,15 +5,21 @@
  * Guarantees every generated meal resolves to an existing verified food record
  * with authentic stored imagery and structured nutrition data.
  *
- * Supports both:
- * 1. Serverless endpoint: POST /api/ai/food-plan
- * 2. Direct client fallback using user's configured Gemini API key if server is unreachable
+ * Dynamic Model Resolution:
+ * - Automatically discovers accessible models for the user's Gemini API key.
+ * - Supports modern Flash and Pro models (gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash, gemini-1.5-pro, gemini-pro).
+ * - Client-direct execution + serverless endpoint fallback.
  */
 
 import { findOrResolveFood, getFoodsForPlan } from "./foodService";
 import { getGeminiApiKey } from "../utils/storage";
 
 const DEFAULT_TIMEOUT_MS = 25000;
+
+// Cache for discovered models to prevent repeated discovery roundtrips
+let cachedDiscoveredModels = null;
+let modelCacheTimestamp = 0;
+const MODEL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
  * Extracts numeric value from a string (e.g. "45 kcal", "90g", "2.5L") or number.
@@ -38,7 +44,6 @@ function normalizeIngredients(ingredients) {
   return ingredients.map((item) => {
     if (!item) return { name: "Healthy Ingredient", amount: "1 portion" };
     if (typeof item === "string") {
-      // Split on typical quantities or keep string as name
       return { name: item.trim(), amount: "" };
     }
     if (typeof item === "object") {
@@ -258,24 +263,99 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
 }
 
 /**
- * Direct client-side Gemini generation fallback using user's configured API Key.
+ * Dynamically queries Google Generative Language API to discover available models for this specific API key.
+ */
+async function discoverKeyModels(apiKey) {
+  const now = Date.now();
+  if (cachedDiscoveredModels && now - modelCacheTimestamp < MODEL_CACHE_TTL_MS) {
+    return cachedDiscoveredModels;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+
+    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`;
+    const res = await fetch(listUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data?.models)) {
+        const available = data.models
+          .filter((m) => {
+            const methods = m.supportedGenerationMethods || [];
+            return Array.isArray(methods) && methods.includes("generateContent");
+          })
+          .map((m) => (m.name || "").replace(/^models\//, "").trim())
+          .filter(Boolean);
+
+        if (available.length > 0) {
+          // Prioritize flash models, then pro models
+          const flashModels = available.filter((m) => m.toLowerCase().includes("flash"));
+          const proModels = available.filter((m) => m.toLowerCase().includes("pro") && !m.toLowerCase().includes("flash"));
+          const otherModels = available.filter((m) => !m.toLowerCase().includes("flash") && !m.toLowerCase().includes("pro"));
+
+          const sorted = [...flashModels, ...proModels, ...otherModels];
+          cachedDiscoveredModels = sorted;
+          modelCacheTimestamp = now;
+          return sorted;
+        }
+      }
+    }
+  } catch (_e) {
+    // Model discovery failed or was blocked; continue to prioritized static models
+  }
+
+  return [];
+}
+
+/**
+ * Direct client-side Gemini generation using user's configured API Key and dynamic model selection.
  */
 async function generateWithGeminiDirect(apiKey, formData) {
+  const cleanKey = String(apiKey || "").trim();
+  if (!cleanKey) {
+    throw new Error("No Gemini API key provided. Please enter a valid Gemini API key in the settings.");
+  }
+
   const prompt = buildNutritionistPrompt(formData);
-  const models = [
+
+  // 1. Discover models supported by this specific key
+  const discoveredModels = await discoverKeyModels(cleanKey);
+
+  // 2. Build prioritized candidate models list
+  const candidateModels = [];
+  if (discoveredModels.length > 0) {
+    candidateModels.push(...discoveredModels);
+  }
+
+  const fallbackKnownModels = [
     "gemini-1.5-flash",
     "gemini-2.0-flash",
     "gemini-2.5-flash",
     "gemini-1.5-pro",
     "gemini-pro",
-    "gemini-1.5-flash-8b"
+    "gemini-1.5-flash-8b",
+    "gemini-1.0-pro"
   ];
+
+  for (const m of fallbackKnownModels) {
+    if (!candidateModels.includes(m)) {
+      candidateModels.push(m);
+    }
+  }
 
   let lastError = null;
 
-  for (const model of models) {
+  for (const model of candidateModels) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
       const payload = {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
@@ -296,7 +376,7 @@ async function generateWithGeminiDirect(apiKey, formData) {
       });
 
       if (res.status === 400) {
-        // Retry without responseMimeType
+        // Retry without responseMimeType in case this specific model doesn't support json schema
         const fallbackPayload = {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
@@ -314,11 +394,23 @@ async function generateWithGeminiDirect(apiKey, formData) {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const msg = errData?.error?.message || `HTTP ${res.status}`;
-        lastError = new Error(msg);
-        if (res.status === 401 || res.status === 403) {
-          throw new Error("Invalid Gemini API Key. Please verify your API key.");
+        const rawMsg = errData?.error?.message || `HTTP ${res.status}`;
+        const isAuthError =
+          res.status === 401 ||
+          res.status === 403 ||
+          rawMsg.toLowerCase().includes("api_key_invalid") ||
+          rawMsg.toLowerCase().includes("api key not valid") ||
+          rawMsg.toLowerCase().includes("permission_denied");
+
+        if (isAuthError) {
+          throw new Error("The Gemini API key is not valid or does not have access. Please check your key at Google AI Studio (aistudio.google.com).");
         }
+
+        if (res.status === 429) {
+          throw new Error("Gemini AI rate limit reached. Please wait a few seconds and try again.");
+        }
+
+        lastError = new Error(rawMsg);
         continue;
       }
 
@@ -341,30 +433,49 @@ async function generateWithGeminiDirect(apiKey, formData) {
 
       const parsed = JSON.parse(cleaned);
       if (parsed && parsed.meals) {
+        console.log(`[Gemini AI] Successfully generated food routine using model: ${model}`);
         return formatAIResponseToRoutine(parsed, formData);
       }
     } catch (e) {
-      if (e.message.includes("Invalid Gemini API Key")) {
+      if (e.message.includes("API key is not valid") || e.message.includes("rate limit")) {
         throw e;
       }
       lastError = e;
     }
   }
 
-  throw lastError || new Error("Failed to generate plan with available Gemini models.");
+  throw lastError || new Error("Unable to generate food routine with available Gemini AI models. Please verify your API key.");
 }
 
 /**
  * Generate a personalized food routine via Gemini AI.
- * Attempts serverless API first, then falls back to direct client API if user configured an API key.
+ * If user configured an API key, performs dynamic direct generation;
+ * otherwise queries the serverless /api/ai/food-plan endpoint.
  */
 export async function generateAIFoodPlan(formData) {
   const customKey =
-    formData?.apiKey ||
+    (formData?.apiKey && typeof formData.apiKey === "string" ? formData.apiKey.trim() : "") ||
     getGeminiApiKey() ||
     (typeof import.meta !== "undefined" && (import.meta.env?.VITE_GEMINI_API_KEY || import.meta.env?.GEMINI_API_KEY)) ||
     "";
 
+  // If a Gemini API key is available, execute dynamic client generation directly
+  if (customKey) {
+    try {
+      return await generateWithGeminiDirect(customKey, formData);
+    } catch (directErr) {
+      // If it's explicitly an invalid key error or rate limit, throw directly to guide the user
+      if (
+        directErr.message.includes("API key is not valid") ||
+        directErr.message.includes("rate limit")
+      ) {
+        throw directErr;
+      }
+      console.warn("Direct Gemini call failed, attempting serverless route:", directErr?.message);
+    }
+  }
+
+  // Serverless endpoint attempt with safe text parsing
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
@@ -381,14 +492,23 @@ export async function generateAIFoodPlan(formData) {
 
     clearTimeout(timeoutId);
 
-    const result = await response.json();
+    const rawText = await response.text();
+    let result = null;
+    try {
+      result = JSON.parse(rawText);
+    } catch (_e) {
+      result = {
+        success: false,
+        error: response.ok ? "Invalid server response structure" : `Server returned status ${response.status}`
+      };
+    }
 
-    if (response.ok && result.success && result.data) {
+    if (response.ok && result?.success && result?.data) {
       return formatAIResponseToRoutine(result.data, formData);
     }
 
-    // If server returned an error (e.g. 503 missing server key) and we have a custom client key, try direct client generation
-    if (customKey && (response.status === 503 || response.status === 404 || !result.success)) {
+    // If server failed and custom key exists, try direct one last time
+    if (customKey) {
       return await generateWithGeminiDirect(customKey, formData);
     }
 
@@ -399,12 +519,11 @@ export async function generateAIFoodPlan(formData) {
   } catch (err) {
     clearTimeout(timeoutId);
 
-    // If fetch failed completely (e.g., local dev without backend or static host) and we have customKey, try direct client call
-    if (customKey && err.name !== "AbortError" && !err.message.includes("Invalid Gemini API Key")) {
+    if (customKey && !err.message.includes("API key is not valid")) {
       try {
         return await generateWithGeminiDirect(customKey, formData);
-      } catch (directErr) {
-        throw directErr;
+      } catch (fallbackDirectErr) {
+        throw fallbackDirectErr;
       }
     }
 

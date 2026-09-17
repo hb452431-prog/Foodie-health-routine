@@ -268,6 +268,7 @@ export default async function handler(req, res) {
 
   const startTime = Date.now();
 
+  try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
 
     // Read server environment variable or client-supplied API key

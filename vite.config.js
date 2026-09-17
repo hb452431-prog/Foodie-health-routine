@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import foodPlanHandler from './api/ai/food-plan.js';
+import foodImageHandler from './api/generate-food-image.js';
 
 function devApiPlugin() {
   return {
@@ -8,16 +10,21 @@ function devApiPlugin() {
       server.middlewares.use(async (req, res, next) => {
         if (req.url && req.url.startsWith('/api/')) {
           try {
-            const cleanPath = req.url.split('?')[0].replace(/^\/api\//, '');
-            // Dynamically import handler for this route
-            const handlerModule = await import(`./api/${cleanPath}.js`).catch(() => null);
-            
-            if (!handlerModule || !handlerModule.default) {
-              return next();
+            const cleanPath = req.url.split('?')[0].replace(/^\/api\//, '').replace(/\/$/, '');
+            let handler = null;
+            if (cleanPath === 'ai/food-plan' || cleanPath === 'food-plan') {
+              handler = foodPlanHandler;
+            } else if (cleanPath === 'generate-food-image' || cleanPath === 'ai/generate-food-image') {
+              handler = foodImageHandler;
             }
 
-            const handler = handlerModule.default;
-            
+            if (!handler) {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: false, error: 'API route not found', code: 'NOT_FOUND' }));
+              return;
+            }
+
             // Read request body
             let body = '';
             req.on('data', chunk => {
@@ -29,7 +36,7 @@ function devApiPlugin() {
               } catch (e) {
                 req.body = {};
               }
-              
+
               // Custom mock response object matching Vercel Serverless Function signature
               const vercelRes = {
                 statusCode: 200,
@@ -48,7 +55,7 @@ function devApiPlugin() {
                   return vercelRes;
                 }
               };
-              
+
               await handler(req, vercelRes);
             });
           } catch (err) {
