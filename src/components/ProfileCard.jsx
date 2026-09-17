@@ -12,10 +12,11 @@ import {
   ArrowRight,
   Award,
   LogOut,
-  Bookmark
+  Bookmark,
+  Key
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { saveUserProfile, setActivePlan, getUserBadges, getStreakDays } from "../utils/storage";
+import { saveUserProfile, setActivePlan, getUserBadges, getStreakDays, getGeminiApiKey, setGeminiApiKey } from "../utils/storage";
 import { AVATAR_COLLECTION } from "../data/avatarsData";
 import { REGIONAL_COUNTRIES, getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
 import { BADGES_DATA, calculateStage } from "../data/badgesData";
@@ -41,6 +42,31 @@ export default function ProfileCard({
     country: profile.country || "India",
     state: profile.state || "Karnataka"
   });
+
+  const [geminiApiKey, setGeminiApiKeyState] = useState(() => getGeminiApiKey());
+  const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
+  const [isEditingKey, setIsEditingKey] = useState(false);
+
+  const handleSaveGeminiKey = (e) => {
+    if (e) e.preventDefault();
+    const clean = geminiKeyInput.trim();
+    setGeminiApiKey(clean);
+    setGeminiApiKeyState(clean);
+    setIsEditingKey(false);
+    if (onShowToast) {
+      onShowToast(clean ? "🔑 Gemini AI API Key saved successfully!" : "Gemini API Key removed. Using default.");
+    }
+  };
+
+  const handleClearGeminiKey = () => {
+    setGeminiApiKey("");
+    setGeminiApiKeyState("");
+    setGeminiKeyInput("");
+    setIsEditingKey(false);
+    if (onShowToast) {
+      onShowToast("Gemini API Key cleared.");
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -476,6 +502,136 @@ export default function ProfileCard({
               <span>Save & Update Profile</span>
             </button>
           </form>
+        )}
+      </div>
+
+      {/* Gemini AI API Key & Intelligence Settings Card */}
+      <div className="widget-card" style={{ padding: "1.5rem", marginBottom: "1.75rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "50%",
+                background: geminiApiKey ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" : "linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#FFFFFF",
+                boxShadow: "0 2px 8px rgba(16, 185, 129, 0.25)"
+              }}
+            >
+              <Key size={20} />
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--primary-900)", margin: 0 }}>
+                  Gemini AI Model & API Key
+                </h3>
+                <span
+                  className="badge"
+                  style={{
+                    background: geminiApiKey ? "#ECFDF5" : "#EFF6FF",
+                    color: geminiApiKey ? "#065F46" : "#1E40AF",
+                    border: geminiApiKey ? "1px solid #A7F3D0" : "1px solid #BFDBFE",
+                    fontWeight: 700,
+                    fontSize: "0.72rem"
+                  }}
+                >
+                  {geminiApiKey ? "✓ Custom Key Active" : "⚡ System AI Active"}
+                </span>
+              </div>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: "0.2rem 0 0" }}>
+                Powers personalized food routines, clinical macronutrient calculations, and disease-specific dietary therapy.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {!isEditingKey ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setGeminiKeyInput(geminiApiKey);
+                  setIsEditingKey(true);
+                }}
+              >
+                <Key size={13} />
+                <span>{geminiApiKey ? "Change API Key" : "Configure API Key"}</span>
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {isEditingKey ? (
+          <form onSubmit={handleSaveGeminiKey} style={{ background: "var(--bg-card-subtle)", padding: "1.25rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-subtle)" }}>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--primary-900)", marginBottom: "0.35rem" }}>
+              Google Gemini API Key (from Google AI Studio)
+            </label>
+            <input
+              type="password"
+              value={geminiKeyInput}
+              onChange={(e) => setGeminiKeyInput(e.target.value)}
+              placeholder="AIzaSy..."
+              className="search-input"
+              style={{ width: "100%", padding: "0.65rem 0.85rem", fontFamily: "monospace", fontSize: "0.85rem", marginBottom: "0.5rem" }}
+              autoFocus
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                🔒 Stored securely in your local browser storage. Never exposed publicly.
+              </span>
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: "0.78rem", color: "var(--primary-700)", fontWeight: 700, textDecoration: "none" }}
+              >
+                Get a free Gemini API Key ↗
+              </a>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+              {geminiApiKey && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleClearGeminiKey}
+                  style={{ color: "#DC2626", borderColor: "#FECACA" }}
+                >
+                  Clear Key
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => setIsEditingKey(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+              >
+                <Check size={14} />
+                Save API Key
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--bg-card-subtle)", padding: "0.75rem 1rem", borderRadius: "var(--radius-md)", border: "1px solid var(--border-subtle)", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.85rem", fontFamily: "monospace", color: geminiApiKey ? "var(--primary-800)" : "var(--text-muted)" }}>
+                {geminiApiKey ? `${geminiApiKey.slice(0, 6)}••••••••••••••••${geminiApiKey.slice(-4)}` : "No custom key entered (uses server key if configured)"}
+              </span>
+            </div>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              Supported Models: Gemini 2.5 Flash, 2.0 Flash, 1.5 Flash, 1.5 Pro
+            </span>
+          </div>
         )}
       </div>
 

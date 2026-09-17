@@ -14,9 +14,13 @@ import {
   MapPin,
   CheckCircle2,
   AlertCircle,
-  Utensils
+  Utensils,
+  Key,
+  ShieldCheck,
+  Settings
 } from "lucide-react";
 import { generateAIFoodPlan, generateOfflineFallbackPlan } from "../services/geminiPlanService";
+import { getGeminiApiKey, setGeminiApiKey } from "../utils/storage";
 import { useLocation } from "../context/LocationContext";
 import FoodDetailsModal from "./FoodDetailsModal";
 import { findOrResolveFood } from "../services/foodService";
@@ -33,9 +37,33 @@ export default function PlanBuilder({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState(null);
   const [generatedRoutine, setGeneratedRoutine] = useState(null);
-  const [activeTabSection, setActiveTabSection] = useState("routine"); // 'routine' | 'shopping' | 'tips'
-  const [checkedShoppingItems, setCheckedShoppingItems] = useState({});
   const [selectedFoodDetail, setSelectedFoodDetail] = useState(null);
+
+  // Gemini API Key State & Management
+  const [apiKey, setApiKey] = useState(() => getGeminiApiKey());
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [tempApiKeyInput, setTempApiKeyInput] = useState(() => getGeminiApiKey());
+
+  const handleSaveApiKey = (e) => {
+    if (e) e.preventDefault();
+    const cleanKey = tempApiKeyInput.trim();
+    setGeminiApiKey(cleanKey);
+    setApiKey(cleanKey);
+    setIsApiKeyModalOpen(false);
+    if (onShowToast) {
+      onShowToast(cleanKey ? "🔑 Gemini API Key saved successfully!" : "Gemini API Key removed. Using default.");
+    }
+  };
+
+  const handleClearApiKey = () => {
+    setTempApiKeyInput("");
+    setGeminiApiKey("");
+    setApiKey("");
+    setIsApiKeyModalOpen(false);
+    if (onShowToast) {
+      onShowToast("Gemini API key cleared.");
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -186,7 +214,7 @@ export default function PlanBuilder({
     setGenerationError(null);
 
     try {
-      const plan = await generateAIFoodPlan(formData);
+      const plan = await generateAIFoodPlan({ ...formData, apiKey });
       setGeneratedRoutine(plan);
       setIsGenerating(false);
 
@@ -367,6 +395,34 @@ export default function PlanBuilder({
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {/* API Key Quick Button */}
+              {mode === "gemini-ai" && !generatedRoutine && !isGenerating && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTempApiKeyInput(apiKey);
+                    setIsApiKeyModalOpen(true);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    background: apiKey ? "rgba(16, 185, 129, 0.12)" : "var(--bg-card-subtle)",
+                    border: apiKey ? "1.5px solid #86EFAC" : "1px solid var(--border-subtle)",
+                    color: apiKey ? "#065F46" : "var(--text-secondary)",
+                    padding: "0.35rem 0.65rem",
+                    borderRadius: "var(--radius-full)",
+                    fontSize: "0.76rem",
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                  title={apiKey ? "Custom Gemini API Key is configured" : "Click to enter your Gemini API Key"}
+                >
+                  <Key size={13} color={apiKey ? "#10B981" : "currentColor"} />
+                  <span>{apiKey ? "API Key Active" : "Set API Key"}</span>
+                </button>
+              )}
+
               {/* Mode Toggle Switcher */}
               {!generatedRoutine && !isGenerating && (
                 <div
@@ -531,6 +587,18 @@ export default function PlanBuilder({
                     >
                       <RefreshCw size={15} />
                       Try Again
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline"
+                      onClick={() => {
+                        setTempApiKeyInput(apiKey);
+                        setIsApiKeyModalOpen(true);
+                      }}
+                      style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                    >
+                      <Key size={15} />
+                      {apiKey ? "Update Gemini API Key" : "Enter Gemini API Key"}
                     </button>
                     <button
                       type="button"
@@ -1596,6 +1664,143 @@ export default function PlanBuilder({
           onClose={() => setSelectedFoodDetail(null)}
           onShowToast={onShowToast}
         />
+      )}
+
+      {/* Gemini AI API Key Configuration Modal */}
+      {isApiKeyModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem"
+          }}
+          onClick={() => setIsApiKeyModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "#FFFFFF",
+              borderRadius: "var(--radius-xl)",
+              padding: "1.75rem",
+              maxWidth: "480px",
+              width: "100%",
+              boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
+              border: "1px solid var(--border-subtle)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    background: "rgba(16, 185, 129, 0.12)",
+                    color: "#059669",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}
+                >
+                  <Key size={18} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: "1.2rem", fontWeight: 800, margin: 0, color: "var(--primary-900)" }}>
+                    Gemini AI API Key
+                  </h4>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                    Google Generative AI Personalization
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsApiKeyModalOpen(false)}
+                style={{
+                  background: "var(--bg-card-subtle)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "28px",
+                  height: "28px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "var(--text-muted)"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.1rem", lineHeight: 1.45 }}>
+              Enter your Google Gemini API key to enable instant personalized food timetable generation, clinical macro balancing, and custom recipe tailoring.
+            </p>
+
+            <form onSubmit={handleSaveApiKey}>
+              <div style={{ marginBottom: "1.25rem" }}>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)", marginBottom: "0.35rem" }}>
+                  GEMINI API KEY (GOOGLE AI STUDIO)
+                </label>
+                <input
+                  type="password"
+                  value={tempApiKeyInput}
+                  onChange={(e) => setTempApiKeyInput(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="search-input"
+                  style={{ width: "100%", padding: "0.65rem 0.85rem", fontFamily: "monospace", fontSize: "0.85rem" }}
+                  autoFocus
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.45rem" }}>
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                    🔒 Stored in your local browser storage
+                  </span>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: "0.75rem", color: "var(--primary-700)", fontWeight: 700, textDecoration: "none" }}
+                  >
+                    Get Free API Key ↗
+                  </a>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+                {apiKey && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={handleClearApiKey}
+                    style={{ color: "#DC2626", borderColor: "#FECACA" }}
+                  >
+                    Clear Key
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsApiKeyModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                >
+                  <Check size={14} />
+                  Save & Apply Key
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

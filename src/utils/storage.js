@@ -8,7 +8,8 @@ const KEYS = {
   SHOPPING_LIST_CHECKED: "fhr_shopping_checked",
   UNLOCKED_BADGES: "fhr_unlocked_badges",
   STREAK_DAYS: "fhr_streak_days",
-  COMPLETED_DAYS_HISTORY: "fhr_completed_days_history"
+  COMPLETED_DAYS_HISTORY: "fhr_completed_days_history",
+  GEMINI_API_KEY: "fhr_gemini_api_key"
 };
 
 import { DEFAULT_AVATAR } from "../data/avatarsData";
@@ -314,4 +315,22 @@ export const evaluateMilestones = ({
     streakDays: currentStreak,
     stage: currentStage
   };
+};
+
+// =========================================================================
+// GEMINI AI API KEY STORAGE
+// =========================================================================
+
+export const getGeminiApiKey = () => {
+  return String(getStoredItem(KEYS.GEMINI_API_KEY, "") || "").trim();
+};
+
+export const setGeminiApiKey = (key) => {
+  const clean = typeof key === "string" ? key.trim() : "";
+  setStoredItem(KEYS.GEMINI_API_KEY, clean);
+  return clean;
+};
+
+export const hasGeminiApiKey = () => {
+  return Boolean(getGeminiApiKey());
 };

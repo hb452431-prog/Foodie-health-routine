@@ -753,6 +753,25 @@ export const DISEASE_DAILY_NUTRITION_MAP = {
 // =========================================================================
 
 export function getWeeklyScheduleForRoutine(routine, country = "India", state = "Karnataka", mode = "regional") {
+  // Preserve custom and AI-generated routines' personalized meals
+  if (
+    routine?.isCustom ||
+    routine?.isAIGenerated ||
+    String(routine?.id || "").startsWith("ai-routine-") ||
+    String(routine?.id || "").startsWith("custom-")
+  ) {
+    if (routine.weeklySchedule && Object.keys(routine.weeklySchedule).length > 0) {
+      return routine.weeklySchedule;
+    }
+    if (Array.isArray(routine.dailyTimeline) && routine.dailyTimeline.length > 0) {
+      const schedule = {};
+      ["mon", "tue", "wed", "thu", "fri", "sat", "sun"].forEach((d) => {
+        schedule[d] = routine.dailyTimeline;
+      });
+      return schedule;
+    }
+  }
+
   const normState = normalizeStateKey(state, country);
   const conditionKey = detectRoutineCondition(routine);
   const days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -898,19 +917,23 @@ export function getAdaptedRoutineForLocation(baseRoutine, country = "India", sta
   const weeklySchedule = getWeeklyScheduleForRoutine(baseRoutine, country, state, mode);
   const dayTimeline = weeklySchedule[activeDay] || weeklySchedule["mon"] || baseRoutine.dailyTimeline;
 
-  // Preserve custom and AI-generated personalized routines while giving them the diverse 7-day schedule
+  // Preserve custom and AI-generated personalized routines without replacing meals
   if (
     baseRoutine.isCustom ||
     baseRoutine.isAIGenerated ||
     String(baseRoutine.id || "").startsWith("ai-routine-") ||
     String(baseRoutine.id || "").startsWith("custom-")
   ) {
+    const aiDailyTimeline = Array.isArray(baseRoutine.dailyTimeline) && baseRoutine.dailyTimeline.length > 0
+      ? baseRoutine.dailyTimeline
+      : (weeklySchedule[activeDay] || baseRoutine.dailyTimeline);
+
     return {
       ...baseRoutine,
-      isRegionalAdapted: mode === "regional",
+      isRegionalAdapted: false,
       cuisineMode: mode,
       currentDay: activeDay,
-      dailyTimeline: dayTimeline || baseRoutine.dailyTimeline,
+      dailyTimeline: aiDailyTimeline,
       weeklySchedule: weeklySchedule
     };
   }

@@ -158,6 +158,8 @@ export default function RecipeModal({
               <ul className="ingredient-checklist">
                 {meal.ingredients && meal.ingredients.map((item, idx) => {
                   const isChecked = !!checkedIngredients[idx];
+                  const itemName = typeof item === "string" ? item : (item?.name || item?.item || "Nutritious Ingredient");
+                  const itemAmount = typeof item === "string" ? "" : (item?.amount || item?.qty || "");
                   return (
                     <li
                       key={idx}
@@ -171,10 +173,12 @@ export default function RecipeModal({
                         style={{ accentColor: "#10B981", cursor: "pointer", width: "16px", height: "16px" }}
                       />
                       <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 600 }}>{item.name}</span>
-                        <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem", fontSize: "0.82rem" }}>
-                          ({item.amount})
-                        </span>
+                        <span style={{ fontWeight: 600 }}>{itemName}</span>
+                        {itemAmount && (
+                          <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem", fontSize: "0.82rem" }}>
+                            ({itemAmount})
+                          </span>
+                        )}
                       </div>
                     </li>
                   );
@@ -207,14 +211,17 @@ export default function RecipeModal({
                 Step-by-Step Preparation
               </h4>
               <div className="recipe-steps-list">
-                {meal.steps && meal.steps.map((step, idx) => (
-                  <div key={idx} className="recipe-step-item">
-                    <div className="step-number-badge">{idx + 1}</div>
-                    <div style={{ color: "var(--text-secondary)" }}>
-                      {step}
+                {meal.steps && meal.steps.map((step, idx) => {
+                  const stepText = typeof step === "string" ? step : (step?.step || step?.instruction || String(step));
+                  return (
+                    <div key={idx} className="recipe-step-item">
+                      <div className="step-number-badge">{idx + 1}</div>
+                      <div style={{ color: "var(--text-secondary)" }}>
+                        {stepText}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -232,14 +239,48 @@ export default function RecipeModal({
             </p>
 
             <div className="youtube-resources-grid">
-              {meal.youtubeVideos && meal.youtubeVideos.map((video, idx) => (
+              {Array.isArray(meal.youtubeVideos) && meal.youtubeVideos.length > 0 ? (
+                meal.youtubeVideos.map((video, idx) => (
+                  <a
+                    key={video.id || idx}
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(video.query || video.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="youtube-card"
+                    title={`Watch "${video.title}" on YouTube`}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem" }}>
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
+                          background: "#FEE2E2",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#DC2626",
+                          flexShrink: 0
+                        }}
+                      >
+                        <YouTubeIcon size={16} color="#DC2626" fill={true} />
+                      </div>
+                      <div className="youtube-card-title">{video.title}</div>
+                    </div>
+
+                    <div className="youtube-channel-tag">
+                      <span>{video.channel || "Food & Health"}</span>
+                      <span>⏱️ {video.duration || "5-10 min"}</span>
+                    </div>
+                  </a>
+                ))
+              ) : (
                 <a
-                  key={video.id || idx}
-                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(video.query || video.title)}`}
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(meal.orderQuery || meal.title + " healthy recipe")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="youtube-card"
-                  title={`Watch "${video.title}" on YouTube`}
+                  title={`Watch "${meal.title}" recipes on YouTube`}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", gap: "0.4rem" }}>
                     <div
@@ -257,15 +298,15 @@ export default function RecipeModal({
                     >
                       <YouTubeIcon size={16} color="#DC2626" fill={true} />
                     </div>
-                    <div className="youtube-card-title">{video.title}</div>
+                    <div className="youtube-card-title">Watch {meal.title} Preparation Guide</div>
                   </div>
 
                   <div className="youtube-channel-tag">
-                    <span>{video.channel}</span>
-                    <span>⏱️ {video.duration}</span>
+                    <span>YouTube Cooking Guides</span>
+                    <span>HD Walkthrough</span>
                   </div>
                 </a>
-              ))}
+              )}
             </div>
           </div>
 

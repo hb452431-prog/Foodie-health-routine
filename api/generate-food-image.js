@@ -280,8 +280,11 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
+
     const rawKey =
+      req.headers?.["x-gemini-api-key"] ||
+      body.apiKey ||
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
       process.env.GOOGLE_GENAI_API_KEY ||
@@ -290,15 +293,13 @@ export default async function handler(req, res) {
     const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
 
     if (!apiKey) {
-      console.warn("[FoodImage] Error: GEMINI_API_KEY is not configured on the server.");
+      console.warn("[FoodImage] Error: GEMINI_API_KEY is not configured.");
       return res.status(503).json({
         success: false,
-        error: "GEMINI_API_KEY is not configured on the server. Please check your Vercel Project Settings.",
+        error: "GEMINI_API_KEY is not configured. Please enter your Gemini API key in settings or set GEMINI_API_KEY in environment variables.",
         code: "MISSING_API_KEY"
       });
     }
-
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
     const { dishName, cuisine, region, ingredients, foodId, dishPrompt, model: requestedModel } = body;
 
     const targetName = dishName || foodId;

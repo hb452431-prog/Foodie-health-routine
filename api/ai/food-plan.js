@@ -268,9 +268,12 @@ export default async function handler(req, res) {
 
   const startTime = Date.now();
 
-  try {
-    // Read server environment variable with secure server-side keys
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
+
+    // Read server environment variable or client-supplied API key
     const rawKey =
+      req.headers?.["x-gemini-api-key"] ||
+      body.apiKey ||
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
       process.env.GOOGLE_GENAI_API_KEY ||
@@ -281,12 +284,10 @@ export default async function handler(req, res) {
     if (!apiKey) {
       return res.status(503).json({
         success: false,
-        error: "GEMINI_API_KEY is not detected in server environment. Please ensure GEMINI_API_KEY is configured in your Vercel Project Settings > Environment Variables.",
+        error: "GEMINI_API_KEY is not detected in server environment. Please configure GEMINI_API_KEY in your settings or enter your Gemini API key in the Plan Wizard.",
         code: "MISSING_API_KEY"
       });
     }
-
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
 
     // Sanitize and normalize input values
     const age = Number(body.age) || 26;
