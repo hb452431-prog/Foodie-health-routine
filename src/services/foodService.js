@@ -11,9 +11,9 @@
  * 7. Dietary & Nutrition Recommendations
  */
 
-import { FOOD_KNOWLEDGE_BASE, FOOD_BY_ID, FOOD_BY_ALIAS } from "../data/foodKnowledgeBase";
-import { searchMeals as searchMealDb, getMealById as getMealDbById } from "./mealDbService";
-import { getExactDishImage, normalizeDishName, useExactDishImage, saveToPersistentCache } from "./imageService";
+import { FOOD_KNOWLEDGE_BASE, FOOD_BY_ID, FOOD_BY_ALIAS } from "../data/foodKnowledgeBase.js";
+import { searchMeals as searchMealDb, getMealById as getMealDbById } from "./mealDbService.js";
+import { getExactDishImage, normalizeDishName, useExactDishImage, saveToPersistentCache } from "./imageService.js";
 
 // Re-export central image utilities for universal availability
 export { getExactDishImage, normalizeDishName, useExactDishImage };

@@ -16,6 +16,7 @@ import { MAJOR_LOCATIONS } from "../data/locationFoodData.js";
 import { ROUTINES_DATA } from "../data/routinesData.js";
 import { REGIONAL_DAILY_MENUS, GLOBAL_DAILY_MENUS, DISEASE_DAILY_NUTRITION_MAP } from "../data/regionalCuisinesData.js";
 import { searchMeals as searchMealDb } from "./mealDbService.js";
+import { getGeminiApiKey } from "../utils/storage.js";
 
 // LocalStorage persistent cache key
 const EXACT_IMAGE_STORAGE_KEY = "foodie_exact_dish_images_v4";
@@ -340,13 +341,21 @@ async function generateExactDishImageAI(dishInfo) {
 
   const foodId = dishInfo.id || `dish-${normalizeDishName(dishName).replace(/\s+/g, "-")}`;
 
+  const apiKey = getGeminiApiKey();
+
   const payload = {
     foodId,
     dishName,
     cuisine,
     region,
     ingredients,
-    dishPrompt: dishInfo.dishPrompt || undefined
+    dishPrompt: dishInfo.dishPrompt || undefined,
+    apiKey: apiKey || undefined
+  };
+
+  const reqHeaders = {
+    "Content-Type": "application/json",
+    ...(apiKey ? { "x-gemini-api-key": apiKey } : {})
   };
 
   console.log(`[imageService] Calling AI Image Generation for "${dishName}"...`);
@@ -355,13 +364,13 @@ async function generateExactDishImageAI(dishInfo) {
   try {
     response = await fetch("/api/generate-food-image", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: reqHeaders,
       body: JSON.stringify(payload)
     });
   } catch (_e) {
     response = await fetch("/api/ai/generate-food-image", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: reqHeaders,
       body: JSON.stringify(payload)
     });
   }

@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Settings
 } from "lucide-react";
-import { generateAIFoodPlan, generateOfflineFallbackPlan } from "../services/geminiPlanService";
+import { generateAIFoodPlan, generateOfflineFallbackPlan, testGeminiApiKey } from "../services/geminiPlanService";
 import { getGeminiApiKey, setGeminiApiKey } from "../utils/storage";
 import { useLocation } from "../context/LocationContext";
 import FoodDetailsModal from "./FoodDetailsModal";
@@ -28,7 +28,8 @@ import { findOrResolveFood } from "../services/foodService";
 export default function PlanBuilder({
   onPlanGenerated,
   onClose,
-  onShowToast
+  onShowToast,
+  initialParams = null
 }) {
   const { currentCity = "", currentArea = "" } = useLocation();
 
@@ -43,6 +44,33 @@ export default function PlanBuilder({
   const [apiKey, setApiKey] = useState(() => getGeminiApiKey());
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [tempApiKeyInput, setTempApiKeyInput] = useState(() => getGeminiApiKey());
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [keyTestStatus, setKeyTestStatus] = useState(null); // null | { success: boolean, message: string }
+
+  const handleTestApiKey = async () => {
+    const cleanKey = tempApiKeyInput.trim().replace(/^["'`\s]+|["'`\s]+$/g, "");
+    if (!cleanKey) {
+      setKeyTestStatus({ success: false, message: "Please enter an API key first." });
+      return;
+    }
+    setIsTestingKey(true);
+    setKeyTestStatus(null);
+    try {
+      const res = await testGeminiApiKey(cleanKey);
+      if (res.valid) {
+        setKeyTestStatus({
+          success: true,
+          message: `✓ Connected to Google Gemini! (Active Model: ${res.primaryModel || "gemini-2.0-flash"})`
+        });
+      } else {
+        setKeyTestStatus({ success: false, message: res.error || "Verification failed." });
+      }
+    } catch (err) {
+      setKeyTestStatus({ success: false, message: err.message || "Failed to connect to Google API." });
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
 
   const handleSaveApiKey = (e) => {
     if (e) e.preventDefault();
@@ -50,6 +78,7 @@ export default function PlanBuilder({
     setGeminiApiKey(cleanKey);
     setApiKey(cleanKey);
     setIsApiKeyModalOpen(false);
+    setKeyTestStatus(null);
     setGenerationError(null);
     if (onShowToast) {
       onShowToast(cleanKey ? "🔑 Gemini API Key saved successfully!" : "Gemini API Key removed.");
@@ -60,6 +89,7 @@ export default function PlanBuilder({
     setTempApiKeyInput("");
     setGeminiApiKey("");
     setApiKey("");
+    setKeyTestStatus(null);
     setIsApiKeyModalOpen(false);
     setGenerationError(null);
     if (onShowToast) {
@@ -76,20 +106,20 @@ export default function PlanBuilder({
   }, [onClose]);
 
   // Comprehensive AI Food Plan Form State
-  const [formData, setFormData] = useState({
-    age: 26,
-    goal: "Healthy Eating",
-    diet: "Vegetarian",
-    activity: "Moderate",
-    mealsPerDay: 5,
-    foodPreferences: ["South Indian", "High Protein"],
-    dislikedFoods: "",
-    allergies: [],
-    budget: "Medium",
-    cookingTime: "Normal",
-    location: currentCity ? `${currentArea ? currentArea + ", " : ""}${currentCity}` : "",
-    healthNotes: ""
-  });
+  const [formData, setFormData] = useState(() => ({
+    age: initialParams?.age || 26,
+    goal: initialParams?.goal || "Healthy Eating",
+    diet: initialParams?.diet || "Vegetarian",
+    activity: initialParams?.activity || "Moderate",
+    mealsPerDay: initialParams?.mealsPerDay || 5,
+    foodPreferences: initialParams?.foodPreferences || ["South Indian", "High Protein"],
+    dislikedFoods: initialParams?.dislikedFoods || "",
+    allergies: initialParams?.allergies || [],
+    budget: initialParams?.budget || "Medium",
+    cookingTime: initialParams?.cookingTime || "Normal",
+    location: initialParams?.location || (currentCity ? `${currentArea ? currentArea + ", " : ""}${currentCity}` : ""),
+    healthNotes: initialParams?.healthNotes || ""
+  }));
 
   // Manual Custom Plan Builder State (Preserved)
   const [customForm, setCustomForm] = useState({
@@ -1771,34 +1801,63 @@ export default function PlanBuilder({
                     Get Free API Key ↗
                   </a>
                 </div>
+                {keyTestStatus && (
+                  <div
+                    style={{
+                      marginTop: "0.75rem",
+                      padding: "0.6rem 0.85rem",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      background: keyTestStatus.success ? "#ECFDF5" : "#FEF2F2",
+                      color: keyTestStatus.success ? "#065F46" : "#991B1B",
+                      border: keyTestStatus.success ? "1px solid #A7F3D0" : "1px solid #FECACA"
+                    }}
+                  >
+                    {keyTestStatus.message}
+                  </div>
+                )}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
-                {apiKey && (
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm"
-                    onClick={handleClearApiKey}
-                    style={{ color: "#DC2626", borderColor: "#FECACA" }}
-                  >
-                    Clear Key
-                  </button>
-                )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  onClick={() => setIsApiKeyModalOpen(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
+                  onClick={handleTestApiKey}
+                  disabled={isTestingKey}
                   style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
                 >
-                  <Check size={14} />
-                  Save & Apply Key
+                  <RefreshCw size={13} className={isTestingKey ? "location-icon-spin" : ""} />
+                  <span>{isTestingKey ? "Testing Key..." : "⚡ Test Key Connection"}</span>
                 </button>
+
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                  {apiKey && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={handleClearApiKey}
+                      style={{ color: "#DC2626", borderColor: "#FECACA" }}
+                    >
+                      Clear Key
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setIsApiKeyModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-sm"
+                    style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                  >
+                    <Check size={14} />
+                    Save & Apply Key
+                  </button>
+                </div>
               </div>
             </form>
           </div>

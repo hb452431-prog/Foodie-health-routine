@@ -12,8 +12,8 @@ const KEYS = {
   GEMINI_API_KEY: "fhr_gemini_api_key"
 };
 
-import { DEFAULT_AVATAR } from "../data/avatarsData";
-import { calculateStage } from "../data/badgesData";
+import { DEFAULT_AVATAR } from "../data/avatarsData.js";
+import { calculateStage } from "../data/badgesData.js";
 
 // Default user profile
 export const DEFAULT_USER_PROFILE = {

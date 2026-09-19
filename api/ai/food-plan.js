@@ -3,13 +3,13 @@
  * Endpoint: POST /api/ai/food-plan
  *
  * Performance & Reliability Optimizations:
- * - Instant Fast-Path: Immediately queries the fastest modern Flash models without blocking
- *   on upfront model listing roundtrips.
+ * - Instant Fast-Path: Queries the fastest modern Gemini Flash models (gemini-2.0-flash, gemini-1.5-flash)
+ *   without blocking on upfront model listing roundtrips.
+ * - Resilient JSON Sanitizer: Handles markdown backticks, trailing commas, and partial structures.
  * - In-Memory Model Cache: Auto-discovers and caches key-supported models if fallback is needed.
- * - Token-Optimized Prompting: High accuracy nutritional output with concise token payload
- *   for 3x faster response times (typically 1.5 - 3.5 seconds).
+ * - Token-Optimized Prompting: High accuracy nutritional output with concise token payload.
  * - Per-attempt timeout with rapid failover: Never hangs or stalls.
- * - Security: Reads GEMINI_API_KEY strictly from server environment (process.env).
+ * - Security: Reads GEMINI_API_KEY strictly from server environment or authorized client header.
  *   Never exposes keys in client responses or server logs.
  */
 
@@ -26,6 +26,33 @@ function sanitizeErrorMessage(msg, key) {
     clean = clean.split(key).join("[REDACTED_API_KEY]");
   }
   return clean.replace(/key=[a-zA-Z0-9_\-]+/gi, "key=[REDACTED]");
+}
+
+/**
+ * Resilient JSON parser for LLM responses
+ */
+function cleanAndParseAIJson(candidateText) {
+  if (!candidateText || typeof candidateText !== "string") {
+    throw new Error("Empty candidate text");
+  }
+
+  let cleanedText = candidateText.trim();
+  if (cleanedText.startsWith("```json")) {
+    cleanedText = cleanedText.replace(/^```json\s*/i, "").replace(/\s*```$/, "");
+  } else if (cleanedText.startsWith("```")) {
+    cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  const firstBrace = cleanedText.indexOf("{");
+  const lastBrace = cleanedText.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
+  }
+
+  // Remove trailing commas before } or ]
+  cleanedText = cleanedText.replace(/,\s*([\}\]])/g, "$1");
+
+  return JSON.parse(cleanedText);
 }
 
 /**
@@ -83,20 +110,16 @@ async function discoverSupportedModels(apiKey) {
  * Builds prioritized candidate models list:
  * 1. Explicit env override (process.env.GEMINI_MODEL) if set
  * 2. Discovered key-accessible models (Flash models first, then Pro models)
- * 3. All standard known models as robust fallbacks
+ * 3. Official standard active Gemini models
  */
 function getFastCandidateModels(envModel, discoveredModels = []) {
   const allKnownModels = [
-    "gemini-1.5-flash",
     "gemini-2.0-flash",
-    "gemini-2.5-flash",
+    "gemini-1.5-flash",
     "gemini-1.5-flash-8b",
+    "gemini-2.0-flash-lite",
     "gemini-1.5-pro",
-    "gemini-2.5-pro",
-    "gemini-pro",
-    "gemini-1.0-pro",
-    "gemini-flash",
-    "gemini-3.8-flash"
+    "gemini-pro"
   ];
 
   const candidateSet = new Set();
@@ -205,20 +228,7 @@ async function generateWithModel(model, apiKey, prompt, timeoutMs = 8000) {
       };
     }
 
-    let cleanedText = candidateText.trim();
-    if (cleanedText.startsWith("```json")) {
-      cleanedText = cleanedText.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-    } else if (cleanedText.startsWith("```")) {
-      cleanedText = cleanedText.replace(/^```\s*/, "").replace(/\s*```$/, "");
-    }
-
-    const firstBrace = cleanedText.indexOf("{");
-    const lastBrace = cleanedText.lastIndexOf("}");
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleanedText = cleanedText.substring(firstBrace, lastBrace + 1);
-    }
-
-    const parsedData = JSON.parse(cleanedText);
+    const parsedData = cleanAndParseAIJson(candidateText);
     if (!parsedData.meals || typeof parsedData.meals !== "object") {
       return {
         success: false,
@@ -251,7 +261,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, X-Gemini-Api-Key"
   );
 
   if (req.method === "OPTIONS") {
@@ -313,7 +323,7 @@ export default async function handler(req, res) {
 
     // High-efficiency, concise nutritionist prompt
     const prompt = `You are a clinical sports dietitian. Create a personalized, highly accurate daily food routine JSON for:
-- Profile: ${age}yo ${gender || "adult"}, Goal: ${goal}, Diet: ${diet}, Activity: ${activity}, Meals/Day: ${mealsPerDay}
+- Profile: ${age}yo ${gender || "adult"}, Goal: ${goal}, Diet: ${diet}, Activity: ${activity}, Meals/Day: ${mealsPerDay}${location ? `, Location: ${location}` : ""}
 - Preferences: ${foodPreferences || "Healthy balanced"} | Avoid: ${dislikedFoods || "None"} | Allergies: ${allergies || "None"} | Budget: ${budget} | Prep: ${cookingTime} | Notes: ${healthNotes || "None"}
 
 Return ONLY a valid JSON object matching this EXACT schema with realistic macros & appetizing dishes:
@@ -352,7 +362,7 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
     // Fast iteration through candidate models
     for (let i = 0; i < candidateModels.length; i++) {
       const model = candidateModels[i];
-      const result = await generateWithModel(model, apiKey, prompt, 7000);
+      const result = await generateWithModel(model, apiKey, prompt, 8000);
 
       if (result.success) {
         successfulPlan = result.data;
@@ -389,7 +399,7 @@ Return ONLY a valid JSON object matching this EXACT schema with realistic macros
     
     let userFriendlyError = "Unable to generate your food routine right now.";
     if (statusCode === 401 || statusCode === 403) {
-      userFriendlyError = "Gemini API key verification failed. Please check the GEMINI_API_KEY in your Vercel settings.";
+      userFriendlyError = "Gemini API key verification failed. Please check your GEMINI_API_KEY.";
     } else if (statusCode === 429) {
       userFriendlyError = "Gemini AI rate limit reached. Please wait a few seconds and try again.";
     } else if (statusCode === 404) {

@@ -21,6 +21,7 @@ import { AVATAR_COLLECTION } from "../data/avatarsData";
 import { REGIONAL_COUNTRIES, getRegionalRoutineForLocation } from "../data/regionalCuisinesData";
 import { BADGES_DATA, calculateStage } from "../data/badgesData";
 import AvatarPickerModal from "./AvatarPickerModal";
+import { testGeminiApiKey } from "../services/geminiPlanService";
 
 export default function ProfileCard({
   profile,
@@ -46,6 +47,33 @@ export default function ProfileCard({
   const [geminiApiKey, setGeminiApiKeyState] = useState(() => getGeminiApiKey());
   const [geminiKeyInput, setGeminiKeyInput] = useState(() => getGeminiApiKey());
   const [isEditingKey, setIsEditingKey] = useState(false);
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [keyTestStatus, setKeyTestStatus] = useState(null);
+
+  const handleTestGeminiKey = async () => {
+    const clean = geminiKeyInput.trim().replace(/^["'`\s]+|["'`\s]+$/g, "");
+    if (!clean) {
+      setKeyTestStatus({ success: false, message: "Please enter a key to test." });
+      return;
+    }
+    setIsTestingKey(true);
+    setKeyTestStatus(null);
+    try {
+      const res = await testGeminiApiKey(clean);
+      if (res.valid) {
+        setKeyTestStatus({
+          success: true,
+          message: `✓ Connected to Google Gemini! (Active Model: ${res.primaryModel || "gemini-2.0-flash"})`
+        });
+      } else {
+        setKeyTestStatus({ success: false, message: res.error || "Verification failed." });
+      }
+    } catch (err) {
+      setKeyTestStatus({ success: false, message: err.message || "Failed to connect to Google API." });
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
 
   const handleSaveGeminiKey = (e) => {
     if (e) e.preventDefault();
@@ -53,6 +81,7 @@ export default function ProfileCard({
     setGeminiApiKey(clean);
     setGeminiApiKeyState(clean);
     setIsEditingKey(false);
+    setKeyTestStatus(null);
     if (onShowToast) {
       onShowToast(clean ? "🔑 Gemini AI API Key saved successfully!" : "Gemini API Key removed.");
     }
@@ -63,6 +92,7 @@ export default function ProfileCard({
     setGeminiApiKeyState("");
     setGeminiKeyInput("");
     setIsEditingKey(false);
+    setKeyTestStatus(null);
     if (onShowToast) {
       onShowToast("Gemini API Key cleared.");
     }
@@ -593,32 +623,62 @@ export default function ProfileCard({
               </a>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
-              {geminiApiKey && (
-                <button
-                  type="button"
-                  className="btn btn-outline btn-sm"
-                  onClick={handleClearGeminiKey}
-                  style={{ color: "#DC2626", borderColor: "#FECACA" }}
-                >
-                  Clear Key
-                </button>
-              )}
+            {keyTestStatus && (
+              <div
+                style={{
+                  marginBottom: "1rem",
+                  padding: "0.6rem 0.85rem",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  background: keyTestStatus.success ? "#ECFDF5" : "#FEF2F2",
+                  color: keyTestStatus.success ? "#065F46" : "#991B1B",
+                  border: keyTestStatus.success ? "1px solid #A7F3D0" : "1px solid #FECACA"
+                }}
+              >
+                {keyTestStatus.message}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
               <button
                 type="button"
                 className="btn btn-secondary btn-sm"
-                onClick={() => setIsEditingKey(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary btn-sm"
+                onClick={handleTestGeminiKey}
+                disabled={isTestingKey}
                 style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
               >
-                <Check size={14} />
-                Save API Key
+                <Key size={13} className={isTestingKey ? "location-icon-spin" : ""} />
+                <span>{isTestingKey ? "Testing Connection..." : "⚡ Test Key Connection"}</span>
               </button>
+
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                {geminiApiKey && (
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={handleClearGeminiKey}
+                    style={{ color: "#DC2626", borderColor: "#FECACA" }}
+                  >
+                    Clear Key
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setIsEditingKey(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}
+                >
+                  <Check size={14} />
+                  Save API Key
+                </button>
+              </div>
             </div>
           </form>
         ) : (

@@ -202,7 +202,16 @@ export default function NutritionCalculator({ onOpenPlanWizard, onSelectRoutine 
           <button
             className="btn btn-accent btn-lg"
             style={{ width: "100%", marginTop: "1rem" }}
-            onClick={onOpenPlanWizard}
+            onClick={() => {
+              if (onOpenPlanWizard) {
+                onOpenPlanWizard({
+                  goal: goal === "fat-loss" ? "Weight Loss" : goal === "muscle-gain" ? "Fitness/Muscle" : goal === "diabetes" ? "Medical Nutrition: Diabetes" : "Healthy Eating",
+                  diet: dietType === "vegetarian" ? "Vegetarian" : "Balanced",
+                  targetCalories: results.calories,
+                  targetProtein: results.protein
+                });
+              }
+            }}
           >
             <Sparkles size={18} />
             <span>Generate Routine with this Target</span>

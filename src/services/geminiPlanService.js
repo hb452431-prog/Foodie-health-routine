@@ -7,12 +7,12 @@
  *
  * Dynamic Model Resolution:
  * - Automatically discovers accessible models for the user's Gemini API key.
- * - Supports modern Flash and Pro models (gemini-1.5-flash, gemini-2.0-flash, gemini-2.5-flash, gemini-1.5-pro, gemini-pro).
- * - Client-direct execution + serverless endpoint fallback.
+ * - Supports modern official Flash & Pro models (gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-flash-8b, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-pro).
+ * - Client-direct execution + serverless endpoint fallback + zero-fail clinical smart routine engine.
  */
 
-import { findOrResolveFood, getFoodsForPlan } from "./foodService";
-import { getGeminiApiKey } from "../utils/storage";
+import { findOrResolveFood, getFoodsForPlan } from "./foodService.js";
+import { getGeminiApiKey } from "../utils/storage.js";
 
 const DEFAULT_TIMEOUT_MS = 25000;
 
@@ -34,6 +34,52 @@ export function parseMacroNumber(val, defaultVal = 0) {
     }
   }
   return typeof defaultVal === "number" ? defaultVal : 0;
+}
+
+/**
+ * Robust JSON extraction & cleanup helper that fixes common LLM syntax irregularities:
+ * - Strips markdown backticks (```json ... ```)
+ * - Strips trailing commas before closing braces/brackets
+ * - Finds first valid JSON block
+ */
+export function cleanAndParseJson(text) {
+  if (!text || typeof text !== "string") {
+    throw new Error("Empty AI text received.");
+  }
+
+  let cleaned = text.trim();
+
+  // Strip markdown code fences
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.replace(/^```json\s*/i, "").replace(/\s*```$/, "");
+  } else if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
+  }
+
+  // Find outermost JSON object
+  const firstBrace = cleaned.indexOf("{");
+  const lastBrace = cleaned.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+  }
+
+  // Remove trailing commas before } or ]
+  cleaned = cleaned.replace(/,\s*([\}\]])/g, "$1");
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (initialErr) {
+    // Attempt fallback fixes for common JSON errors
+    try {
+      // Replace single quotes with double quotes where appropriate
+      const sanitized = cleaned
+        .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":')
+        .replace(/:\s*'([^']*)'/g, ':"$1"');
+      return JSON.parse(sanitized);
+    } catch (_fallbackErr) {
+      throw new Error(`Failed to parse AI nutrition response as JSON: ${initialErr.message}`);
+    }
+  }
 }
 
 /**
@@ -71,7 +117,8 @@ function normalizeSteps(steps) {
  * Every meal is mapped and validated against the Central Food Knowledge Base.
  */
 export function formatAIResponseToRoutine(aiData, formData = {}) {
-  const { summary, dailyTargets = {}, meals = {}, shoppingList = [], tips = [], medicalDisclaimer } = aiData || {};
+  const safeData = aiData || {};
+  const { summary, dailyTargets = {}, meals = {}, shoppingList = [], tips = [], medicalDisclaimer } = safeData;
 
   const mealSlots = [
     { key: "morning", defaultSlot: "Morning Elixir", defaultTime: "07:00 AM", defaultEmoji: "🌅" },
@@ -82,7 +129,7 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
     { key: "dinner", defaultSlot: "Light Restorative Dinner", defaultTime: "08:00 PM", defaultEmoji: "🌙" }
   ];
 
-  const targetMealsCount = Number(formData.mealsPerDay) || 5;
+  const targetMealsCount = Number(formData?.mealsPerDay) || 5;
 
   const dailyTimeline = mealSlots
     .filter((slot) => {
@@ -120,6 +167,8 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
       const ingredients = normalizeIngredients(rawIngredients);
       const steps = normalizeSteps(rawSteps);
 
+      const isUserVeg = formData?.diet === "Vegetarian" || formData?.diet === "Vegan" || verifiedFood?.vegetarian;
+
       return {
         id: `ai-meal-${slot.key}-${Date.now()}-${index}`,
         foodId: verifiedFood?.id || `food-${slot.key}`,
@@ -138,14 +187,14 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
         carbs: carbs,
         fat: fat,
         prepTime: meal.prepTime || verifiedFood?.prepTime || "15 min",
-        isVeg: formData.diet === "Vegetarian" || formData.diet === "Vegan" || verifiedFood?.vegetarian,
-        dietType: formData.diet || verifiedFood?.dietType || "Balanced",
+        isVeg: Boolean(isUserVeg),
+        dietType: formData?.diet || verifiedFood?.dietType || "Balanced",
         cuisine: verifiedFood?.cuisine || "Authentic",
-        region: verifiedFood?.stateOrRegion || formData.location || "Regional",
+        region: verifiedFood?.stateOrRegion || formData?.location || "Regional",
         country: verifiedFood?.country || "India",
         ingredients: ingredients,
         steps: steps,
-        description: verifiedFood?.description || `Scientifically calibrated ${dishTitle} supporting your ${formData.goal || "health"} goal.`,
+        description: verifiedFood?.description || `Scientifically calibrated ${dishTitle} supporting your ${formData?.goal || "health"} goal.`,
         alternative: meal.alternative || "Nutrient-Dense Seasonal Salad",
         youtubeUrl: verifiedFood?.youtubeUrl || `https://www.youtube.com/results?search_query=${encodeURIComponent(dishTitle)}`,
         orderQuery: dishTitle
@@ -169,10 +218,10 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
     dailyTimeline.reduce((sum, m) => sum + (m.fat || 0), 0) ||
     55;
 
-  const goalName = formData.goal || "Healthy Nutrition";
-  const userAge = formData.age || 26;
-  const userDiet = formData.diet || "Balanced";
-  const userActivity = formData.activity || "Moderate";
+  const goalName = formData?.goal || "Healthy Nutrition";
+  const userAge = formData?.age || 26;
+  const userDiet = formData?.diet || "Balanced";
+  const userActivity = formData?.activity || "Moderate";
 
   return {
     id: `ai-routine-${Date.now()}`,
@@ -192,8 +241,8 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
     image: dailyTimeline[0]?.image || dailyTimeline[1]?.image || null,
     imageUrl: dailyTimeline[0]?.imageUrl || dailyTimeline[1]?.imageUrl || null,
     mealsCount: dailyTimeline.length,
-    difficulty: formData.cookingTime === "Quick" ? "Quick & Easy" : "Balanced",
-    prepTimeAvg: formData.cookingTime === "Quick" ? "10-15 min" : "20-25 min",
+    difficulty: formData?.cookingTime === "Quick" ? "Quick & Easy" : "Balanced",
+    prepTimeAvg: formData?.cookingTime === "Quick" ? "10-15 min" : "20-25 min",
     isCustom: true,
     isAIGenerated: true,
     generatedAt: new Date().toLocaleDateString(),
@@ -207,31 +256,31 @@ export function formatAIResponseToRoutine(aiData, formData = {}) {
     medicalDisclaimer:
       medicalDisclaimer ||
       "This food routine is for general information only and is not medical advice. Consult a qualified healthcare professional for personalized dietary guidance.",
-    userPreferences: { ...formData }
+    userPreferences: { ...(formData || {}) }
   };
 }
 
 /**
  * Builds the high-efficiency nutritionist prompt for Gemini AI.
  */
-function buildNutritionistPrompt(formData) {
-  const age = Number(formData.age) || 26;
-  const gender = String(formData.gender || "").trim();
-  const goal = String(formData.goal || "Healthy Eating").trim();
-  const diet = String(formData.diet || "Vegetarian").trim();
-  const activity = String(formData.activity || "Moderate").trim();
-  const mealsPerDay = Number(formData.mealsPerDay) || 5;
-  const foodPreferences = Array.isArray(formData.foodPreferences)
+export function buildNutritionistPrompt(formData = {}) {
+  const age = Number(formData?.age) || 26;
+  const gender = String(formData?.gender || "").trim();
+  const goal = String(formData?.goal || "Healthy Eating").trim();
+  const diet = String(formData?.diet || "Vegetarian").trim();
+  const activity = String(formData?.activity || "Moderate").trim();
+  const mealsPerDay = Number(formData?.mealsPerDay) || 5;
+  const foodPreferences = Array.isArray(formData?.foodPreferences)
     ? formData.foodPreferences.join(", ")
-    : String(formData.foodPreferences || "").trim();
-  const dislikedFoods = String(formData.dislikedFoods || "").trim();
-  const allergies = Array.isArray(formData.allergies)
+    : String(formData?.foodPreferences || "").trim();
+  const dislikedFoods = String(formData?.dislikedFoods || "").trim();
+  const allergies = Array.isArray(formData?.allergies)
     ? formData.allergies.join(", ")
-    : String(formData.allergies || "None").trim();
-  const budget = String(formData.budget || "Medium").trim();
-  const cookingTime = String(formData.cookingTime || "Normal").trim();
-  const location = String(formData.location || "").trim();
-  const healthNotes = String(formData.healthNotes || "").trim();
+    : String(formData?.allergies || "None").trim();
+  const budget = String(formData?.budget || "Medium").trim();
+  const cookingTime = String(formData?.cookingTime || "Normal").trim();
+  const location = String(formData?.location || "").trim();
+  const healthNotes = String(formData?.healthNotes || "").trim();
 
   return `You are a clinical sports dietitian. Create a personalized, highly accurate daily food routine JSON for:
 - Profile: ${age}yo ${gender || "adult"}, Goal: ${goal}, Diet: ${diet}, Activity: ${activity}, Meals/Day: ${mealsPerDay}${location ? `, Location: ${location}` : ""}
@@ -271,6 +320,53 @@ export function sanitizeApiKey(rawKey) {
     .trim()
     .replace(/^["'`\s]+|["'`\s]+$/g, "")
     .trim();
+}
+
+/**
+ * Validates a Gemini API Key quickly by making a lightweight test call.
+ */
+export async function testGeminiApiKey(apiKey) {
+  const cleanKey = sanitizeApiKey(apiKey);
+  if (!cleanKey) {
+    return { valid: false, error: "Please enter an API key." };
+  }
+
+  if (cleanKey.startsWith("sk-")) {
+    return { valid: false, error: "This looks like an OpenAI key ('sk-...'). Please enter a Google Gemini API key from Google AI Studio (starting with 'AIza...')." };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+
+    const testUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`;
+    const res = await fetch(testUrl, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const msg = data?.error?.message || `HTTP ${res.status}`;
+      if (res.status === 400 || res.status === 401 || res.status === 403 || msg.toLowerCase().includes("api key not valid") || msg.toLowerCase().includes("api_key_invalid")) {
+        return { valid: false, error: "The Gemini API key is invalid or unauthorized. Please verify your key at Google AI Studio (aistudio.google.com)." };
+      }
+      return { valid: false, error: `Google API Error: ${msg}` };
+    }
+
+    const data = await res.json();
+    const available = (data?.models || []).map((m) => (m.name || "").replace(/^models\//, ""));
+    return {
+      valid: true,
+      modelsCount: available.length,
+      primaryModel: available.find((m) => m.includes("flash")) || available[0] || "gemini-2.0-flash"
+    };
+  } catch (err) {
+    return { valid: false, error: err.name === "AbortError" ? "Validation timed out. Please check your internet connection." : err.message };
+  }
 }
 
 /**
@@ -335,7 +431,7 @@ async function discoverKeyModels(apiKey) {
 async function generateWithGeminiDirect(apiKey, formData) {
   const cleanKey = sanitizeApiKey(apiKey);
   if (!cleanKey) {
-    throw new Error("No Gemini API key provided. Please enter a valid Gemini API key in the settings.");
+    throw new Error("No Gemini API key provided. Please enter a valid Gemini API key in settings or Plan Wizard.");
   }
 
   if (cleanKey.startsWith("sk-")) {
@@ -347,21 +443,19 @@ async function generateWithGeminiDirect(apiKey, formData) {
   // 1. Discover models supported by this specific key
   const discoveredModels = await discoverKeyModels(cleanKey);
 
-  // 2. Build prioritized candidate models list
+  // 2. Build prioritized candidate models list (Real, active Google Gemini models)
   const candidateModels = [];
   if (discoveredModels.length > 0) {
     candidateModels.push(...discoveredModels);
   }
 
   const fallbackKnownModels = [
-    "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
     "gemini-1.5-flash-8b",
+    "gemini-2.0-flash-lite",
     "gemini-1.5-pro",
-    "gemini-2.0-flash-lite-preview-02-05",
-    "gemini-pro",
-    "gemini-1.0-pro"
+    "gemini-pro"
   ];
 
   for (const m of fallbackKnownModels) {
@@ -380,6 +474,9 @@ async function generateWithGeminiDirect(apiKey, formData) {
     const apiVersions = ["v1beta", "v1"];
 
     for (const version of apiVersions) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 18000);
+
       try {
         const url = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
         const payload = {
@@ -391,9 +488,6 @@ async function generateWithGeminiDirect(apiKey, formData) {
           }
         };
 
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 12000);
-
         let res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -402,7 +496,7 @@ async function generateWithGeminiDirect(apiKey, formData) {
         });
 
         if (res.status === 400) {
-          // Retry without responseMimeType in case this specific model doesn't support json schema
+          // Retry without responseMimeType in case this specific model/version doesn't support json mime type
           const fallbackPayload = {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
@@ -415,8 +509,6 @@ async function generateWithGeminiDirect(apiKey, formData) {
           });
           res = retryRes;
         }
-
-        clearTimeout(timer);
 
         const responseText = await res.text().catch(() => "");
         let json = null;
@@ -450,20 +542,7 @@ async function generateWithGeminiDirect(apiKey, formData) {
         const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) continue;
 
-        let cleaned = text.trim();
-        if (cleaned.startsWith("```json")) {
-          cleaned = cleaned.replace(/^```json\s*/, "").replace(/\s*```$/, "");
-        } else if (cleaned.startsWith("```")) {
-          cleaned = cleaned.replace(/^```\s*/, "").replace(/\s*```$/, "");
-        }
-
-        const firstBrace = cleaned.indexOf("{");
-        const lastBrace = cleaned.lastIndexOf("}");
-        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-          cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-        }
-
-        const parsed = JSON.parse(cleaned);
+        const parsed = cleanAndParseJson(text);
         if (parsed && parsed.meals) {
           console.log(`[Gemini AI] Successfully generated food routine using model: ${model} (${version})`);
           return formatAIResponseToRoutine(parsed, formData);
@@ -473,6 +552,8 @@ async function generateWithGeminiDirect(apiKey, formData) {
           throw e;
         }
         lastError = e;
+      } finally {
+        clearTimeout(timer);
       }
     }
   }
@@ -497,7 +578,7 @@ export async function generateAIFoodPlan(formData = {}) {
     try {
       return await generateWithGeminiDirect(customKey, formData);
     } catch (directErr) {
-      // If it's explicitly an invalid key error, throw directly so user can correct it
+      // If it's explicitly an invalid key error or rate limit, throw directly so user can correct it
       if (
         directErr.message.includes("API key is not valid") ||
         directErr.message.includes("rate limit") ||
@@ -520,7 +601,7 @@ export async function generateAIFoodPlan(formData = {}) {
         "Content-Type": "application/json",
         ...(customKey ? { "x-gemini-api-key": customKey } : {})
       },
-      body: JSON.stringify({ ...formData, apiKey: customKey }),
+      body: JSON.stringify({ ...(formData || {}), apiKey: customKey }),
       signal: controller.signal
     });
 
@@ -581,20 +662,27 @@ export async function generateAIFoodPlan(formData = {}) {
 
 /**
  * Safe offline fallback generator using verified dishes from the Food Knowledge Base.
+ * Guaranteed to never crash even with empty or partial formData.
  */
-export function generateOfflineFallbackPlan(formData) {
-  const goal = formData.goal || "Healthy Eating";
+export function generateOfflineFallbackPlan(formData = {}) {
+  const safeDiet = String(formData?.diet || "Vegetarian").trim();
+  const safeGoal = String(formData?.goal || "Healthy Eating").trim();
+  const safeLocation = String(formData?.location || "").trim();
+
   const verifiedSlots = getFoodsForPlan({
-    diet: formData.diet,
-    goal: formData.goal,
-    stateOrRegion: formData.location || ""
+    diet: safeDiet,
+    goal: safeGoal,
+    stateOrRegion: safeLocation
   });
 
+  const isWeightLoss = safeGoal.toLowerCase().includes("loss");
+  const isWeightGain = safeGoal.toLowerCase().includes("gain") || safeGoal.toLowerCase().includes("muscle");
+
   const fallbackData = {
-    summary: `Scientifically calibrated ${goal.toLowerCase()} routine featuring verified nutritious meals tailored for ${formData.diet.toLowerCase()} lifestyle.`,
+    summary: `Scientifically calibrated ${safeGoal.toLowerCase()} routine featuring verified nutritious meals tailored for ${safeDiet.toLowerCase()} lifestyle.`,
     dailyTargets: {
-      calories: goal === "Weight Loss" ? 1750 : goal === "Weight Gain" ? 2400 : 2050,
-      protein: goal === "Fitness/Muscle" ? "110g" : "85g",
+      calories: isWeightLoss ? 1750 : isWeightGain ? 2400 : 2050,
+      protein: safeGoal.toLowerCase().includes("fitness") || safeGoal.toLowerCase().includes("muscle") ? "110g" : "85g",
       carbs: "210g",
       fat: "50g",
       water: "8-10 glasses (2.5L)"

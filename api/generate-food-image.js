@@ -80,17 +80,15 @@ async function discoverAvailableImageModels(apiKey) {
  */
 async function getPrioritizedImageModels(apiKey, requestedModel = null) {
   const primaryModels = [
-    "gemini-3.1-flash-image",
-    "gemini-3.1-flash-lite-image",
-    "gemini-3-pro-image",
-    "gemini-2.5-flash-image"
+    "imagen-3.0-generate-002",
+    "imagen-3.0-fast-generate-001",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash"
   ];
 
   const fallbackModels = [
     "gemini-2.0-flash-exp",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "imagen-3.0-generate-002"
+    "gemini-1.5-pro"
   ];
 
   const discovered = await discoverAvailableImageModels(apiKey);

@@ -152,6 +152,12 @@ function AppContent() {
   const [selectedOrderMeal, setSelectedOrderMeal] = useState(null);
   const [selectedShareRoutine, setSelectedShareRoutine] = useState(null);
   const [isPlanWizardOpen, setIsPlanWizardOpen] = useState(false);
+  const [planWizardParams, setPlanWizardParams] = useState(null);
+
+  const handleOpenPlanWizard = (params = null) => {
+    setPlanWizardParams(params);
+    setIsPlanWizardOpen(true);
+  };
 
   // Toast State
   const [toastMessage, setToastMessage] = useState("");
@@ -332,7 +338,7 @@ function AppContent() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={handleTabChange}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        onOpenPlanWizard={handleOpenPlanWizard}
         waterGlasses={waterGlasses}
         onUpdateWater={handleUpdateWater}
         userProfile={userProfile}
@@ -346,7 +352,7 @@ function AppContent() {
             userProfile={userProfile}
             activePlan={activePlan}
             onSearchSubmit={handleHeroSearchSubmit}
-            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onOpenPlanWizard={handleOpenPlanWizard}
             onExploreClick={() => handleTabChange("explore")}
             onNavigateTab={handleTabChange}
             onSelectCategory={handleCategorySelect}
@@ -389,7 +395,7 @@ function AppContent() {
               <MyPlanView
                 activePlan={activePlan}
                 userProfile={userProfile}
-                onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+                onOpenPlanWizard={handleOpenPlanWizard}
                 onOpenRecipe={handleOpenRecipe}
                 onOpenYouTube={handleOpenYouTube}
                 onOpenOrder={handleOpenOrder}
@@ -422,7 +428,7 @@ function AppContent() {
                 favoriteMeals={favoriteMeals}
                 onShowToast={showToast}
                 onSelectRoutine={handleSelectRoutine}
-                onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+                onOpenPlanWizard={handleOpenPlanWizard}
                 onApplyPlan={handleApplyPlan}
                 onNavigateTab={handleTabChange}
               />
@@ -440,7 +446,7 @@ function AppContent() {
             onNavigateTab={handleTabChange}
             onSelectRoutine={handleSelectRoutine}
             onOpenRecipe={handleOpenRecipe}
-            onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+            onOpenPlanWizard={handleOpenPlanWizard}
             onUpdateWater={handleUpdateWater}
             waterGlasses={waterGlasses}
             onShowToast={showToast}
@@ -539,8 +545,12 @@ function AppContent() {
         {isPlanWizardOpen && (
           <PlanBuilder
             onPlanGenerated={handlePlanGenerated}
-            onClose={() => setIsPlanWizardOpen(false)}
+            onClose={() => {
+              setIsPlanWizardOpen(false);
+              setPlanWizardParams(null);
+            }}
             onShowToast={showToast}
+            initialParams={planWizardParams}
           />
         )}
       </Suspense>
@@ -552,7 +562,7 @@ function AppContent() {
       <MobileNav
         activeTab={activeTab}
         setActiveTab={handleTabChange}
-        onOpenPlanWizard={() => setIsPlanWizardOpen(true)}
+        onOpenPlanWizard={handleOpenPlanWizard}
       />
 
       {/* Footer */}
